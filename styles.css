@@ -3,6 +3,8 @@
 /* Body Styles */
 body {
     font-family: 'Arial', sans-serif; /* Modern font */
+    margin: 0; /* Remove default margin */
+    padding: 0; /* Remove default padding */
 }
 
 /* Button Styles */
@@ -11,16 +13,16 @@ button {
     border-radius: 5px; /* Rounded corners */
     padding: 10px 15px; /* Padding for buttons */
     cursor: pointer; /* Pointer cursor on hover */
+    width: 100%; /* Full width for mobile view */
+    max-width: 300px; /* Max width for larger screens */
+    box-sizing: border-box; /* Ensure padding is included in width */
+    margin: 10px auto; /* Center the button */
 }
 
 /* New class for pretty pink background */
 .pretty-pink {
     background-color: #ff69b4; /* Pretty pink color */
     color: white; /* Text color */
-    width: 100%; /* Full width for mobile view */
-    max-width: 300px; /* Max width for larger screens */
-    box-sizing: border-box; /* Ensure padding is included in width */
-    margin: 0 auto; /* Center the button */
 }
 
 /* Additional button styles */
@@ -54,4 +56,43 @@ button {
 
 .hover\:bg-red-600:hover {
     background-color: #c53030; /* Darker red on hover */
+}
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+    body {
+        padding: 10px; /* Add padding for mobile */
+    }
+
+    button {
+        padding: 8px 10px; /* Smaller padding for mobile */
+    }
+
+    .expense-list {
+        flex-direction: column; /* Stack items vertically */
+    }
+
+    .expense-name, .expense-amount, .expense-frequency {
+        font-size: 14px; /* Smaller font size for mobile */
+    }
+
+    /* Styles for edit function */
+    .edit-input {
+        width: 100%; /* Full width for input fields */
+        margin: 5px 0; /* Margin for spacing */
+        padding: 8px; /* Padding for input fields */
+        box-sizing: border-box; /* Include padding in width */
+    }
+
+    .save-button {
+        width: 100%; /* Full width for save button */
+        margin-top: 10px; /* Margin for spacing */
+    }
+}
+
+@media (min-width: 601px) {
+    .expense-list {
+        display: flex; /* Use flexbox for larger screens */
+        justify-content: space-between; /* Space items evenly */
+    }
 }

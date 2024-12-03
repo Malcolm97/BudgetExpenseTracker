@@ -83,25 +83,77 @@ function addExpenseToList(expenseName, amount, frequency) {
     
     // Add event listeners for edit and delete buttons
     listItem.querySelector('.edit-expense').addEventListener('click', function() {
-        console.log('Edit button clicked'); // Log when the edit button is clicked
-        const newExpenseName = prompt("Enter new expense name:", expenseName);
-        const newExpenseAmount = prompt("Enter new expense amount:", amount);
-        if (newExpenseName === null || newExpenseAmount === null) {
-            return; // Exit if the user cancels the prompt
-        }
-        if (newExpenseName && !isNaN(parseFloat(newExpenseAmount))) {
-            // Update the displayed values
-            listItem.querySelector('.expense-name').innerText = newExpenseName;
-            listItem.querySelector('.expense-amount').innerText = `$${parseFloat(newExpenseAmount).toFixed(2)}`;
-            // Update the expense variables
-            expenseName = newExpenseName;
-            amount = parseFloat(newExpenseAmount);
-            updateTotalExpenses(); // Update totals after editing
-        }
+        editExpense(listItem, expenseName, amount, frequency);
     });
     
+    // Add event listener for delete button
+    listItem.querySelector('.delete-expense').addEventListener('click', function() {
+        console.log('Delete button clicked'); // Log when the delete button is clicked
+        expenseList.removeChild(listItem); // Remove the list item from the expense list
+        updateTotalExpenses(); // Update totals after deleting
+    });
+
     // Update total expenses based on frequency
     updateExpenses(amount, frequency);
+}
+
+function editExpense(listItem, expenseName, amount, frequency) {
+    console.log('Edit button clicked'); // Log when the edit button is clicked
+    const expenseNameElement = listItem.querySelector('.expense-name');
+    const expenseAmountElement = listItem.querySelector('.expense-amount');
+    const expenseFrequencyElement = listItem.querySelector('.expense-frequency');
+
+    // Create input fields for editing
+    const nameInput = document.createElement('input');
+    nameInput.value = expenseNameElement.innerText;
+    const amountInput = document.createElement('input');
+    amountInput.value = amount.toFixed(2);
+    const frequencyInput = document.createElement('select');
+    const frequencies = ['weekly', 'fortnightly', 'monthly'];
+    frequencies.forEach(freq => {
+        const option = document.createElement('option');
+        option.value = freq;
+        option.textContent = freq.charAt(0).toUpperCase() + freq.slice(1);
+        if (freq === frequency) {
+            option.selected = true;
+        }
+        frequencyInput.appendChild(option);
+    });
+
+    // Replace the displayed values with input fields
+    expenseNameElement.innerHTML = '';
+    expenseAmountElement.innerHTML = '';
+    expenseFrequencyElement.innerHTML = '';
+    expenseNameElement.appendChild(nameInput);
+    expenseAmountElement.appendChild(amountInput);
+    expenseFrequencyElement.appendChild(frequencyInput);
+
+    // Create a save button
+    const saveButton = document.createElement('button');
+    saveButton.innerText = 'Save';
+    saveButton.className = 'bg-green-500 text-white p-1 rounded';
+    listItem.appendChild(saveButton);
+
+    // Add event listener for save button
+    saveButton.addEventListener('click', function() {
+        const newExpenseName = nameInput.value;
+        const newExpenseAmount = parseFloat(amountInput.value);
+        const newExpenseFrequency = frequencyInput.value;
+        if (newExpenseName && !isNaN(newExpenseAmount)) {
+            // Update the displayed values
+            expenseNameElement.innerText = newExpenseName;
+            expenseAmountElement.innerText = `$${newExpenseAmount.toFixed(2)}`;
+            expenseFrequencyElement.innerText = newExpenseFrequency.charAt(0).toUpperCase() + newExpenseFrequency.slice(1);
+            // Update the expense variables
+            expenseName = newExpenseName;
+            amount = newExpenseAmount;
+            frequency = newExpenseFrequency;
+            updateTotalExpenses(); // Update totals after editing
+            listItem.removeChild(saveButton); // Remove the save button
+        } else {
+            alert('Please enter valid expense details.');
+        }
+    });
 }
 
 function updateExpenses(amount, frequency) {
