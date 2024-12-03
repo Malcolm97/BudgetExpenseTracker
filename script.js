@@ -4,11 +4,14 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function setupEventListeners() {
+    console.log('Setting up event listeners'); // Log when setting up listeners
     addEventListenerToButton('set-budget', setBudget);
     addEventListenerToButton('add-expense', addExpense);
+    console.log('Event listeners attached'); // Log to confirm listeners are attached
 }
 
 function addEventListenerToButton(buttonId, callback) {
+    console.log(`Adding event listener to button: ${buttonId}`); // Log button ID
     document.getElementById(buttonId).addEventListener('click', callback);
 }
 
@@ -57,23 +60,33 @@ function clearBudgetInput() {
 
 function addExpense() {
     console.log('Add Expense function triggered'); // Log when the function is triggered
+    console.log('Expense Name:', document.getElementById('expense-name').value); // Log expense name
+    console.log('Expense Amount:', document.getElementById('expense-amount').value); // Log expense amount
     const expenseName = document.getElementById('expense-name').value;
     const expenseAmount = document.getElementById('expense-amount').value;
-    const expenseFrequency = document.getElementById('expense-frequency').value; // Get selected frequency
+    const expenseFrequency = document.getElementById('expense-frequency').value.toLowerCase(); // Get selected frequency
     const amount = validateInput(expenseAmount);
     
     if (expenseName && amount) {
         addExpenseToList(expenseName, amount, expenseFrequency);
-        clearExpenseInputs();
+        clearExpenseInputs(); // Clear input fields after adding the expense
         updateTotalExpenses(); // Update total expenses after adding a new expense
     } else {
         alert('Please enter valid expense details.');
     }
 }
 
+function clearExpenseInputs() {
+    document.getElementById('expense-name').value = ''; // Clear the expense name input
+    document.getElementById('expense-amount').value = ''; // Clear the expense amount input
+    document.getElementById('expense-frequency').value = 'weekly'; // Reset frequency to default
+}
+
 function addExpenseToList(expenseName, amount, frequency) {
+    console.log('Adding expense:', expenseName, amount, frequency); // Log expense details
     const expenseList = document.getElementById('expense-list');
-    const listItem = document.createElement('li');
+    const listItem = document.getElementById('expense-item-template').cloneNode(true);
+    listItem.style.display = 'flex'; // Make the cloned item visible
     listItem.classList.add('flex', 'justify-between', 'items-center', 'border-b', 'border-gray-200', 'py-2');
     listItem.innerHTML = `
         <span class="expense-name font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">${expenseName}</span>
@@ -165,4 +178,31 @@ function changeColors(buttonColor, summaryColor) {
     });
 }
 
-// The rest of the functions remain unchanged...
+function calculateTotalExpenses() {
+    // Logic to calculate total expenses
+    let totalWeekly = 0;
+    let totalFortnightly = 0;
+    let totalMonthly = 0;
+
+    const expenseItems = document.querySelectorAll('#expense-list li');
+    expenseItems.forEach(item => {
+        const amount = parseFloat(item.querySelector('.expense-amount').innerText.replace('$', ''));
+        const frequency = item.querySelector('.expense-frequency').innerText;
+
+        if (frequency === 'weekly') {
+            totalWeekly += amount;
+        } else if (frequency === 'fortnightly') {
+            totalFortnightly += amount;
+        } else if (frequency === 'monthly') {
+            totalMonthly += amount;
+        }
+    });
+
+    document.getElementById('total-weekly-expenses').innerText = totalWeekly.toFixed(2);
+    document.getElementById('total-fortnightly-expenses').innerText = totalFortnightly.toFixed(2);
+    document.getElementById('total-monthly-expenses').innerText = totalMonthly.toFixed(2);
+    document.getElementById('total-expenses').innerText = (totalWeekly + totalFortnightly + totalMonthly).toFixed(2);
+}
+
+// Add event listener for calculating total expenses
+document.getElementById('calculate-total-expenses').addEventListener('click', calculateTotalExpenses);
