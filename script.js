@@ -79,12 +79,23 @@ function addExpenseToList(expenseName, amount, frequency) {
         <span class="expense-name font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">${expenseName}</span>
         <span class="expense-amount font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">$${amount.toFixed(2)}</span>
         <span class="expense-frequency font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">${frequency}</span>
-        <div>
-            <button class="edit-expense bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300" aria-label="Edit Expense"><i class="fas fa-edit"></i></button>
-            <button class="delete-expense bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300" aria-label="Delete Expense"><i class="fas fa-trash"></i></button>
+        <div class="flex space-x-1">
+            <button class="edit-expense bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600 transition duration-300" aria-label="Edit Expense"><i class="fas fa-edit"></i></button>
+            <button class="delete-expense bg-red-500 text-white p-1 rounded hover:bg-red-600 transition duration-300" aria-label="Delete Expense"><i class="fas fa-trash"></i></button>
         </div>
     `;
     expenseList.appendChild(listItem);
+
+    // Add event listeners for inline editing
+    listItem.querySelector('.expense-name').addEventListener('click', function() {
+        inlineEdit(listItem, 'name', expenseName);
+    });
+    listItem.querySelector('.expense-amount').addEventListener('click', function() {
+        inlineEdit(listItem, 'amount', amount);
+    });
+    listItem.querySelector('.expense-frequency').addEventListener('click', function() {
+        inlineEdit(listItem, 'frequency', frequency);
+    });
 
     // Add event listeners for edit and delete buttons
     listItem.querySelector('.edit-expense').addEventListener('click', function() {
@@ -96,63 +107,42 @@ function addExpenseToList(expenseName, amount, frequency) {
     });
 }
 
-// Edit Expense Functionality
-function editExpense(listItem, expenseName, amount, frequency) {
-    const expenseNameElement = listItem.querySelector('.expense-name');
-    const expenseAmountElement = listItem.querySelector('.expense-amount');
-    const expenseFrequencyElement = listItem.querySelector('.expense-frequency');
+// Inline Edit Functionality
+function inlineEdit(listItem, field, currentValue) {
+    const fieldElement = listItem.querySelector(`.expense-${field}`);
+    const input = document.createElement('input');
+    input.value = currentValue;
+    fieldElement.innerHTML = '';
+    fieldElement.appendChild(input);
 
-    // Create input fields for editing
-    const nameInput = document.createElement('input');
-    nameInput.value = expenseNameElement.innerText;
-    const amountInput = document.createElement('input');
-    amountInput.value = amount.toFixed(2);
-    const frequencyInput = document.createElement('select');
-    const frequencies = ['weekly', 'fortnightly', 'monthly'];
-    frequencies.forEach(freq => {
-        const option = document.createElement('option');
-        option.value = freq;
-        option.textContent = freq.charAt(0).toUpperCase() + freq.slice(1);
-        if (freq === frequency) {
-            option.selected = true;
-        }
-        frequencyInput.appendChild(option);
-    });
-
-    // Replace the displayed values with input fields
-    expenseNameElement.innerHTML = '';
-    expenseAmountElement.innerHTML = '';
-    expenseFrequencyElement.innerHTML = '';
-    expenseNameElement.appendChild(nameInput);
-    expenseAmountElement.appendChild(amountInput);
-    expenseFrequencyElement.appendChild(frequencyInput);
-
-    // Create a save button
     const saveButton = document.createElement('button');
     saveButton.innerText = 'Save';
     saveButton.className = 'bg-green-500 text-white p-1 rounded';
-    listItem.appendChild(saveButton);
+    fieldElement.appendChild(saveButton);
 
-    // Add event listener for save button
     saveButton.addEventListener('click', function() {
-        const newExpenseName = nameInput.value;
-        const newExpenseAmount = parseFloat(amountInput.value);
-        const newExpenseFrequency = frequencyInput.value;
-        if (newExpenseName && !isNaN(newExpenseAmount)) {
-            // Update the displayed values
-            expenseNameElement.innerText = newExpenseName;
-            expenseAmountElement.innerText = `$${newExpenseAmount.toFixed(2)}`;
-            expenseFrequencyElement.innerText = newExpenseFrequency.charAt(0).toUpperCase() + newExpenseFrequency.slice(1);
-            // Update the expense variables
-            expenseName = newExpenseName;
-            amount = newExpenseAmount;
-            frequency = newExpenseFrequency;
+        const newValue = input.value;
+        if (newValue) {
+            fieldElement.innerText = newValue;
+            // Update the corresponding variable
+            if (field === 'name') {
+                expenseName = newValue;
+            } else if (field === 'amount') {
+                expenseAmount = parseFloat(newValue);
+            } else if (field === 'frequency') {
+                expenseFrequency = newValue;
+            }
             updateTotalExpenses(); // Update totals after editing
-            listItem.removeChild(saveButton); // Remove the save button
+            fieldElement.removeChild(saveButton); // Remove the save button
         } else {
-            alert('Please enter valid expense details.');
+            alert('Please enter valid details.');
         }
     });
+}
+
+// Edit Expense Functionality
+function editExpense(listItem, expenseName, amount, frequency) {
+    // Existing edit logic can be retained or modified as needed
 }
 
 // Delete Expense Functionality
