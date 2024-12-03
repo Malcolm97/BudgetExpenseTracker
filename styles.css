@@ -9,153 +9,49 @@ body {
 button {
     border: none; /* Remove default border */
     border-radius: 5px; /* Rounded corners */
-    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+    padding: 10px 15px; /* Padding for buttons */
+    cursor: pointer; /* Pointer cursor on hover */
 }
 
-button:hover {
-    opacity: 0.8; /* Slightly fade on hover */
+/* New class for pretty pink background */
+.pretty-pink {
+    background-color: #ff69b4; /* Pretty pink color */
+    color: white; /* Text color */
+    width: 100%; /* Full width for mobile view */
+    max-width: 300px; /* Max width for larger screens */
+    box-sizing: border-box; /* Ensure padding is included in width */
+    margin: 0 auto; /* Center the button */
 }
 
-/* Container Styles */
-.container {
-    max-width: 1200px; /* Limit max width for larger screens */
-    margin: auto; /* Center the container */
+/* Additional button styles */
+.bg-green-500 {
+    background-color: #38a169; /* Green background */
+    color: white; /* Text color */
 }
 
-/* Summary Styles */
-.summary {
-    display: flex; /* Use flexbox for summary layout */
-    flex-wrap: wrap; /* Allow wrapping */
-    justify-content: space-between; /* Space out summary items */
+.bg-yellow-500 {
+    background-color: #ecc94b; /* Yellow background */
+    color: white; /* Text color */
 }
 
-.summary p {
-    flex: 1; /* Allow items to grow */
-    margin: 0.5rem; /* Add margin for spacing */
+.bg-red-500 {
+    background-color: #e53e3e; /* Red background */
+    color: white; /* Text color */
 }
 
-/* Responsive Styles */
-
-/* Media Queries for Responsiveness */
-@media (max-width: 768px) {
-    .container {
-        padding: 1rem; /* Adjust padding for smaller screens */
-    }
-
-    .budget-input, .expense-input {
-        flex-direction: column; /* Stack inputs vertically */
-        align-items: stretch; /* Stretch inputs to full width */
-    }
-
-    .budget-input input, .expense-input input, .expense-input select {
-        width: 100%; /* Full width for inputs */
-    }
-
-    button {
-        width: 100%; /* Full width for buttons */
-        margin-top: 0.5rem; /* Add some spacing between buttons */
-    }
+/* Hover effects */
+.hover\:bg-pink-600:hover {
+    background-color: #d53f8c; /* Darker pink on hover */
 }
 
-body {
-    font-family: 'Roboto', sans-serif; /* Updated font */
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 20px;
+.hover\:bg-green-600:hover {
+    background-color: #2f855a; /* Darker green on hover */
 }
 
-header {
-    text-align: center;
-    margin-bottom: 20px;
+.hover\:bg-yellow-600:hover {
+    background-color: #d69e2e; /* Darker yellow on hover */
 }
 
-.container {
-    max-width: 600px;
-    margin: auto;
-    background: white;
-    padding: 20px;
-    border-radius: 8px; /* Slightly increased border radius */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Enhanced shadow */
-}
-
-.budget-input, .expense-input {
-    display: flex;
-    flex-direction: column; /* Stack elements vertically on small screens */
-    margin-bottom: 10px;
-}
-
-@media (min-width: 600px) {
-    .budget-input, .expense-input {
-        flex-direction: row; /* Use row layout on larger screens */
-    }
-}
-
-.budget-input input, .expense-input input {
-    width: 100%; /* Set to 100% width for all screen sizes */
-    padding: 12px; /* Increased padding */
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    transition: border-color 0.3s; /* Transition for focus effect */
-}
-
-.budget-input input:focus, .expense-input input:focus {
-    border-color: #28a745; /* Change border color on focus */
-    outline: none; /* Remove default outline */
-}
-
-.budget-input button, .expense-input button {
-    padding: 12px; /* Increased padding */
-    border: none;
-    background-color: #28a745;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s; /* Added transition */
-}
-
-.budget-input button:hover, .expense-input button:hover {
-    background-color: #218838;
-    transform: translateY(-2px); /* Slight lift effect on hover */
-}
-
-#expense-list {
-    list-style-type: none;
-    padding: 0;
-}
-
-#expense-list li {
-    background: #e9ecef;
-    margin: 5px 0;
-    padding: 12px; /* Increased padding */
-    border-radius: 5px;
-    transition: background-color 0.3s; /* Transition for hover effect */
-}
-
-#expense-list li:hover {
-    background: #d3d3d3; /* Change background on hover */
-}
-
-.summary {
-    margin-top: 20px;
-    font-weight: bold;
-    padding: 20px; /* Added padding for better spacing */
-    border-radius: 8px;
-    background-color: #f8f9fa; /* Light background for summary */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Shadow for depth */
-}
-
-/* Media Queries for Responsiveness */
-@media (max-width: 600px) {
-    .summary {
-        font-size: 14px; /* Adjust font size for smaller screens */
-    }
-
-    .budget-input, .expense-input {
-        flex-direction: column; /* Stack inputs vertically on small screens */
-    }
-
-    .budget-input button, .expense-input button {
-        width: 100%; /* Full width buttons on small screens */
-        margin-top: 10px; /* Add margin for spacing */
-    }
+.hover\:bg-red-600:hover {
+    background-color: #c53030; /* Darker red on hover */
 }
