@@ -40,14 +40,14 @@ header {
 }
 
 .budget-input input:focus, .expense-input input:focus {
-    border-color: #28a745; /* Change border color on focus */
+border-color: #ff69b4; /* Change border color on focus */
     outline: none; /* Remove default outline */
 }
 
 .budget-input button, .expense-input button {
     padding: 12px; /* Increased padding */
     border: none;
-    background-color: #28a745;
+background-color: #ff69b4; /* Original button color */
     color: white;
     border-radius: 5px;
     cursor: pointer;

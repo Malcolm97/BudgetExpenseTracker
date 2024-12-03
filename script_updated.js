@@ -68,10 +68,6 @@ function calculateWeeklyBudget(totalExpenses, totalBudget) {
     return totalBudget - totalExpenses; // Calculate weekly budget
 }
 
-function calculateWeeklyBudget(totalExpenses, totalBudget) {
-    return totalBudget - totalExpenses; // Calculate weekly budget
-}
-
 function calculateSavings(totalExpenses, totalBudget) {
     return totalBudget - totalExpenses; // Calculate savings
 }
