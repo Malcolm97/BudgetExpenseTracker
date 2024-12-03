@@ -1,0 +1,102 @@
+body {
+    font-family: 'Roboto', sans-serif; /* Updated font */
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px; /* Slightly increased border radius */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Enhanced shadow */
+}
+
+.budget-input, .expense-input {
+    display: flex;
+    flex-direction: column; /* Stack elements vertically on small screens */
+    margin-bottom: 10px;
+}
+
+@media (min-width: 600px) {
+    .budget-input, .expense-input {
+        flex-direction: row; /* Use row layout on larger screens */
+    }
+}
+
+.budget-input input, .expense-input input {
+    width: 100%; /* Set to 100% width for all screen sizes */
+    padding: 12px; /* Increased padding */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: border-color 0.3s; /* Transition for focus effect */
+}
+
+.budget-input input:focus, .expense-input input:focus {
+    border-color: #28a745; /* Change border color on focus */
+    outline: none; /* Remove default outline */
+}
+
+.budget-input button, .expense-input button {
+    padding: 12px; /* Increased padding */
+    border: none;
+    background-color: #28a745;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s; /* Added transition */
+}
+
+.budget-input button:hover, .expense-input button:hover {
+    background-color: #218838;
+    transform: translateY(-2px); /* Slight lift effect on hover */
+}
+
+#expense-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+#expense-list li {
+    background: #e9ecef;
+    margin: 5px 0;
+    padding: 12px; /* Increased padding */
+    border-radius: 5px;
+    transition: background-color 0.3s; /* Transition for hover effect */
+}
+
+#expense-list li:hover {
+    background: #d3d3d3; /* Change background on hover */
+}
+
+.summary {
+    margin-top: 20px;
+    font-weight: bold;
+    padding: 20px; /* Added padding for better spacing */
+    border-radius: 8px;
+    background-color: #f8f9fa; /* Light background for summary */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Shadow for depth */
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 600px) {
+    .summary {
+        font-size: 14px; /* Adjust font size for smaller screens */
+    }
+
+    .budget-input, .expense-input {
+        flex-direction: column; /* Stack inputs vertically on small screens */
+    }
+
+    .budget-input button, .expense-input button {
+        width: 100%; /* Full width buttons on small screens */
+        margin-top: 10px; /* Add margin for spacing */
+    }
+}

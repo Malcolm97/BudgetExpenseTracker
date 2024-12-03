@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- FontAwesome CDN -->
+    <title>Budget and Expense Tracker</title>
+</head>
+<body class="bg-gray-100">
+    <header class="text-center py-4">
+        <h1 class="text-3xl font-bold text-blue-600">Budget and Expense Tracker</h1>
+    </header>
+    <div class="container mx-auto mt-4 bg-white p-6 rounded-lg shadow-md">
+        <div class="budget-input mb-4">
+            <label for="budget" class="font-bold">Weekly Budget</label>
+            <input type="number" id="budget" class="border border-gray-300 p-2 rounded w-3/4" placeholder="Enter your weekly budget" required>
+            <button id="set-budget" class="bg-green-500 text-white p-2 rounded">Set Budget</button>
+        </div>
+        <div class="expense-input mb-4">
+            <label for="expense-name" class="font-bold">Expense Name</label>
+            <input type="text" id="expense-name" class="border border-gray-300 p-2 rounded w-1/3" placeholder="Groceries, Rent, etc." required>
+            <label for="expense-amount" class="font-bold">Expense Amount</label>
+            <input type="number" id="expense-amount" class="border border-gray-300 p-2 rounded w-1/3" placeholder="Amount" required>
+            <label for="expense-frequency" class="font-bold">Expense Frequency</label>
+            <select id="expense-frequency" class="border border-gray-300 p-2 rounded w-1/3 mb-2">
+                <option value="weekly">Weekly</option>
+                <option value="fortnightly">Fortnightly</option>
+                <option value="monthly">Monthly</option>
+            </select>
+            <button id="add-expense" class="bg-blue-500 text-white p-2 rounded">Add Expense</button>
+        </div>
+        <div class="summary mt-4 p-4 bg-gray-200 rounded-lg shadow">
+            <h2 class="font-bold text-xl">Summary</h2>
+            <div class="flex justify-between">
+                <p class="font-bold text-lg text-green-600">Total Weekly Expenses: $<span id="total-weekly-expenses">0</span></p>
+                <p class="font-bold text-lg text-green-600">Total Fortnightly Expenses: $<span id="total-fortnightly-expenses">0</span></p>
+                <p class="font-bold text-lg text-green-600">Total Monthly Expenses: $<span id="total-monthly-expenses">0</span></p>
+            </div>
+            <div class="flex justify-between">
+                <p class="font-bold text-lg text-green-600">Total Expenses: $<span id="total-expenses">0</span></p>
+                <p class="font-bold text-lg text-blue-600">Savings: $<span id="savings">0</span></p> <!-- Updated to include savings -->
+            </div>
+        </div>
+    </div>
+    <ul id="expense-list" class="list-disc pl-5">
+        <li class="flex justify-between items-center" id="expense-item-template" style="display: none;">
+            <span class="expense-name"></span>
+            <span class="expense-amount"></span>
+            <span class="expense-frequency"></span> <!-- Display frequency -->
+            <button class="edit-expense bg-yellow-500 text-white p-1 rounded"><i class="fas fa-edit"></i> Edit</button>
+            <button class="delete-expense bg-red-500 text-white p-1 rounded"><i class="fas fa-trash"></i> Delete</button>
+        </li>
+    </ul>
+    <script src="script.js"></script>
+</body>
+</html>
