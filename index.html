@@ -39,7 +39,23 @@
                 <i class="fas fa-plus"></i> Add Expense
             </button>
         </div>
-        <div class="summary mt-4 p-4 bg-gray-200 rounded-lg shadow">
+        <ul id="expense-list" class="list-disc pl-5 border border-gray-300 rounded-lg p-4">
+            <li class="flex justify-between items-center border-b border-gray-200 py-2" id="expense-item-template" style="display: none;">
+                <span class="expense-name font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300"></span>
+                <span class="expense-amount font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300"></span>
+                <span class="expense-frequency font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300"></span>
+                <div>
+                    <button class="edit-expense bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300" aria-label="Edit Expense"><i class="fas fa-edit"></i></button>
+                    <button class="delete-expense bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300" aria-label="Delete Expense"><i class="fas fa-trash"></i></button>
+                </div>
+            </li>
+        </ul>
+        <div class="budget-input mb-4">
+            <button id="calculate-total-expenses" class="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300">
+                Calculate Total Expenses
+            </button>
+        </div>
+        <div class="summary mt-4 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
             <h2 class="font-bold text-xl">
                 <i class="fas fa-clipboard-list"></i> Summary
             </h2>
@@ -54,15 +70,6 @@
             </div>
         </div>
     </div>
-    <ul id="expense-list" class="list-disc pl-5">
-        <li class="flex justify-between items-center" id="expense-item-template" style="display: none;">
-            <span class="expense-name"></span>
-            <span class="expense-amount"></span>
-            <span class="expense-frequency"></span>
-            <button class="edit-expense bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600 transition duration-300"><i class="fas fa-edit"></i> Edit</button>
-            <button class="delete-expense bg-red-500 text-white p-1 rounded hover:bg-red-600 transition duration-300"><i class="fas fa-trash"></i> Delete</button>
-        </li>
-    </ul>
     <script src="script.js"></script>
 </body>
 </html>

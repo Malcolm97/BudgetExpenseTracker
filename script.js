@@ -63,11 +63,11 @@ function addExpenseToList(expenseName, amount, frequency) {
     // Add event listeners for edit and delete buttons
     listItem.querySelector('.edit-expense').addEventListener('click', function() {
         console.log('Edit button clicked'); // Log when the edit button is clicked
-            const newExpenseName = prompt("Enter new expense name:", expenseName);
-            const newExpenseAmount = prompt("Enter new expense amount:", amount);
-            if (newExpenseName === null || newExpenseAmount === null) {
-                return; // Exit if the user cancels the prompt
-            }
+        const newExpenseName = prompt("Enter new expense name:", expenseName) || expenseName;
+        const newExpenseAmount = prompt("Enter new expense amount:", amount) || amount;
+        if (newExpenseName === null || newExpenseAmount === null) {
+            return; // Exit if the user cancels the prompt
+        }
         if (newExpenseName && !isNaN(parseFloat(newExpenseAmount))) {
             // Update the displayed values
             listItem.querySelector('.expense-name').innerText = newExpenseName;
@@ -147,8 +147,22 @@ function changeColors(buttonColor, summaryColor) {
     });
 }
 
-// Example usage
-changeColors('#', '#007bff'); // Change button color to original and summary text color to blue
+const showExpenseResultsButton = document.getElementById('show-expense-results');
+if (showExpenseResultsButton) {
+    showExpenseResultsButton.addEventListener('click', function() {
+        console.log('Show Expense Results button clicked');
+        const expenseList = document.getElementById('expense-list');
+        expenseList.style.display = 'block'; // Show the expense list
+    });
+}
+
+const calculateTotalExpensesButton = document.getElementById('calculate-total-expenses');
+if (calculateTotalExpensesButton) {
+    calculateTotalExpensesButton.addEventListener('click', function() {
+        console.log('Calculate Total Expenses button clicked');
+        updateTotalExpenses(); // Call the function to update total expenses
+    });
+}
 
 // Add event listener for the Change Color Scheme button
 document.getElementById('change-color-scheme').addEventListener('click', function() {
