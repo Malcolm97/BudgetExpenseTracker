@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fortnightlyBudget = parseFloat(document.getElementById('fortnightly-budget').value) || 0; // Get fortnightly budget
                 console.log('Fortnightly Budget:', fortnightlyBudget); // Log fortnightly budget
                 const combinedBudget = totalBudget + fortnightlyBudget; // Include fortnightly budget in total
+                const totalExpenses = totalWeeklyExpenses + totalFortnightlyExpenses + totalMonthlyExpenses; // Calculate total expenses
                 
                 const remainingBudgetElement = document.getElementById('remaining-budget');
                 if (remainingBudgetElement) {
@@ -19,8 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Update savings
-                const totalExpenses = totalWeeklyExpenses + totalFortnightlyExpenses + totalMonthlyExpenses;
-                const savings = calculateSavings(totalExpenses, totalBudget); // Calculate savings
+                const savings = calculateSavings(totalExpenses, combinedBudget); // Calculate savings
                 document.getElementById('savings').innerText = savings.toFixed(2); // Display savings
                 
                 document.getElementById('budget').value = ''; // Clear the budget input field
