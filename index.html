@@ -11,29 +11,35 @@
 </head>
 <body class="bg-gray-100">
     <header class="text-center py-4">
-<h1 class="text-3xl font-bold text-blue-600">Budget and Expense Tracker</h1>
+<h1 class="text-3xl font-bold text-blue-600">
+    <i class="fas fa-wallet"></i> Budget and Expense Tracker
+</h1>
     </header>
     <div class="container mx-auto mt-4 bg-white p-6 rounded-lg shadow-md">
         <div class="budget-input mb-4">
-            <label for="budget" class="font-bold">Weekly Budget</label>
+<label for="budget" class="font-bold"><i class="fas fa-dollar-sign"></i> Weekly Budget</label>
             <input type="number" id="budget" class="border border-gray-300 p-2 rounded w-3/4" placeholder="Enter your weekly budget" required>
-            <button id="set-budget" class="bg-green-500 text-white p-2 rounded">Set Budget</button>
+<button id="set-budget" class="bg-green-500 text-white p-2 rounded">
+    <i class="fas fa-pencil-alt"></i> Set Budget
         </div>
         <div class="expense-input mb-4">
-            <label for="expense-name" class="font-bold">Expense Name</label>
+<label for="expense-name" class="font-bold"><i class="fas fa-tag"></i> Expense Name</label>
             <input type="text" id="expense-name" class="border border-gray-300 p-2 rounded w-1/3" placeholder="Groceries, Rent, etc." required>
-            <label for="expense-amount" class="font-bold">Expense Amount</label>
+<label for="expense-amount" class="font-bold"><i class="fas fa-money-bill-wave"></i> Expense Amount</label>
             <input type="number" id="expense-amount" class="border border-gray-300 p-2 rounded w-1/3" placeholder="Amount" required>
-            <label for="expense-frequency" class="font-bold">Expense Frequency</label>
+<label for="expense-frequency" class="font-bold"><i class="fas fa-calendar-alt"></i> Expense Frequency</label>
             <select id="expense-frequency" class="border border-gray-300 p-2 rounded w-1/3 mb-2">
                 <option value="weekly">Weekly</option>
                 <option value="fortnightly">Fortnightly</option>
                 <option value="monthly">Monthly</option>
             </select>
-            <button id="add-expense" class="bg-blue-500 text-white p-2 rounded">Add Expense</button>
+<button id="add-expense" class="bg-blue-500 text-white p-2 rounded">
+    <i class="fas fa-plus"></i> Add Expense
         </div>
         <div class="summary mt-4 p-4 bg-gray-200 rounded-lg shadow">
-            <h2 class="font-bold text-xl">Summary</h2>
+<h2 class="font-bold text-xl">
+    <i class="fas fa-clipboard-list"></i> Summary
+</h2>
             <div class="flex justify-between">
                 <p class="font-bold text-lg text-green-600">Total Weekly Expenses: $<span id="total-weekly-expenses">0</span></p>
                 <p class="font-bold text-lg text-green-600">Total Fortnightly Expenses: $<span id="total-fortnightly-expenses">0</span></p>
