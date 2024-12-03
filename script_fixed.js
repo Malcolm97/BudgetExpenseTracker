@@ -1,4 +1,4 @@
-document.getElementById('set-budget').addEventListener('click', function() {
+  document.getElementById('set-budget').addEventListener('click', function() {
     try {
         const budgetInput = document.getElementById('budget').value;
         console.log('Budget Input:', budgetInput); // Log the input value
@@ -48,6 +48,25 @@ function addExpenseToList(expenseName, amount, frequency) {
         <button class="delete-expense bg-red-500 text-white p-1 rounded">Delete</button>
     `;
     expenseList.appendChild(listItem);
+    
+    // Add event listeners for edit and delete buttons
+    listItem.querySelector('.edit-expense').addEventListener('click', function() {
+        console.log('Edit button clicked'); // Log when the edit button is clicked
+        const newExpenseName = prompt("Enter new expense name:", expenseName);
+        const newExpenseAmount = prompt("Enter new expense amount:", amount);
+        if (newExpenseName === null || newExpenseAmount === null) {
+            return; // Exit if the user cancels the prompt
+        }
+        if (newExpenseName && !isNaN(parseFloat(newExpenseAmount))) {
+            // Update the displayed values
+            listItem.querySelector('.expense-name').innerText = newExpenseName;
+            listItem.querySelector('.expense-amount').innerText = `$${parseFloat(newExpenseAmount).toFixed(2)}`;
+            // Update the expense variables
+            expenseName = newExpenseName;
+            amount = parseFloat(newExpenseAmount);
+            updateTotalExpenses(); // Update totals after editing
+        }
+    });
     
     // Update total expenses based on frequency
     updateExpenses(amount, frequency);

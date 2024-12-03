@@ -1,27 +1,35 @@
-document.getElementById('set-budget').addEventListener('click', function() {
-    try {
-        const budgetInput = document.getElementById('budget').value;
-        console.log('Budget Input:', budgetInput); // Log the input value
-        console.log('Processing budget...'); // Indicate processing start
-        const totalBudget = parseFloat(budgetInput);
-        if (!isNaN(totalBudget) && totalBudget > 0) {
-            document.getElementById('remaining-budget').innerText = totalBudget.toFixed(2);
-            document.getElementById('budget').value = ''; // Clear the budget input field
-            updateTotalExpenses(); // Reset expenses
-        } else {
-            alert('Please enter a valid budget amount.');
+console.log('Script loaded successfully'); // Log to confirm script execution
+
+const setBudgetButton = document.getElementById('set-budget');
+if (setBudgetButton) {
+    console.log('Set Budget button found'); // Log to confirm button existence
+    setBudgetButton.addEventListener('click', function() {
+        console.log('Set Budget event listener triggered'); // Log to confirm listener execution
+        console.log('Set Budget button clicked'); // Log when the button is clicked
+        try {
+            const budgetInput = document.getElementById('budget').value;
+            console.log('Budget Input:', budgetInput); // Log the input value
+            console.log('Processing budget...'); // Indicate processing start
+            const totalBudget = parseFloat(budgetInput);
+            if (!isNaN(totalBudget) && totalBudget > 0) {
+                document.getElementById('remaining-budget').innerText = totalBudget.toFixed(2);
+                document.getElementById('budget').value = ''; // Clear the budget input field
+                updateTotalExpenses(); // Reset expenses
+            } else {
+                alert('Please enter a valid budget amount.');
+            }
+        } catch (error) {
+            console.error('Error setting budget:', error); // Log any errors
         }
-    } catch (error) {
-        console.error('Error setting budget:', error); // Log any errors
-    }
-});
+    });
+}
 
 let totalWeeklyExpenses = 0;
 let totalFortnightlyExpenses = 0;
 let totalMonthlyExpenses = 0;
 
 document.getElementById('add-expense').addEventListener('click', function() {
-    console.log('Add Expense function triggered'); // Log when the function is triggered
+    console.log('Add Expense button clicked'); // Log when the button is clicked
     const expenseName = document.getElementById('expense-name').value;
     const expenseAmount = document.getElementById('expense-amount').value;
     const expenseFrequency = document.getElementById('expense-frequency').value; // Get selected frequency
@@ -51,6 +59,32 @@ function addExpenseToList(expenseName, amount, frequency) {
     
     // Update total expenses based on frequency
     updateExpenses(amount, frequency);
+
+    // Add event listeners for edit and delete buttons
+    listItem.querySelector('.edit-expense').addEventListener('click', function() {
+        console.log('Edit button clicked'); // Log when the edit button is clicked
+            const newExpenseName = prompt("Enter new expense name:", expenseName);
+            const newExpenseAmount = prompt("Enter new expense amount:", amount);
+            if (newExpenseName === null || newExpenseAmount === null) {
+                return; // Exit if the user cancels the prompt
+            }
+        if (newExpenseName && !isNaN(parseFloat(newExpenseAmount))) {
+            // Update the displayed values
+            listItem.querySelector('.expense-name').innerText = newExpenseName;
+            listItem.querySelector('.expense-amount').innerText = `$${parseFloat(newExpenseAmount).toFixed(2)}`;
+            // Update the expense variables
+            expenseName = newExpenseName;
+            amount = parseFloat(newExpenseAmount);
+            updateTotalExpenses(); // Update totals after editing
+        }
+    });
+
+    listItem.querySelector('.delete-expense').addEventListener('click', function() {
+        console.log('Delete button clicked'); // Log when the delete button is clicked
+        // Logic for deleting the expense
+        expenseList.removeChild(listItem);
+        updateTotalExpenses(); // Update totals after deleting
+    });
 }
 
 function updateExpenses(amount, frequency) {
@@ -87,6 +121,8 @@ function updateTotalExpenses() {
 
     // Calculate savings
     const totalBudget = parseFloat(weeklyBudgetElement.innerText) || 0; // Get the budget value
+    console.log('Total Expenses:', totalExpenses); // Log total expenses
+    console.log('Total Budget:', totalBudget); // Log total budget
     savings = calculateSavings(totalExpenses, totalBudget); // Calculate savings
     document.getElementById('savings').innerText = savings.toFixed(2); // Display savings
 }
@@ -120,4 +156,3 @@ document.getElementById('change-color-scheme').addEventListener('click', functio
     const summaryColor = prompt("Enter the desired summary text color (e.g., #007bff):");
     changeColors(buttonColor, summaryColor);
 });
-"document.getElementById('change-color-scheme').addEventListener('click', function() { document.getElementById('set-budget').style.backgroundColor = '#ff69b4'; document.getElementById('add-expense').style.backgroundColor = '#ff69b4'; });" 
