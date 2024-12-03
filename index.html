@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -15,15 +15,16 @@
             Budget and Expense Tracker
         </h1>
     </header>
-    <div class="container mx-auto mt-4 bg-white p-6 rounded-lg shadow-md">
-        <div class="budget-input mb-4">
+    <div class="container mx-auto mt-4 bg-white p-4 rounded-lg shadow-md">
+        <div class="budget-input mb-2">
             <label for="fortnightly-budget" class="font-bold"><i class="fas fa-dollar-sign"></i> Fortnightly Budget</label>
             <input type="number" id="fortnightly-budget" class="border border-gray-300 p-2 rounded w-full" placeholder="Enter your fortnightly budget" required>
-<button id="set-budget" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300">
+            <input type="number" id="budget" class="border border-gray-300 p-2 rounded w-full" placeholder="Enter your budget" required>
+            <button id="set-budget" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300">
                 <i class="fas fa-pencil-alt"></i> Set Budget
             </button>
         </div>
-        <div class="expense-input mb-4">
+        <div class="expense-input mb-2">
             <label for="expense-name" class="font-bold"><i class="fas fa-tag"></i> Expense Name</label>
             <input type="text" id="expense-name" class="border border-gray-300 p-2 rounded w-full" placeholder="Groceries, Rent, etc." required>
             <label for="expense-amount" class="font-bold"><i class="fas fa-money-bill-wave"></i> Expense Amount</label>
@@ -34,38 +35,38 @@
                 <option value="fortnightly">Fortnightly</option>
                 <option value="monthly">Monthly</option>
             </select>
-<button id="add-expense" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300">
+            <button id="add-expense" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300">
                 <i class="fas fa-plus"></i> Add Expense
             </button>
         </div>
-        <ul id="expense-list" class="list-disc pl-5 border border-gray-300 rounded-lg p-4">
-            <li class="flex justify-between items-center border-b border-gray-200 py-2" id="expense-item-template" style="display: none;">
+        <ul id="expense-list" class="list-disc pl-5 border border-gray-300 rounded-lg p-2">
+            <li class="flex flex-col md:flex-row justify-between items-center border-b border-gray-200 py-1" id="expense-item-template" style="display: none;">
                 <span class="expense-name font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300"></span>
                 <span class="expense-amount font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300"></span>
                 <span class="expense-frequency font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300"></span>
-                <div>
-                    <button class="edit-expense bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300" aria-label="Edit Expense"><i class="fas fa-edit"></i></button>
-                    <button class="delete-expense bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300" aria-label="Delete Expense"><i class="fas fa-trash"></i></button>
+                <div class="flex space-x-1">
+                    <button class="edit-expense bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600 transition duration-300" aria-label="Edit Expense"><i class="fas fa-edit"></i></button>
+                    <button class="delete-expense bg-red-500 text-white p-1 rounded hover:bg-red-600 transition duration-300" aria-label="Delete Expense"><i class="fas fa-trash"></i></button>
                 </div>
             </li>
         </ul>
-        <div class="budget-input mb-4">
-<button id="calculate-total-expenses" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300">
+        <div class="budget-input mb-2">
+            <button id="calculate-total-expenses" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300">
                 Calculate Total Expenses
             </button>
         </div>
-        <div class="summary mt-4 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
+        <div class="summary mt-4 p-4 bg-white rounded-lg shadow-lg border border-gray-300">
             <h2 class="font-bold text-xl">
                 <i class="fas fa-clipboard-list"></i> Summary
             </h2>
-            <div class="flex justify-between">
+            <div class="flex flex-col space-y-1">
                 <p class="font-bold text-lg text-green-600">Total Weekly Expenses: $<span id="total-weekly-expenses">0</span></p>
                 <p class="font-bold text-lg text-green-600">Total Fortnightly Expenses: $<span id="total-fortnightly-expenses">0</span></p>
                 <p class="font-bold text-lg text-green-600">Total Monthly Expenses: $<span id="total-monthly-expenses">0</span></p>
-            </div>
-            <div class="flex justify-between">
                 <p class="font-bold text-lg text-green-600">Total Expenses: $<span id="total-expenses">0</span></p>
                 <p class="font-bold text-lg text-blue-600">Savings: $<span id="savings">0</span></p>
+                <p class="font-bold text-lg text-green-600">Remaining Budget: $<span id="remaining-budget">0</span></p>
+                <p class="font-bold text-lg text-green-600" id="fortnightly-budget-summary">Fortnightly Budget: $0</p>
             </div>
         </div>
     </div>

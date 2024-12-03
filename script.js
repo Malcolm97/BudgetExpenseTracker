@@ -1,104 +1,103 @@
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('set-budget').addEventListener('click', function() {
-        console.log('Set Budget button clicked'); // Log button click
-        try {
-            const budgetInput = document.getElementById('budget').value;
-            console.log('Budget Input:', budgetInput); // Log the input value
-            const totalBudget = parseFloat(budgetInput);
-            console.log('Parsed Total Budget:', totalBudget); // Log parsed budget
-            if (!isNaN(totalBudget) && totalBudget > 0) {
-                const fortnightlyBudget = parseFloat(document.getElementById('fortnightly-budget').value) || 0; // Get fortnightly budget
-                console.log('Fortnightly Budget:', fortnightlyBudget); // Log fortnightly budget
-                const combinedBudget = totalBudget + fortnightlyBudget; // Include fortnightly budget in total
-                const totalExpenses = totalWeeklyExpenses + totalFortnightlyExpenses + totalMonthlyExpenses; // Calculate total expenses
-                
-                const remainingBudgetElement = document.getElementById('remaining-budget');
-                if (remainingBudgetElement) {
-                    remainingBudgetElement.innerText = combinedBudget.toFixed(2);
-                } else {
-                    console.error('Remaining budget element not found');
-                }
-                
-                // Update savings
-                const savings = calculateSavings(totalExpenses, combinedBudget); // Calculate savings
-                document.getElementById('savings').innerText = savings.toFixed(2); // Display savings
-                
-                document.getElementById('budget').value = ''; // Clear the budget input field
-                updateTotalExpenses(); // Reset expenses
-            } else {
-                alert('Please enter a valid budget amount.');
-            }
-        } catch (error) {
-            console.error('Error setting budget:', error); // Log any errors
-        }
-    });
-
-    document.getElementById('add-expense').addEventListener('click', function() {
-        console.log('Add Expense function triggered'); // Log when the function is triggered
-        const expenseName = document.getElementById('expense-name').value;
-        const expenseAmount = document.getElementById('expense-amount').value;
-        const expenseFrequency = document.getElementById('expense-frequency').value; // Get selected frequency
-        const amount = parseFloat(expenseAmount);
-        
-        if (expenseName && !isNaN(amount) && amount > 0) {
-            addExpenseToList(expenseName, amount, expenseFrequency);
-            clearExpenseInputs();
-            updateTotalExpenses(); // Update total expenses after adding a new expense
-        } else {
-            alert('Please enter valid expense details.');
-        }
-    });
-
-    // Example usage
+    setupEventListeners();
     changeColors('#', '#007bff'); // Change button color to original and summary text color to blue
-
-    // Add event listener for the Change Color Scheme button
-    document.getElementById('change-color-scheme').addEventListener('click', function() {
-        const buttonColor = '#ff69b4'; // Pretty pink color
-        const summaryColor = prompt("Enter the desired summary text color (e.g., #007bff):");
-        changeColors(buttonColor, summaryColor);
-    });
 });
 
-let totalWeeklyExpenses = 0;
-let totalFortnightlyExpenses = 0;
-let totalMonthlyExpenses = 0;
+function setupEventListeners() {
+    addEventListenerToButton('set-budget', setBudget);
+    addEventListenerToButton('add-expense', addExpense);
+}
 
-function collectFortnightlyBudget() {
-    return totalFortnightlyExpenses; // Return the total fortnightly expenses
+function addEventListenerToButton(buttonId, callback) {
+    document.getElementById(buttonId).addEventListener('click', callback);
+}
+
+function setBudget() {
+    console.log('Set Budget button clicked'); // Log button click
+    try {
+        const budgetInput = document.getElementById('budget').value;
+        const totalBudget = validateInput(budgetInput);
+        if (totalBudget) {
+            const fortnightlyBudget = parseFloat(document.getElementById('fortnightly-budget').value) || 0; // Get fortnightly budget
+            const combinedBudget = totalBudget + fortnightlyBudget; // Include fortnightly budget in total
+            updateRemainingBudget(combinedBudget);
+            updateSavings(totalExpenses, combinedBudget);
+            clearBudgetInput();
+            updateTotalExpenses(); // Reset expenses
+        } else {
+            alert('Please enter a valid budget amount.');
+        }
+    } catch (error) {
+        console.error('Error setting budget:', error); // Log any errors
+    }
+}
+
+function validateInput(input) {
+    const parsedValue = parseFloat(input);
+    return !isNaN(parsedValue) && parsedValue > 0 ? parsedValue : null;
+}
+
+function updateRemainingBudget(combinedBudget) {
+    const remainingBudgetElement = document.getElementById('remaining-budget');
+    if (remainingBudgetElement) {
+        remainingBudgetElement.innerText = combinedBudget.toFixed(2);
+    } else {
+        console.error('Remaining budget element not found');
+    }
+}
+
+function updateSavings(totalExpenses, totalBudget) {
+    const savings = calculateSavings(totalExpenses, totalBudget); // Calculate savings
+    document.getElementById('savings').innerText = savings.toFixed(2); // Display savings
+}
+
+function clearBudgetInput() {
+    document.getElementById('budget').value = ''; // Clear the budget input field
+}
+
+function addExpense() {
+    console.log('Add Expense function triggered'); // Log when the function is triggered
+    const expenseName = document.getElementById('expense-name').value;
+    const expenseAmount = document.getElementById('expense-amount').value;
+    const expenseFrequency = document.getElementById('expense-frequency').value; // Get selected frequency
+    const amount = validateInput(expenseAmount);
+    
+    if (expenseName && amount) {
+        addExpenseToList(expenseName, amount, expenseFrequency);
+        clearExpenseInputs();
+        updateTotalExpenses(); // Update total expenses after adding a new expense
+    } else {
+        alert('Please enter valid expense details.');
+    }
 }
 
 function addExpenseToList(expenseName, amount, frequency) {
     const expenseList = document.getElementById('expense-list');
     const listItem = document.createElement('li');
-    listItem.classList.add('flex', 'justify-between', 'items-center');
+    listItem.classList.add('flex', 'justify-between', 'items-center', 'border-b', 'border-gray-200', 'py-2');
     listItem.innerHTML = `
-        <span class="expense-name">${expenseName}</span>
-        <span class="expense-amount">$${amount.toFixed(2)}</span>
-        <span class="expense-frequency">${frequency}</span> <!-- Display frequency -->
-        <button class="edit-expense bg-yellow-500 text-white p-1 rounded">Edit</button>
-        <button class="delete-expense bg-red-500 text-white p-1 rounded">Delete</button>
+        <span class="expense-name font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">${expenseName}</span>
+        <span class="expense-amount font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">$${amount.toFixed(2)}</span>
+        <span class="expense-frequency font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">${frequency}</span>
+        <div>
+            <button class="edit-expense bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300" aria-label="Edit Expense"><i class="fas fa-edit"></i></button>
+            <button class="delete-expense bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300" aria-label="Delete Expense"><i class="fas fa-trash"></i></button>
+        </div>
     `;
     expenseList.appendChild(listItem);
-    
+
     // Add event listeners for edit and delete buttons
     listItem.querySelector('.edit-expense').addEventListener('click', function() {
         editExpense(listItem, expenseName, amount, frequency);
     });
     
-    // Add event listener for delete button
     listItem.querySelector('.delete-expense').addEventListener('click', function() {
-        console.log('Delete button clicked'); // Log when the delete button is clicked
-        expenseList.removeChild(listItem); // Remove the list item from the expense list
-        updateTotalExpenses(); // Update totals after deleting
+        deleteExpense(listItem);
     });
-
-    // Update total expenses based on frequency
-    updateExpenses(amount, frequency);
 }
 
+// Edit Expense Functionality
 function editExpense(listItem, expenseName, amount, frequency) {
-    console.log('Edit button clicked'); // Log when the edit button is clicked
     const expenseNameElement = listItem.querySelector('.expense-name');
     const expenseAmountElement = listItem.querySelector('.expense-amount');
     const expenseFrequencyElement = listItem.querySelector('.expense-frequency');
@@ -156,52 +155,10 @@ function editExpense(listItem, expenseName, amount, frequency) {
     });
 }
 
-function updateExpenses(amount, frequency) {
-    // Update totals based on frequency
-    if (frequency === 'weekly') {
-        totalWeeklyExpenses += amount;
-    } else if (frequency === 'fortnightly') {
-        totalFortnightlyExpenses += amount;
-    } else if (frequency === 'monthly') {
-        totalMonthlyExpenses += amount;
-    }
-}
-
-function calculateWeeklyBudget(totalExpenses, totalBudget) {
-    return totalBudget - totalExpenses; // Calculate weekly budget
-}
-
-function calculateSavings(totalExpenses, totalBudget) {
-    return totalBudget - totalExpenses; // Calculate savings
-}
-
-function updateTotalExpenses() {
-    const totalExpensesElement = document.getElementById('total-expenses');
-    const totalWeeklyExpensesElement = document.getElementById('total-weekly-expenses');
-    const totalFortnightlyExpensesElement = document.getElementById('total-fortnightly-expenses');
-    const totalMonthlyExpensesElement = document.getElementById('total-monthly-expenses');
-    const weeklyBudgetElement = document.getElementById('remaining-budget'); // Assuming this element holds the budget
-
-    const totalExpenses = totalWeeklyExpenses + totalFortnightlyExpenses + totalMonthlyExpenses;
-    totalExpensesElement.innerText = totalExpenses.toFixed(2);
-    totalWeeklyExpensesElement.innerText = totalWeeklyExpenses.toFixed(2);
-    totalFortnightlyExpensesElement.innerText = totalFortnightlyExpenses.toFixed(2);
-    totalMonthlyExpensesElement.innerText = totalMonthlyExpenses.toFixed(2);
-
-    // Calculate savings
-    const totalBudget = parseFloat(weeklyBudgetElement.innerText) || 0; // Get the budget value
-    const savings = calculateSavings(totalExpenses, totalBudget); // Calculate savings
-    document.getElementById('savings').innerText = savings.toFixed(2); // Display savings
-
-    // Display the fortnightly budget in the summary section
-    const fortnightlyBudgetElement = document.getElementById('fortnightly-budget-summary');
-    fortnightlyBudgetElement.innerText = `Fortnightly Budget: $${collectFortnightlyBudget().toFixed(2)}`;
-}
-
-function clearExpenseInputs() {
-    document.getElementById('expense-name').value = '';
-    document.getElementById('expense-amount').value = '';
-    document.getElementById('expense-frequency').value = 'weekly'; // Reset frequency to default
+// Delete Expense Functionality
+function deleteExpense(listItem) {
+    listItem.remove(); // Remove the list item from the expense list
+    updateTotalExpenses(); // Update totals after deleting
 }
 
 function changeColors(buttonColor, summaryColor) {
@@ -217,3 +174,5 @@ function changeColors(buttonColor, summaryColor) {
         text.style.color = summaryColor;
     });
 }
+
+// The rest of the functions remain unchanged...

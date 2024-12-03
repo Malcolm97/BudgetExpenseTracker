@@ -65,7 +65,8 @@ button {
     }
 
     button {
-        padding: 8px 10px; /* Smaller padding for mobile */
+        padding: 10px; /* Consistent padding for mobile */
+        font-size: 16px; /* Increase font size for better touch targets */
     }
 
     .expense-list {
@@ -73,14 +74,14 @@ button {
     }
 
     .expense-name, .expense-amount, .expense-frequency {
-        font-size: 14px; /* Smaller font size for mobile */
+        font-size: 16px; /* Increase font size for better readability */
     }
 
     /* Styles for edit function */
     .edit-input {
         width: 100%; /* Full width for input fields */
         margin: 5px 0; /* Margin for spacing */
-        padding: 8px; /* Padding for input fields */
+        padding: 10px; /* Consistent padding for input fields */
         box-sizing: border-box; /* Include padding in width */
     }
 
