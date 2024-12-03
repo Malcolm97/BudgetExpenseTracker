@@ -120,3 +120,4 @@ document.getElementById('change-color-scheme').addEventListener('click', functio
     const summaryColor = prompt("Enter the desired summary text color (e.g., #007bff):");
     changeColors(buttonColor, summaryColor);
 });
+"document.getElementById('change-color-scheme').addEventListener('click', function() { document.getElementById('set-budget').style.backgroundColor = '#ff69b4'; document.getElementById('add-expense').style.backgroundColor = '#ff69b4'; });" 
