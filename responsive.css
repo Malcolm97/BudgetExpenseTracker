@@ -1,0 +1,22 @@
+/* Responsive Styles */
+
+/* Media Queries for Responsiveness */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem; /* Adjust padding for smaller screens */
+    }
+
+    .budget-input, .expense-input {
+        flex-direction: column; /* Stack inputs vertically */
+        align-items: stretch; /* Stretch inputs to full width */
+    }
+
+    .budget-input input, .expense-input input, .expense-input select {
+        width: 100%; /* Full width for inputs */
+    }
+
+    button {
+        width: 100%; /* Full width for buttons */
+        margin-top: 0.5rem; /* Add some spacing between buttons */
+    }
+}
