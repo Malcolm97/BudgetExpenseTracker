@@ -23,7 +23,7 @@ function addEventListenerToButton(buttonId, callback) {
     if (button) {
         button.addEventListener('click', callback);
     } else {
-        console.error(`Button with ID ${buttonId} not found`);
+        displayError(`Button with ID ${buttonId} not found`);
     }
 }
 
@@ -38,10 +38,10 @@ function setBudget() {
             clearBudgetInput();
             updateTotalExpenses(); // Reset expenses
         } else {
-            alert('Please enter a valid budget amount.');
+            displayError('Please enter a valid budget amount.');
         }
     } catch (error) {
-        console.error('Error setting budget:', error); // Log any errors
+        displayError('Error setting budget:', error); // Log any errors
     }
 }
 
@@ -67,7 +67,7 @@ function addExpense() {
             if (expenseName && amount) {
                 addExpenseToList(expenseName, amount, expenseFrequency, expenseDay);
             } else {
-                alert('Please enter valid expense details.');
+                displayError('Please enter valid expense details.');
             }
         });
         clearExpenseInputs(); // Clear input fields after adding the expenses
@@ -75,7 +75,7 @@ function addExpense() {
         updateDeductions(); // Update deductions after adding new expenses
         updateUpcomingDeductions(); // Update next upcoming deduction after adding new expenses
     } else {
-        alert('Please ensure the number of expense names matches the number of expense amounts.');
+        displayError('Please ensure the number of expense names matches the number of expense amounts.');
     }
 }
 
@@ -189,7 +189,7 @@ function saveEdits(listItem) {
             updateUpcomingDeductions(); // Update next upcoming deduction after editing
             listItem.querySelector('.save-expense').style.display = 'none'; // Hide the save button
         } else {
-            alert('Please enter valid details.');
+            displayError('Please enter valid details.');
         }
     }
 }
@@ -388,4 +388,22 @@ function updateUpcomingDeductions() {
         document.getElementById('next-deduction-day').innerText = nextDeduction.day;
         document.getElementById('next-deduction-date').innerText = nextDeduction.nextDueDate.toDateString();
     }
+}
+
+// Custom error display function
+function displayError(message) {
+    const errorContainer = document.createElement('div');
+    errorContainer.className = 'error-container bg-red-500 text-white p-4 rounded mb-4';
+    errorContainer.innerText = message;
+
+    const container = document.getElementById('error-container');
+    if (container) {
+        container.appendChild(errorContainer);
+    } else {
+        document.body.appendChild(errorContainer);
+    }
+
+    setTimeout(() => {
+        errorContainer.remove();
+    }, 5000);
 }
