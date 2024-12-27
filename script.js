@@ -73,6 +73,7 @@ function addExpense() {
         clearExpenseInputs(); // Clear input fields after adding the expenses
         updateTotalExpenses(); // Update total expenses after adding new expenses
         updateDeductions(); // Update deductions after adding new expenses
+        updateUpcomingDeductions(); // Update next upcoming deduction after adding new expenses
     } else {
         alert('Please ensure the number of expense names matches the number of expense amounts.');
     }
@@ -185,6 +186,7 @@ function saveEdits(listItem) {
 
             updateTotalExpenses(); // Update totals after editing
             updateDeductions(); // Update deductions after editing
+            updateUpcomingDeductions(); // Update next upcoming deduction after editing
             listItem.querySelector('.save-expense').style.display = 'none'; // Hide the save button
         } else {
             alert('Please enter valid details.');
@@ -212,21 +214,19 @@ function editExpense(listItem) {
 
 // Delete Expense Functionality
 function deleteExpense(listItem) {
-    if (confirm('Are you sure you want to delete this expense?')) {
-        listItem.remove(); // Remove the list item from the expense list
-        updateTotalExpenses(); // Update totals after deleting
-        updateDeductions(); // Update deductions after deleting
-    }
+    listItem.remove(); // Remove the list item from the expense list
+    updateTotalExpenses(); // Update totals after deleting
+    updateDeductions(); // Update deductions after deleting
+    updateUpcomingDeductions(); // Update next upcoming deduction after deleting
 }
 
 // Clear All Expenses Functionality
 function clearAllExpenses() {
-    if (confirm('Are you sure you want to clear all expenses?')) {
-        const expenseList = document.getElementById('expense-list');
-        expenseList.innerHTML = ''; // Clear all expenses
-        updateTotalExpenses(); // Update totals after clearing
-        updateDeductions(); // Update deductions after clearing
-    }
+    const expenseList = document.getElementById('expense-list');
+    expenseList.innerHTML = ''; // Clear all expenses
+    updateTotalExpenses(); // Update totals after clearing
+    updateDeductions(); // Update deductions after clearing
+    updateUpcomingDeductions(); // Update next upcoming deduction after clearing
 }
 
 function changeColors(buttonColor, summaryColor) {
@@ -299,13 +299,9 @@ function calculateDeductions(frequency, now) {
     expenseItems.forEach(item => {
         const amount = parseFloat(item.querySelector('.expense-amount').innerText.replace('$', ''));
         const expenseFrequency = item.querySelector('.expense-frequency').innerText;
-        const expenseDay = item.querySelector('.expense-day').innerText;
 
         if (expenseFrequency === frequency) {
-            const nextDueDate = getNextDueDate(frequency, now, expenseDay);
-            const timeRemaining = nextDueDate - now;
-            const daysRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60 * 24));
-            totalDeductions += amount / daysRemaining;
+            totalDeductions += amount;
         }
     });
     return totalDeductions;
@@ -337,17 +333,52 @@ function updateUpcomingDeductions() {
     const expenseItems = document.querySelectorAll('#expense-list li');
     let upcomingDeductions = [];
 
+    // Collect weekly expenses
     expenseItems.forEach(item => {
         const expenseName = item.querySelector('.expense-name').innerText;
         const amount = parseFloat(item.querySelector('.expense-amount').innerText.replace('$', ''));
         const frequency = item.querySelector('.expense-frequency').innerText;
         const day = item.querySelector('.expense-day').innerText;
 
-        const nextDueDate = getNextDueDate(frequency, now, day);
-        upcomingDeductions.push({ expenseName, amount, frequency, day, nextDueDate });
+        if (frequency === 'weekly') {
+            const nextDueDate = getNextDueDate(frequency, now, day);
+            upcomingDeductions.push({ expenseName, amount, frequency, day, nextDueDate });
+        }
     });
 
-    upcomingDeductions.sort((a, b) => a.nextDueDate - b.nextDueDate);
+    // If no weekly expenses, collect fortnightly expenses
+    if (upcomingDeductions.length === 0) {
+        expenseItems.forEach(item => {
+            const expenseName = item.querySelector('.expense-name').innerText;
+            const amount = parseFloat(item.querySelector('.expense-amount').innerText.replace('$', ''));
+            const frequency = item.querySelector('.expense-frequency').innerText;
+            const day = item.querySelector('.expense-day').innerText;
+
+            if (frequency === 'fortnightly') {
+                const nextDueDate = getNextDueDate(frequency, now, day);
+                upcomingDeductions.push({ expenseName, amount, frequency, day, nextDueDate });
+            }
+        });
+    }
+
+    // If no fortnightly expenses, collect monthly expenses
+    if (upcomingDeductions.length === 0) {
+        expenseItems.forEach(item => {
+            const expenseName = item.querySelector('.expense-name').innerText;
+            const amount = parseFloat(item.querySelector('.expense-amount').innerText.replace('$', ''));
+            const frequency = item.querySelector('.expense-frequency').innerText;
+            const day = item.querySelector('.expense-day').innerText;
+
+            if (frequency === 'monthly') {
+                const nextDueDate = getNextDueDate(frequency, now, day);
+                upcomingDeductions.push({ expenseName, amount, frequency, day, nextDueDate });
+            }
+        });
+    }
+
+    // Sort by day of the week
+    const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    upcomingDeductions.sort((a, b) => daysOfWeek.indexOf(a.day) - daysOfWeek.indexOf(b.day));
 
     const nextDeduction = upcomingDeductions[0];
     if (nextDeduction) {

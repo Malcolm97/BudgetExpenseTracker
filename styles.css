@@ -101,6 +101,7 @@ li {
     align-items: center; /* Center items vertically */
     padding: 10px; /* Padding inside list items */
     border-bottom: 1px solid #e2e8f0; /* Light gray border */
+    width: 100%; /* Full width */
 }
 
 li:last-child {
@@ -147,6 +148,12 @@ li:last-child {
 
     .budget-input, .summary, .deductions, .next-deduction {
         text-align: center; /* Center text in mobile view */
+    }
+
+    .expense-input {
+        display: flex;
+        flex-direction: column;
+        gap: 10px; /* Space between inputs */
     }
 }
 
