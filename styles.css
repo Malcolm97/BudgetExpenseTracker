@@ -26,7 +26,7 @@ header {
     padding: 20px 0; /* Padding around the header */
     background-color: #ff69b4; /* Pretty pink background */
     color: white; /* White text color */
-    border-radius: 10px 10px 0 0; /* Rounded top corners */
+    /* Removed border-radius */
 }
 
 /* Button Styles */
@@ -151,7 +151,7 @@ li:last-child {
         align-items: center; /* Center the buttons */
     }
 
-    .budget-input, .summary, .deductions, .next-deduction {
+    .budget-input, .summary, .deductions, .next-deduction, .expense-input {
         text-align: center; /* Center text in mobile view */
     }
 
@@ -159,6 +159,16 @@ li:last-child {
         display: flex;
         flex-direction: column;
         gap: 10px; /* Space between inputs */
+    }
+
+    .budget-input button, .summary button, .deductions button, .next-deduction button {
+        margin: 10px auto; /* Center the buttons */
+    }
+
+    .budget-input, .summary, .deductions, .next-deduction {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Center the buttons */
     }
 }
 
