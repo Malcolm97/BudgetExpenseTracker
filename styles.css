@@ -5,6 +5,26 @@ body {
     font-family: 'Arial', sans-serif; /* Modern font */
     margin: 0; /* Remove default margin */
     padding: 0; /* Remove default padding */
+    background-color: #f7fafc; /* Light background color */
+}
+
+/* Container Styles */
+.container {
+    max-width: 800px; /* Limit the width of the container */
+    margin: 0 auto; /* Center the container */
+    padding: 20px; /* Padding around the container */
+    background-color: #ffffff; /* White background */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+/* Header Styles */
+header {
+    text-align: center; /* Center the header text */
+    padding: 20px 0; /* Padding around the header */
+    background-color: #ff69b4; /* Pretty pink background */
+    color: white; /* White text color */
+    border-radius: 10px 10px 0 0; /* Rounded top corners */
 }
 
 /* Button Styles */
@@ -17,6 +37,7 @@ button {
     max-width: 300px; /* Max width for larger screens */
     box-sizing: border-box; /* Ensure padding is included in width */
     margin: 10px auto; /* Center the button */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effects */
 }
 
 /* New class for pretty pink background */
@@ -58,6 +79,34 @@ button {
     background-color: #c53030; /* Darker red on hover */
 }
 
+/* Input Styles */
+input, select {
+    border: 1px solid #e2e8f0; /* Light gray border */
+    border-radius: 5px; /* Rounded corners */
+    padding: 10px; /* Padding inside the input */
+    width: 100%; /* Full width */
+    box-sizing: border-box; /* Ensure padding is included in width */
+    margin-bottom: 10px; /* Space between inputs */
+}
+
+/* List Styles */
+ul {
+    list-style-type: none; /* Remove default list style */
+    padding: 0; /* Remove default padding */
+}
+
+li {
+    display: flex; /* Flexbox for list items */
+    justify-content: space-between; /* Space items evenly */
+    align-items: center; /* Center items vertically */
+    padding: 10px; /* Padding inside list items */
+    border-bottom: 1px solid #e2e8f0; /* Light gray border */
+}
+
+li:last-child {
+    border-bottom: none; /* Remove border from last item */
+}
+
 /* Responsive Styles */
 @media (max-width: 600px) {
     body {
@@ -73,7 +122,7 @@ button {
         flex-direction: column; /* Stack items vertically */
     }
 
-    .expense-name, .expense-amount, .expense-frequency {
+    .expense-name, .expense-amount, .expense-frequency, .expense-day {
         font-size: 16px; /* Increase font size for better readability */
     }
 
@@ -88,6 +137,16 @@ button {
     .save-button {
         width: 100%; /* Full width for save button */
         margin-top: 10px; /* Margin for spacing */
+    }
+
+    .flex {
+        display: flex;
+        justify-content: center; /* Center the buttons */
+        align-items: center; /* Center the buttons */
+    }
+
+    .budget-input, .summary, .deductions, .next-deduction {
+        text-align: center; /* Center text in mobile view */
     }
 }
 
