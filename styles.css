@@ -38,6 +38,9 @@ button {
     box-sizing: border-box; /* Ensure padding is included in width */
     margin: 10px auto; /* Center the button */
     transition: background-color 0.3s ease; /* Smooth transition for hover effects */
+    -webkit-transition: background-color 0.3s ease; /* Vendor prefix for Safari */
+    -moz-transition: background-color 0.3s ease; /* Vendor prefix for Firefox */
+    -o-transition: background-color 0.3s ease; /* Vendor prefix for Opera */
 }
 
 /* New class for pretty pink background */
