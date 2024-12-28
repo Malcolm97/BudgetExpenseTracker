@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script> <!-- Add Vue.js -->
     <link rel="manifest" href="manifest.json"> <!-- Link to the manifest file -->
+    <script src="https://apis.google.com/js/api.js"></script> <!-- Add Google API client library -->
     <title>Budget App</title>
 </head>
 <body class="bg-gray-100">
@@ -104,6 +105,12 @@
                     <p class="font-bold text-lg text-blue-600">Day: <span>{{ nextDeduction.day }}</span></p>
                     <p class="font-bold text-lg text-blue-600">Next Due Date: <span>{{ nextDeduction.nextDueDate }}</span></p>
                 </div>
+                <button @click="addEventToCalendar(nextDeduction.name, nextDeduction.amount, nextDeduction.frequency, nextDeduction.day)" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Add to Calendar">
+                    <i class="fas fa-calendar-plus"></i> Add to Calendar
+                </button>
+                <button @click="sendNotification(nextDeduction)" class="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 mt-2" title="Setup Notification">
+                    <i class="fas fa-bell"></i> Setup Notification
+                </button>
             </div>
         </div>
     </div>
