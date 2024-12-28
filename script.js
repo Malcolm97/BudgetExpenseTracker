@@ -150,20 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             displayError(message) {
-                const errorContainer = document.createElement('div');
-                errorContainer.className = 'error-container bg-red-500 text-white p-4 rounded mb-4';
-                errorContainer.innerText = message;
-
-                const container = document.getElementById('error-container');
-                if (container) {
-                    container.appendChild(errorContainer);
-                } else {
-                    document.body.appendChild(errorContainer);
-                }
-
-                setTimeout(() => {
-                    errorContainer.remove();
-                }, 5000);
+                alert(message); // Show error as a pop-up
             },
             calculateTotalExpenses() {
                 this.updateTotalExpenses();
