@@ -28,7 +28,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 monthly: 0,
                 daily: 0
             },
-            nextDeduction: {}
+            nextDeduction: {},
+            editingIndex: null,
+            isEditing: false
         },
         methods: {
             setBudget() {
@@ -46,8 +48,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const { name, amount, frequency, day } = this.newExpense;
                 const parsedAmount = parseFloat(amount);
                 if (name && !isNaN(parsedAmount) && parsedAmount > 0) {
-                    this.expenses.push({ name, amount: parsedAmount.toFixed(2), frequency, day });
-                    this.newExpense = { name: '', amount: 0, frequency: 'weekly', day: 'monday' };
+                    if (this.editingIndex !== null) {
+                        this.expenses.splice(this.editingIndex, 1, { name, amount: parsedAmount.toFixed(2), frequency, day });
+                        this.editingIndex = null;
+                        this.isEditing = false;
+                    } else {
+                        this.expenses.push({ name, amount: parsedAmount.toFixed(2), frequency, day });
+                    }
+                    this.resetNewExpense();
                     this.updateTotalExpenses();
                     this.updateDeductions();
                     this.updateUpcomingDeductions();
@@ -55,6 +63,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     this.displayError('Please enter valid expense details.');
                 }
+            },
+            resetNewExpense() {
+                this.newExpense = { name: '', amount: 0, frequency: 'weekly', day: 'monday' };
+                this.isEditing = false;
             },
             updateTotalExpenses() {
                 let totalWeekly = 0;
@@ -77,20 +89,16 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             updateDeductions() {
                 const now = new Date();
-                this.deductions.weekly = this.calculateDeductions('weekly', now).toFixed(2);
-                this.deductions.fortnightly = this.calculateDeductions('fortnightly', now).toFixed(2);
-                this.deductions.monthly = this.calculateDeductions('monthly', now).toFixed(2);
-                this.deductions.daily = this.calculateDeductions('day', now).toFixed(2);
+                this.deductions.weekly = this.calculateDeductions('weekly').toFixed(2);
+                this.deductions.fortnightly = this.calculateDeductions('fortnightly').toFixed(2);
+                this.deductions.monthly = this.calculateDeductions('monthly').toFixed(2);
+                this.deductions.daily = this.calculateDeductions('daily').toFixed(2);
                 this.updateUpcomingDeductions();
             },
-            calculateDeductions(frequency, now) {
-                let totalDeductions = 0;
-                this.expenses.forEach(expense => {
-                    if (expense.frequency === frequency) {
-                        totalDeductions += parseFloat(expense.amount);
-                    }
-                });
-                return totalDeductions;
+            calculateDeductions(frequency) {
+                return this.expenses.reduce((total, expense) => {
+                    return expense.frequency === frequency ? total + parseFloat(expense.amount) : total;
+                }, 0);
             },
             getNextDueDate(frequency, now, day) {
                 const nextDueDate = new Date(now);
@@ -145,9 +153,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 upcomingDeductions.sort((a, b) => daysOfWeek.indexOf(a.day) - daysOfWeek.indexOf(b.day));
 
                 this.nextDeduction = upcomingDeductions[0] || {};
-                if (this.nextDeduction.name) {
-                    this.sendNotificationAndAddToAppleCalendar(this.nextDeduction);
-                }
             },
             displayNotification(message, isError = true) {
                 const notification = document.createElement('div');
@@ -179,25 +184,13 @@ document.addEventListener('DOMContentLoaded', function() {
             editExpense(index) {
                 const expense = this.expenses[index];
                 this.newExpense = { ...expense };
-                this.expenses.splice(index, 1);
-                document.querySelectorAll('.save-expense')[index].style.display = 'inline-block';
-                document.querySelectorAll('.edit-expense')[index].style.display = 'none';
+                this.editingIndex = index;
+                this.isEditing = true;
+                this.refreshExpenseButtons();
             },
-            saveEdits(index) {
-                const { name, amount, frequency, day } = this.newExpense;
-                const parsedAmount = parseFloat(amount);
-                if (name && !isNaN(parsedAmount) && parsedAmount > 0) {
-                    this.expenses.splice(index, 1, { name, amount: parsedAmount.toFixed(2), frequency, day });
-                    this.newExpense = { name: '', amount: 0, frequency: 'weekly', day: 'monday' };
-                    this.updateTotalExpenses();
-                    this.updateDeductions();
-                    this.updateUpcomingDeductions();
-                    localStorage.setItem('expenses', JSON.stringify(this.expenses)); // Update expenses in Local Storage
-                    document.querySelectorAll('.save-expense')[index].style.display = 'none';
-                    document.querySelectorAll('.edit-expense')[index].style.display = 'inline-block';
-                } else {
-                    this.displayError('Please enter valid expense details.');
-                }
+            saveEdits() {
+                this.addExpense();
+                this.refreshExpenseButtons();
             },
             deleteExpense(index) {
                 this.expenses.splice(index, 1);
@@ -205,6 +198,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.updateDeductions();
                 this.updateUpcomingDeductions();
                 localStorage.setItem('expenses', JSON.stringify(this.expenses)); // Update expenses in Local Storage
+            },
+            refreshExpenseButtons() {
+                this.$nextTick(() => {
+                    document.querySelectorAll('.save-expense').forEach(button => button.style.display = 'none');
+                    document.querySelectorAll('.edit-expense').forEach(button => button.style.display = 'inline-block');
+                });
             },
             requestNotificationPermission() {
                 if ('Notification' in window && navigator.serviceWorker) {
@@ -215,40 +214,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             console.log('Notification permission denied.');
                         }
                     });
-                }
-            },
-            sendNotificationAndAddToAppleCalendar(deduction) {
-                if ('Notification' in window && navigator.serviceWorker) {
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.showNotification('Upcoming Deduction', {
-                            body: `Expense: ${deduction.name}, Amount: $${deduction.amount}, Due: ${deduction.nextDueDate}`,
-                            icon: 'icons/icon-192x192.png',
-                            tag: 'upcoming-deduction'
-                        }).catch(error => {
-                            this.displayError('Failed to send notification: ' + error.message);
-                        });
-                    }).catch(error => {
-                        this.displayError('Service Worker not ready: ' + error.message);
-                    });
-                } else {
-                    this.displayError('Notifications are not supported in this browser.');
-                }
-                this.addToAppleCalendar(deduction);
-            },
-            addToAppleCalendar(deduction) {
-                if (!deduction.nextDueDate) {
-                    this.displayError('Next due date is not set.');
-                    return;
-                }
-                try {
-                    const cal = ics(); // Initialize the ics library
-                    const startDate = new Date(deduction.nextDueDate);
-                    const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes duration
-                    cal.addEvent(deduction.name, `Amount: $${deduction.amount}`, '', startDate, endDate);
-                    cal.download(`${deduction.name}-event`); // Download the .ics file
-                    this.displaySuccess('Event added to Apple Calendar successfully.');
-                } catch (error) {
-                    this.displayError('Failed to add event to Apple Calendar: ' + error.message);
                 }
             },
             loadFromLocalStorage() {
