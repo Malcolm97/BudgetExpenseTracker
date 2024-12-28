@@ -153,9 +153,6 @@ document.addEventListener('DOMContentLoaded', function() {
             calculateTotalExpenses() {
                 this.updateTotalExpenses();
             },
-            calculateRemainingBalance() {
-                this.remainingBalance = (this.budget - this.totalExpenses).toFixed(2);
-            },
             clearAllExpenses() {
                 this.expenses = [];
                 this.updateTotalExpenses();
@@ -163,10 +160,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.updateUpcomingDeductions();
             },
             editExpense(index) {
-                // Implement edit functionality
+                const expense = this.expenses[index];
+                this.newExpense = { ...expense };
+                this.expenses.splice(index, 1);
             },
             saveEdits(index) {
-                // Implement save functionality
+                const { name, amount, frequency, day } = this.newExpense;
+                const parsedAmount = parseFloat(amount);
+                if (name && !isNaN(parsedAmount) && parsedAmount > 0) {
+                    this.expenses.splice(index, 1, { name, amount: parsedAmount.toFixed(2), frequency, day });
+                    this.newExpense = { name: '', amount: 0, frequency: 'weekly', day: 'monday' };
+                    this.updateTotalExpenses();
+                    this.updateDeductions();
+                    this.updateUpcomingDeductions();
+                } else {
+                    this.displayError('Please enter valid expense details.');
+                }
             },
             deleteExpense(index) {
                 this.expenses.splice(index, 1);

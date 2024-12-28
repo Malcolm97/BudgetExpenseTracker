@@ -88,26 +88,9 @@
                     <p class="font-bold text-lg text-green-600">Total Fortnightly Expenses: ${{ deductions.fortnightly }}</p>
                     <p class="font-bold text-lg text-green-600">Total Monthly Expenses: ${{ deductions.monthly }}</p>
                     <p class="font-bold text-lg text-green-600">Total Expenses: ${{ totalExpenses }}</p>
-                    <button @click="calculateRemainingBalance" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300" title="Calculate remaining balance">
-                        Calculate Remaining Balance
-                    </button>
                     <p class="font-bold text-lg text-green-600">Remaining Balance: ${{ remainingBalance }}</p>
                     <p class="font-bold text-lg text-green-600">Budget: ${{ budget }}</p>
                 </div>
-            </div>
-            <div class="deductions mt-6 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
-                <h2 class="font-bold text-xl">
-                    <i class="fas fa-calendar-alt"></i> Upcoming Deductions
-                </h2>
-                <div class="flex flex-col space-y-2 mt-4">
-                    <p class="font-bold text-lg text-red-600">Weekly Deductions: ${{ deductions.weekly }}</p>
-                    <p class="font-bold text-lg text-red-600">Fortnightly Deductions: ${{ deductions.fortnightly }}</p>
-                    <p class="font-bold text-lg text-red-600">Monthly Deductions: ${{ deductions.monthly }}</p>
-                    <p class="font-bold text-lg text-red-600">Daily Deductions: ${{ deductions.daily }}</p>
-                </div>
-                <button @click="updateDeductions" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Calculate upcoming deductions">
-                    Calculate Upcoming Deductions
-                </button>
             </div>
             <div class="next-deduction mt-6 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
                 <h2 class="font-bold text-xl">
@@ -120,9 +103,6 @@
                     <p class="font-bold text-lg text-blue-600">Day: {{ nextDeduction.day }}</p>
                     <p class="font-bold text-lg text-blue-600">Next Due Date: {{ nextDeduction.nextDueDate }}</p>
                 </div>
-                <button @click="updateUpcomingDeductions" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Calculate next upcoming deduction">
-                    Calculate Next Deduction
-                </button>
             </div>
         </div>
     </div>
