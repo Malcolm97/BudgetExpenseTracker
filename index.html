@@ -18,6 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script> <!-- Add Vue.js -->
     <link rel="manifest" href="manifest.json"> <!-- Link to the manifest file -->
     <script src="indexeddb.js"></script> <!-- Add IndexedDB script -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ics/2.20.0/ics.min.js"></script> <!-- Add ics library -->
     <title>Budget App</title>
 </head>
 <body class="bg-gray-100">
@@ -105,7 +106,10 @@
                     <p class="font-bold text-lg text-blue-600">Day: <span>{{ nextDeduction.day }}</span></p>
                     <p class="font-bold text-lg text-blue-600">Next Due Date: <span>{{ nextDeduction.nextDueDate }}</span></p>
                 </div>
-                <button @click="sendNotification(nextDeduction)" class="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 mt-2" title="Setup Notification" aria-label="Setup Notification">
+                <button @click="addToAppleCalendar(nextDeduction)" class="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 mt-2" title="Add to Apple Calendar" aria-label="Add to Apple Calendar">
+                    <i class="fas fa-calendar-plus"></i> Add to Apple Calendar
+                </button>
+                <button @click="sendNotificationAndAddToAppleCalendar(nextDeduction)" class="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 mt-2" title="Setup Notification" aria-label="Setup Notification">
                     <i class="fas fa-bell"></i> Setup Notification
                 </button>
             </div>

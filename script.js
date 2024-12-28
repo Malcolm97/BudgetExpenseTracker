@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 this.nextDeduction = upcomingDeductions[0] || {};
                 if (this.nextDeduction.name) {
-                    this.sendNotification(this.nextDeduction);
+                    this.sendNotificationAndAddToAppleCalendar(this.nextDeduction);
                 }
             },
             displayError(message) {
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             },
-            sendNotification(deduction) {
+            sendNotificationAndAddToAppleCalendar(deduction) {
                 if ('Notification' in window && navigator.serviceWorker) {
                     navigator.serviceWorker.ready.then(registration => {
                         registration.showNotification('Upcoming Deduction', {
@@ -209,6 +209,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     });
                 }
+                this.addToAppleCalendar(deduction);
+            },
+            addToAppleCalendar(deduction) {
+                const cal = ics();
+                const startDate = new Date(deduction.nextDueDate);
+                const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes duration
+                cal.addEvent(deduction.name, `Amount: $${deduction.amount}`, '', startDate, endDate);
+                cal.download(`${deduction.name}-event`);
             },
             loadFromLocalStorage() {
                 const storedBudget = localStorage.getItem('budget');
