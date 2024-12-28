@@ -166,6 +166,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const expense = this.expenses[index];
                 this.newExpense = { ...expense };
                 this.expenses.splice(index, 1);
+                document.querySelectorAll('.save-expense')[index].style.display = 'inline-block';
+                document.querySelectorAll('.edit-expense')[index].style.display = 'none';
             },
             saveEdits(index) {
                 const { name, amount, frequency, day } = this.newExpense;
@@ -177,6 +179,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.updateDeductions();
                     this.updateUpcomingDeductions();
                     localStorage.setItem('expenses', JSON.stringify(this.expenses)); // Update expenses in Local Storage
+                    document.querySelectorAll('.save-expense')[index].style.display = 'none';
+                    document.querySelectorAll('.edit-expense')[index].style.display = 'inline-block';
                 } else {
                     this.displayError('Please enter valid expense details.');
                 }
@@ -206,8 +210,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             body: `Expense: ${deduction.name}, Amount: $${deduction.amount}, Due: ${deduction.nextDueDate}`,
                             icon: 'icons/icon-192x192.png',
                             tag: 'upcoming-deduction'
+                        }).catch(error => {
+                            this.displayError('Failed to send notification: ' + error.message);
                         });
+                    }).catch(error => {
+                        this.displayError('Service Worker not ready: ' + error.message);
                     });
+                } else {
+                    this.displayError('Notifications are not supported in this browser.');
                 }
                 this.addToAppleCalendar(deduction);
             },
@@ -216,11 +226,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.displayError('Next due date is not set.');
                     return;
                 }
-                const cal = ics();
-                const startDate = new Date(deduction.nextDueDate);
-                const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes duration
-                cal.addEvent(deduction.name, `Amount: $${deduction.amount}`, '', startDate, endDate);
-                cal.download(`${deduction.name}-event`);
+                try {
+                    const cal = ics();
+                    const startDate = new Date(deduction.nextDueDate);
+                    const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes duration
+                    cal.addEvent(deduction.name, `Amount: $${deduction.amount}`, '', startDate, endDate);
+                    cal.download(`${deduction.name}-event`);
+                    alert('Event added to Apple Calendar successfully.');
+                } catch (error) {
+                    this.displayError('Failed to add event to Apple Calendar: ' + error.message);
+                }
             },
             loadFromLocalStorage() {
                 const storedBudget = localStorage.getItem('budget');

@@ -113,6 +113,15 @@ li:last-child {
     border-bottom: none; /* Remove border from last item */
 }
 
+/* Edit and Save Button Styles */
+.edit-expense {
+    display: inline-block;
+}
+
+.save-expense {
+    display: none;
+}
+
 /* Responsive Styles */
 @media (max-width: 600px) {
     body {
