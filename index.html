@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script> <!-- Add Vue.js -->
     <link rel="manifest" href="manifest.json"> <!-- Link to the manifest file -->
-    <script src="https://apis.google.com/js/api.js"></script> <!-- Add Google API client library -->
+    <script src="indexeddb.js"></script> <!-- Add IndexedDB script -->
     <title>Budget App</title>
 </head>
 <body class="bg-gray-100">
@@ -30,24 +30,24 @@
         <div class="container mx-auto mt-4 bg-white p-6 rounded-lg shadow-md">
             <div class="budget-input mb-4">
                 <label for="budget" class="font-bold text-lg"><i class="fas fa-money-bill-wave"></i> Budget</label>
-                <input type="number" v-model="budget" class="border border-gray-300 p-2 rounded w-full" placeholder="Enter your budget" required>
-                <button @click="setBudget" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Set your budget">
+                <input type="number" v-model="budget" class="border border-gray-300 p-2 rounded w-full" placeholder="Enter your budget" required aria-label="Enter your budget">
+                <button @click="setBudget" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Set your budget" aria-label="Set your budget">
                     <i class="fas fa-pencil-alt"></i> Set Budget
                 </button>
             </div>
             <div class="expense-input mb-4">
                 <label for="expense-name" class="font-bold text-lg"><i class="fas fa-tag"></i> Expense Name</label>
-                <input type="text" v-model="newExpense.name" class="border border-gray-300 p-2 rounded w-full" placeholder="Groceries, Rent, etc." required>
+                <input type="text" v-model="newExpense.name" class="border border-gray-300 p-2 rounded w-full" placeholder="Groceries, Rent, etc." required aria-label="Expense Name">
                 <label for="expense-amount" class="font-bold text-lg"><i class="fas fa-money-bill-wave"></i> Expense Amount</label>
-                <input type="number" v-model="newExpense.amount" class="border border-gray-300 p-2 rounded w-full" placeholder="Amount" required>
+                <input type="number" v-model="newExpense.amount" class="border border-gray-300 p-2 rounded w-full" placeholder="Amount" required aria-label="Expense Amount">
                 <label for="expense-frequency" class="font-bold text-lg"><i class="fas fa-calendar-alt"></i> Expense Frequency</label>
-                <select v-model="newExpense.frequency" class="border border-gray-300 p-2 rounded w-full mb-2">
+                <select v-model="newExpense.frequency" class="border border-gray-300 p-2 rounded w-full mb-2" aria-label="Expense Frequency">
                     <option value="weekly">Weekly</option>
                     <option value="fortnightly">Fortnightly</option>
                     <option value="monthly">Monthly</option>
                 </select>
                 <label for="expense-day" class="font-bold text-lg"><i class="fas fa-calendar-day"></i> Expense Day</label>
-                <select v-model="newExpense.day" class="border border-gray-300 p-2 rounded w-full mb-2">
+                <select v-model="newExpense.day" class="border border-gray-300 p-2 rounded w-full mb-2" aria-label="Expense Day">
                     <option value="monday">Monday</option>
                     <option value="tuesday">Tuesday</option>
                     <option value="wednesday">Wednesday</option>
@@ -56,7 +56,7 @@
                     <option value="saturday">Saturday</option>
                     <option value="sunday">Sunday</option>
                 </select>
-                <button @click="addExpense" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Add a new expense">
+                <button @click="addExpense" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Add a new expense" aria-label="Add a new expense">
                     <i class="fas fa-plus"></i> Add Expense
                 </button>
             </div>
@@ -74,10 +74,10 @@
                 </li>
             </ul>
             <div class="budget-input mb-4">
-                <button @click="calculateTotalExpenses" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300" title="Calculate total expenses">
+                <button @click="calculateTotalExpenses" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300" title="Calculate total expenses" aria-label="Calculate total expenses">
                     Calculate Total Expenses
                 </button>
-                <button @click="clearAllExpenses" class="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300" title="Clear all expenses">
+                <button @click="clearAllExpenses" class="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300" title="Clear all expenses" aria-label="Clear all expenses">
                     Clear All Expenses
                 </button>
             </div>
@@ -105,10 +105,7 @@
                     <p class="font-bold text-lg text-blue-600">Day: <span>{{ nextDeduction.day }}</span></p>
                     <p class="font-bold text-lg text-blue-600">Next Due Date: <span>{{ nextDeduction.nextDueDate }}</span></p>
                 </div>
-                <button @click="addEventToCalendar(nextDeduction.name, nextDeduction.amount, nextDeduction.frequency, nextDeduction.day)" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Add to Calendar">
-                    <i class="fas fa-calendar-plus"></i> Add to Calendar
-                </button>
-                <button @click="sendNotification(nextDeduction)" class="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 mt-2" title="Setup Notification">
+                <button @click="sendNotification(nextDeduction)" class="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 mt-2" title="Setup Notification" aria-label="Setup Notification">
                     <i class="fas fa-bell"></i> Setup Notification
                 </button>
             </div>

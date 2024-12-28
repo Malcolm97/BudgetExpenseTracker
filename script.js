@@ -28,9 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 monthly: 0,
                 daily: 0
             },
-            nextDeduction: {},
-            gapiLoaded: false,
-            isSignedIn: false
+            nextDeduction: {}
         },
         methods: {
             setBudget() {
@@ -39,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.budget = totalBudget.toFixed(2);
                     this.remainingBalance = totalBudget.toFixed(2);
                     this.updateTotalExpenses();
+                    localStorage.setItem('budget', this.budget); // Store budget in Local Storage
                 } else {
                     this.displayError('Please enter a valid budget amount.');
                 }
@@ -52,9 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.updateTotalExpenses();
                     this.updateDeductions();
                     this.updateUpcomingDeductions();
-                    if (this.isSignedIn) {
-                        this.addEventToCalendar(name, parsedAmount, frequency, day);
-                    }
+                    localStorage.setItem('expenses', JSON.stringify(this.expenses)); // Store expenses in Local Storage
                 } else {
                     this.displayError('Please enter valid expense details.');
                 }
@@ -176,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.updateTotalExpenses();
                 this.updateDeductions();
                 this.updateUpcomingDeductions();
+                localStorage.removeItem('expenses'); // Remove expenses from Local Storage
             },
             editExpense(index) {
                 const expense = this.expenses[index];
@@ -191,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.updateTotalExpenses();
                     this.updateDeductions();
                     this.updateUpcomingDeductions();
+                    localStorage.setItem('expenses', JSON.stringify(this.expenses)); // Update expenses in Local Storage
                 } else {
                     this.displayError('Please enter valid expense details.');
                 }
@@ -200,88 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.updateTotalExpenses();
                 this.updateDeductions();
                 this.updateUpcomingDeductions();
-            },
-            handleClientLoad() {
-                gapi.load('client:auth2', this.initClient);
-            },
-            initClient() {
-                gapi.client.init({
-                    apiKey: 'AIzaSyDn3lh-v9D2o23gobDdS9bGHQx42IN_CvM', // Replace with your actual API key
-                    clientId: '69787155393-9npml0lmk9tp6egnavbucu2kpibgi8e4.apps.googleusercontent.com', // Replace with your actual client ID
-                    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
-                    scope: "https://www.googleapis.com/auth/calendar.events"
-                }).then(() => {
-                    this.gapiLoaded = true;
-                    gapi.auth2.getAuthInstance().isSignedIn.listen(this.updateSigninStatus);
-                    this.updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-                }, (error) => {
-                    console.error(JSON.stringify(error, null, 2));
-                });
-            },
-            updateSigninStatus(isSignedIn) {
-                this.isSignedIn = isSignedIn;
-                if (isSignedIn) {
-                    this.listUpcomingEvents();
-                }
-            },
-            handleAuthClick() {
-                gapi.auth2.getAuthInstance().signIn();
-            },
-            handleSignoutClick() {
-                gapi.auth2.getAuthInstance().signOut();
-            },
-            listUpcomingEvents() {
-                gapi.client.calendar.events.list({
-                    'calendarId': 'primary',
-                    'timeMin': (new Date()).toISOString(),
-                    'showDeleted': false,
-                    'singleEvents': true,
-                    'maxResults': 10,
-                    'orderBy': 'startTime'
-                }).then((response) => {
-                    const events = response.result.items;
-                    if (events.length > 0) {
-                        console.log('Upcoming events:');
-                        events.forEach((event) => {
-                            const when = event.start.dateTime || event.start.date;
-                            console.log(`${event.summary} (${when})`);
-                        });
-                    } else {
-                        console.log('No upcoming events found.');
-                    }
-                });
-            },
-            addEventToCalendar(name, amount, frequency, day) {
-                const now = new Date();
-                const nextDueDate = this.getNextDueDate(frequency, now, day);
-                const event = {
-                    'summary': `${name} - $${amount}`,
-                    'start': {
-                        'dateTime': nextDueDate.toISOString(),
-                        'timeZone': 'America/Los_Angeles'
-                    },
-                    'end': {
-                        'dateTime': new Date(nextDueDate.getTime() + 30 * 60 * 1000).toISOString(), // 30 minutes duration
-                        'timeZone': 'America/Los_Angeles'
-                    },
-                    'recurrence': [
-                        `RRULE:FREQ=${frequency.toUpperCase()};`
-                    ],
-                    'reminders': {
-                        'useDefault': false,
-                        'overrides': [
-                            { 'method': 'email', 'minutes': 24 * 60 },
-                            { 'method': 'popup', 'minutes': 10 }
-                        ]
-                    }
-                };
-
-                gapi.client.calendar.events.insert({
-                    'calendarId': 'primary',
-                    'resource': event
-                }).then((response) => {
-                    console.log('Event created: ', response);
-                });
+                localStorage.setItem('expenses', JSON.stringify(this.expenses)); // Update expenses in Local Storage
             },
             requestNotificationPermission() {
                 if ('Notification' in window && navigator.serviceWorker) {
@@ -304,11 +222,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     });
                 }
+            },
+            loadFromLocalStorage() {
+                const storedBudget = localStorage.getItem('budget');
+                if (storedBudget) {
+                    this.budget = parseFloat(storedBudget);
+                    this.remainingBalance = this.budget;
+                }
+                const storedExpenses = localStorage.getItem('expenses');
+                if (storedExpenses) {
+                    this.expenses = JSON.parse(storedExpenses);
+                    this.updateTotalExpenses();
+                    this.updateDeductions();
+                    this.updateUpcomingDeductions();
+                }
             }
         },
         mounted() {
-            this.handleClientLoad();
             this.requestNotificationPermission();
+            this.loadFromLocalStorage(); // Load data from Local Storage on mount
         }
     });
 });
