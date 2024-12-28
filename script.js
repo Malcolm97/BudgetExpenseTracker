@@ -206,8 +206,8 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             initClient() {
                 gapi.client.init({
-                    apiKey: 'YOUR_API_KEY',
-                    clientId: 'YOUR_CLIENT_ID',
+                    apiKey: 'AIzaSyDn3lh-v9D2o23gobDdS9bGHQx42IN_CvM', // Replace with your actual API key
+                    clientId: '69787155393-9npml0lmk9tp6egnavbucu2kpibgi8e4.apps.googleusercontent.com', // Replace with your actual client ID
                     discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
                     scope: "https://www.googleapis.com/auth/calendar.events"
                 }).then(() => {
