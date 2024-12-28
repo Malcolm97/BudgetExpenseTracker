@@ -85,12 +85,12 @@
                     <i class="fas fa-clipboard-list"></i> Summary
                 </h2>
                 <div class="flex flex-col space-y-2 mt-4">
-                    <p class="font-bold text-lg text-green-600">Total Weekly Expenses: ${{ deductions.weekly }}</p>
-                    <p class="font-bold text-lg text-green-600">Total Fortnightly Expenses: ${{ deductions.fortnightly }}</p>
-                    <p class="font-bold text-lg text-green-600">Total Monthly Expenses: ${{ deductions.monthly }}</p>
-                    <p class="font-bold text-lg text-green-600">Total Expenses: ${{ totalExpenses }}</p>
-                    <p class="font-bold text-lg text-green-600">Remaining Balance: ${{ remainingBalance }}</p>
-                    <p class="font-bold text-lg text-green-600">Budget: ${{ budget }}</p>
+                    <p class="font-bold text-lg text-green-600">Total Weekly Expenses: $<span>{{ deductions.weekly }}</span></p>
+                    <p class="font-bold text-lg text-green-600">Total Fortnightly Expenses: $<span>{{ deductions.fortnightly }}</span></p>
+                    <p class="font-bold text-lg text-green-600">Total Monthly Expenses: $<span>{{ deductions.monthly }}</span></p>
+                    <p class="font-bold text-lg text-green-600">Total Expenses: $<span>{{ totalExpenses }}</span></p>
+                    <p class="font-bold text-lg text-green-600">Remaining Balance: $<span>{{ remainingBalance }}</span></p>
+                    <p class="font-bold text-lg text-green-600">Budget: $<span>{{ budget }}</span></p>
                 </div>
             </div>
             <div class="next-deduction mt-6 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
@@ -98,11 +98,11 @@
                     <i class="fas fa-calendar-day"></i> Next Upcoming Deduction
                 </h2>
                 <div class="flex flex-col space-y-2 mt-4">
-                    <p class="font-bold text-lg text-blue-600">Expense Name: {{ nextDeduction.name }}</p>
-                    <p class="font-bold text-lg text-blue-600">Amount: ${{ nextDeduction.amount }}</p>
-                    <p class="font-bold text-lg text-blue-600">Frequency: {{ nextDeduction.frequency }}</p>
-                    <p class="font-bold text-lg text-blue-600">Day: {{ nextDeduction.day }}</p>
-                    <p class="font-bold text-lg text-blue-600">Next Due Date: {{ nextDeduction.nextDueDate }}</p>
+                    <p class="font-bold text-lg text-blue-600">Expense Name: <span>{{ nextDeduction.name }}</span></p>
+                    <p class="font-bold text-lg text-blue-600">Amount: $<span>{{ nextDeduction.amount }}</span></p>
+                    <p class="font-bold text-lg text-blue-600">Frequency: <span>{{ nextDeduction.frequency }}</span></p>
+                    <p class="font-bold text-lg text-blue-600">Day: <span>{{ nextDeduction.day }}</span></p>
+                    <p class="font-bold text-lg text-blue-600">Next Due Date: <span>{{ nextDeduction.nextDueDate }}</span></p>
                 </div>
             </div>
         </div>
