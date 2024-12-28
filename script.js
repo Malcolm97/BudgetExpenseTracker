@@ -149,8 +149,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.sendNotificationAndAddToAppleCalendar(this.nextDeduction);
                 }
             },
+            displayNotification(message, isError = true) {
+                const notification = document.createElement('div');
+                notification.className = isError ? 'error-notification' : 'success-notification';
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                notification.style.display = 'block';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                    document.body.removeChild(notification);
+                }, 3000); // Hide after 3 seconds
+            },
             displayError(message) {
-                alert(message); // Show error as a pop-up
+                this.displayNotification(message, true);
+            },
+            displaySuccess(message) {
+                this.displayNotification(message, false);
             },
             calculateTotalExpenses() {
                 this.updateTotalExpenses();
@@ -227,12 +241,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 try {
-                    const cal = ics();
+                    const cal = ics(); // Initialize the ics library
                     const startDate = new Date(deduction.nextDueDate);
                     const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes duration
                     cal.addEvent(deduction.name, `Amount: $${deduction.amount}`, '', startDate, endDate);
-                    cal.download(`${deduction.name}-event`);
-                    alert('Event added to Apple Calendar successfully.');
+                    cal.download(`${deduction.name}-event`); // Download the .ics file
+                    this.displaySuccess('Event added to Apple Calendar successfully.');
                 } catch (error) {
                     this.displayError('Failed to add event to Apple Calendar: ' + error.message);
                 }

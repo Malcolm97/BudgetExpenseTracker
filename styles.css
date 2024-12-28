@@ -122,6 +122,34 @@ li:last-child {
     display: none;
 }
 
+/* Error Notification Styles */
+.error-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #e53e3e; /* Red background */
+    color: white; /* White text */
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none; /* Hidden by default */
+}
+
+/* Success Notification Styles */
+.success-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #38a169; /* Green background */
+    color: white; /* White text */
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none; /* Hidden by default */
+}
+
 /* Responsive Styles */
 @media (max-width: 600px) {
     body {
