@@ -212,6 +212,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.addToAppleCalendar(deduction);
             },
             addToAppleCalendar(deduction) {
+                if (!deduction.nextDueDate) {
+                    this.displayError('Next due date is not set.');
+                    return;
+                }
                 const cal = ics();
                 const startDate = new Date(deduction.nextDueDate);
                 const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes duration
