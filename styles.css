@@ -24,7 +24,7 @@ body {
 header {
     text-align: center; /* Center the header text */
     padding: 20px 0; /* Padding around the header */
-    background-color: #ff69b4; /* Pretty pink background */
+    background-color: #007bff; /* Pretty blue background */
     color: white; /* White text color */
     /* Removed border-radius */
 }
@@ -45,9 +45,9 @@ button {
     -o-transition: background-color 0.3s ease; /* Vendor prefix for Opera */
 }
 
-/* New class for pretty pink background */
-.pretty-pink {
-    background-color: #ff69b4; /* Pretty pink color */
+/* New class for pretty blue background */
+.pretty-blue {
+    background-color: #007bff; /* Pretty blue color */
     color: white; /* Text color */
 }
 
@@ -68,8 +68,8 @@ button {
 }
 
 /* Hover effects */
-.hover\:bg-pink-600:hover {
-    background-color: #d53f8c; /* Darker pink on hover */
+.hover\:bg-blue-600:hover {
+    background-color: #0056b3; /* Darker blue on hover */
 }
 
 .hover\:bg-green-600:hover {

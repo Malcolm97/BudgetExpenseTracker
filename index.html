@@ -33,7 +33,7 @@
             <div class="budget-input mb-4">
                 <label for="budget" class="font-bold text-lg"><i class="fas fa-money-bill-wave"></i> Budget</label>
                 <input type="number" v-model="budget" class="border border-gray-300 p-2 rounded w-full" placeholder="Enter your budget" required aria-label="Enter your budget">
-                <button @click="setBudget" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Set your budget" aria-label="Set your budget">
+                <button @click="setBudget" class="pretty-blue text-white p-2 rounded hover:bg-blue-600 transition duration-300 mt-2" title="Set your budget" aria-label="Set your budget">
                     <i class="fas fa-pencil-alt"></i> Set Budget
                 </button>
             </div>
@@ -58,7 +58,7 @@
                     <option value="saturday">Saturday</option>
                     <option value="sunday">Sunday</option>
                 </select>
-                <button @click="addExpense" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300 mt-2" title="Add a new expense" aria-label="Add a new expense">
+                <button @click="addExpense" class="pretty-blue text-white p-2 rounded hover:bg-blue-600 transition duration-300 mt-2" title="Add a new expense" aria-label="Add a new expense">
                     <i class="fas fa-plus"></i> {{ isEditing ? 'Edit Expense' : 'Add Expense' }}
                 </button>
             </div>
@@ -76,7 +76,7 @@
                 </li>
             </ul>
             <div class="budget-input mb-4">
-                <button @click="calculateTotalExpenses" class="pretty-pink text-white p-2 rounded hover:bg-pink-600 transition duration-300" title="Calculate total expenses" aria-label="Calculate total expenses">
+                <button @click="calculateTotalExpenses" class="pretty-blue text-white p-2 rounded hover:bg-blue-600 transition duration-300" title="Calculate total expenses" aria-label="Calculate total expenses">
                     Calculate Total Expenses
                 </button>
                 <button @click="clearAllExpenses" class="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300" title="Clear all expenses" aria-label="Clear all expenses">
