@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     new Vue({
         el: '#app',
         data: {
+            currentPage: 'dashboard', // Default page
             budget: 0,
             expenses: [],
             newExpense: {
@@ -615,6 +616,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 return isValid;
+            },
+            switchPage(page) {
+                this.currentPage = page;
+                // Create charts when switching to analytics page
+                if (page === 'analytics') {
+                    this.$nextTick(() => {
+                        this.createCharts();
+                    });
+                }
             }
         },
         computed: {
@@ -677,9 +687,19 @@ document.addEventListener('DOMContentLoaded', function() {
         watch: {
             expenses: {
                 handler() {
-                    this.createCharts();
+                    // Only create charts if on analytics page
+                    if (this.currentPage === 'analytics') {
+                        this.createCharts();
+                    }
                 },
                 deep: true
+            },
+            currentPage(newPage) {
+                if (newPage === 'analytics') {
+                    this.$nextTick(() => {
+                        this.createCharts();
+                    });
+                }
             }
         },
         mounted() {
