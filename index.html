@@ -30,158 +30,173 @@
     </button>
 
     <div id="app">
-        <header>
+        <header class="app-header">
             <h1>Budget Expense Tracker</h1>
         </header>
 
         <!-- Dashboard Page -->
-        <div v-show="currentPage === 'dashboard'" class="page-container">
-            <div class="container">
-                <!-- Budget Section -->
-                <div class="card">
+        <main v-show="currentPage === 'dashboard'" class="page-content">
+            <!-- Budget Section -->
+            <section class="card budget-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <h2 class="card-title">Set Your Budget</h2>
+                </div>
+                <div class="card-content">
+                    <form @submit.prevent="setBudget" class="budget-form">
+                        <div class="input-group">
+                            <label for="budget" class="input-label">Monthly Budget Amount</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="budget" v-model="budget" placeholder="0.00" step="0.01" required class="form-input">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary btn-full">
+                            <i class="fas fa-save"></i>
+                            Set Budget
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Summary Cards Grid -->
+            <div class="summary-grid">
+                <!-- Financial Summary -->
+                <section class="card summary-card">
                     <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-money-bill-wave"></i> Set Your Budget
-                        </h2>
+                        <div class="card-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h2 class="card-title">Financial Summary</h2>
                     </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label for="budget" class="form-label">Monthly Budget Amount</label>
-                            <input type="number" id="budget" v-model="budget" placeholder="Enter your monthly budget" required aria-label="Enter your budget">
-                            <button @click="setBudget" class="btn-primary" title="Set your budget" aria-label="Set your budget">
-                                <i class="fas fa-save"></i> Set Budget
-                            </button>
+                    <div class="card-content">
+                        <div class="summary-items">
+                            <div class="summary-item">
+                                <span class="summary-label">Budget</span>
+                                <span class="summary-value text-primary">${{ budget }}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Total Expenses</span>
+                                <span class="summary-value text-danger">${{ totalExpenses }}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Remaining Balance</span>
+                                <span class="summary-value" :class="remainingBalance >= 0 ? 'text-success' : 'text-danger'">
+                                    ${{ remainingBalance }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="deduction-breakdown">
+                            <h3 class="breakdown-title">Expense Breakdown</h3>
+                            <div class="breakdown-items">
+                                <div class="breakdown-item">
+                                    <span>Weekly</span>
+                                    <span>${{ deductions.weekly }}</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span>Fortnightly</span>
+                                    <span>${{ deductions.fortnightly }}</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span>Monthly</span>
+                                    <span>${{ deductions.monthly }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- Summary and Next Deduction Grid -->
-                <div class="grid-tablet">
-                    <!-- Summary Section -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <i class="fas fa-chart-bar"></i> Financial Summary
-                            </h2>
+                <!-- Next Deduction -->
+                <section class="card next-deduction-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-calendar-check"></i>
                         </div>
-                        <div class="card-body">
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center p-3 bg-light rounded">
-                                    <span class="font-medium">Budget</span>
-                                    <span class="font-bold text-primary">${{ budget }}</span>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-light rounded">
-                                    <span class="font-medium">Total Expenses</span>
-                                    <span class="font-bold text-danger">${{ totalExpenses }}</span>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-light rounded">
-                                    <span class="font-medium">Remaining Balance</span>
-                                    <span class="font-bold" :class="remainingBalance >= 0 ? 'text-success' : 'text-danger'">
-                                        ${{ remainingBalance }}
-                                    </span>
-                                </div>
-                                <hr>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between text-sm">
-                                        <span>Weekly Expenses</span>
-                                        <span>${{ deductions.weekly }}</span>
-                                    </div>
-                                    <div class="flex justify-between text-sm">
-                                        <span>Fortnightly Expenses</span>
-                                        <span>${{ deductions.fortnightly }}</span>
-                                    </div>
-                                    <div class="flex justify-between text-sm">
-                                        <span>Monthly Expenses</span>
-                                        <span>${{ deductions.monthly }}</span>
-                                    </div>
-                                </div>
+                        <h2 class="card-title">Next Deduction</h2>
+                    </div>
+                    <div class="card-content">
+                        <div v-if="nextDeduction.name" class="next-deduction-content">
+                            <div class="deduction-detail">
+                                <span class="detail-label">Expense</span>
+                                <span class="detail-value">{{ nextDeduction.name }}</span>
                             </div>
+                            <div class="deduction-detail">
+                                <span class="detail-label">Amount</span>
+                                <span class="detail-value text-danger">${{ nextDeduction.amount }}</span>
+                            </div>
+                            <div class="deduction-detail">
+                                <span class="detail-label">Frequency</span>
+                                <span class="detail-value">{{ nextDeduction.frequency }}</span>
+                            </div>
+                            <div class="deduction-detail">
+                                <span class="detail-label">Day</span>
+                                <span class="detail-value">{{ nextDeduction.day }}</span>
+                            </div>
+                            <div class="next-due-highlight">
+                                <i class="fas fa-clock"></i>
+                                <span>{{ nextDeduction.nextDueDate }}</span>
+                            </div>
+                        </div>
+                        <div v-else class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-calendar-times"></i>
+                            </div>
+                            <p class="empty-text">No upcoming deductions</p>
                         </div>
                     </div>
-
-                    <!-- Next Deduction Section -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <i class="fas fa-calendar-check"></i> Next Deduction
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div v-if="nextDeduction.name" class="space-y-3">
-                                <div class="flex justify-between items-center p-3 bg-light rounded">
-                                    <span class="font-medium">Expense</span>
-                                    <span class="font-bold">{{ nextDeduction.name }}</span>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-light rounded">
-                                    <span class="font-medium">Amount</span>
-                                    <span class="font-bold text-danger">${{ nextDeduction.amount }}</span>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-light rounded">
-                                    <span class="font-medium">Frequency</span>
-                                    <span>{{ nextDeduction.frequency }}</span>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-light rounded">
-                                    <span class="font-medium">Day</span>
-                                    <span>{{ nextDeduction.day }}</span>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-info rounded text-white">
-                                    <span class="font-medium">Next Due</span>
-                                    <span class="font-bold">{{ nextDeduction.nextDueDate }}</span>
-                                </div>
-                            </div>
-                            <div v-else class="text-center py-8 text-secondary">
-                                <i class="fas fa-calendar-times fa-3x mb-4"></i>
-                                <p>No upcoming deductions</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </section>
             </div>
-        </div>
+        </main>
 
         <!-- Expenses Page -->
-        <div v-show="currentPage === 'expenses'" class="page-container">
-            <div class="container">
-                <!-- Add Expense Section -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-plus-circle"></i> {{ isEditing ? 'Edit Expense' : 'Add New Expense' }}
-                        </h2>
+        <main v-show="currentPage === 'expenses'" class="page-content">
+            <!-- Add/Edit Expense Form -->
+            <section class="card expense-form-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-plus-circle"></i>
                     </div>
-                    <div class="card-body">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="expense-name" class="form-label">Expense Name</label>
-                                <input type="text" id="expense-name" v-model="newExpense.name" placeholder="e.g., Groceries, Rent, Utilities" required aria-label="Expense Name">
+                    <h2 class="card-title">{{ isEditing ? 'Edit Expense' : 'Add New Expense' }}</h2>
+                </div>
+                <div class="card-content">
+                    <form @submit.prevent="addExpense" class="expense-form">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="expense-name" class="input-label">Expense Name</label>
+                                <input type="text" id="expense-name" v-model="newExpense.name" placeholder="e.g., Groceries, Rent, Utilities" required class="form-input">
                             </div>
-                            <div class="form-group">
-                                <label for="expense-amount" class="form-label">Amount ($)</label>
-                                <input type="number" id="expense-amount" v-model="newExpense.amount" placeholder="0.00" step="0.01" required aria-label="Expense Amount">
+                            <div class="input-group">
+                                <label for="expense-amount" class="input-label">Amount</label>
+                                <div class="input-wrapper">
+                                    <span class="input-prefix">$</span>
+                                    <input type="number" id="expense-amount" v-model="newExpense.amount" placeholder="0.00" step="0.01" required class="form-input">
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="expense-frequency" class="form-label">Frequency</label>
-                                <select id="expense-frequency" v-model="newExpense.frequency" aria-label="Expense Frequency">
+                            <div class="input-group">
+                                <label for="expense-frequency" class="input-label">Frequency</label>
+                                <select id="expense-frequency" v-model="newExpense.frequency" class="form-input">
                                     <option value="weekly">Weekly</option>
                                     <option value="fortnightly">Fortnightly</option>
                                     <option value="monthly">Monthly</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label for="expense-category" class="form-label">Category</label>
-                                <select id="expense-category" v-model="newExpense.category" aria-label="Expense Category">
+                            <div class="input-group">
+                                <label for="expense-category" class="input-label">Category</label>
+                                <select id="expense-category" v-model="newExpense.category" class="form-input">
                                     <option v-for="category in expenseCategories" :value="category.id" :key="category.id">
                                         {{ category.name }}
                                     </option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label for="expense-start-date" class="form-label">Start Date</label>
-                                <input type="date" id="expense-start-date" v-model="newExpense.startDate" aria-label="Expense Start Date">
+                            <div class="input-group">
+                                <label for="expense-start-date" class="input-label">Start Date</label>
+                                <input type="date" id="expense-start-date" v-model="newExpense.startDate" class="form-input">
                             </div>
-                            <div class="form-group">
-                                <label for="expense-day" class="form-label">Day of Week</label>
-                                <select id="expense-day" v-model="newExpense.day" aria-label="Expense Day">
+                            <div class="input-group">
+                                <label for="expense-day" class="input-label">Day of Week</label>
+                                <select id="expense-day" v-model="newExpense.day" class="form-input">
                                     <option value="monday">Monday</option>
                                     <option value="tuesday">Tuesday</option>
                                     <option value="wednesday">Wednesday</option>
@@ -191,174 +206,252 @@
                                     <option value="sunday">Sunday</option>
                                 </select>
                             </div>
-                            <button @click="addExpense" class="btn-success" title="Add a new expense" aria-label="Add a new expense">
-                                <i class="fas fa-plus"></i> {{ isEditing ? 'Update Expense' : 'Add Expense' }}
-                            </button>
                         </div>
-                    </div>
+                        <button type="submit" class="btn-success btn-full">
+                            <i class="fas fa-plus"></i>
+                            {{ isEditing ? 'Update Expense' : 'Add Expense' }}
+                        </button>
+                    </form>
                 </div>
+            </section>
 
-                <!-- Expenses List -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-list"></i> Your Expenses
-                        </h2>
+            <!-- Expenses List -->
+            <section class="card expenses-list-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-list"></i>
                     </div>
-                    <div class="card-body">
-                        <!-- Search and Filter Section -->
-                        <div class="search-filter-section" v-if="expenses.length > 0">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="search-expenses" class="form-label">Search Expenses</label>
-                                    <input type="text" id="search-expenses" v-model="searchQuery" placeholder="Search by name..." aria-label="Search expenses">
-                                </div>
-                                <div class="form-group">
-                                    <label for="filter-category" class="form-label">Filter by Category</label>
-                                    <select id="filter-category" v-model="categoryFilter" aria-label="Filter by category">
-                                        <option value="">All Categories</option>
-                                        <option v-for="category in expenseCategories" :value="category.id" :key="category.id">
-                                            {{ category.name }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="filter-frequency" class="form-label">Filter by Frequency</label>
-                                    <select id="filter-frequency" v-model="frequencyFilter" aria-label="Filter by frequency">
-                                        <option value="">All Frequencies</option>
-                                        <option value="weekly">Weekly</option>
-                                        <option value="fortnightly">Fortnightly</option>
-                                        <option value="monthly">Monthly</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="sort-by" class="form-label">Sort By</label>
-                                    <select id="sort-by" v-model="sortBy" aria-label="Sort expenses">
-                                        <option value="date-desc">Newest First</option>
-                                        <option value="date-asc">Oldest First</option>
-                                        <option value="amount-desc">Highest Amount</option>
-                                        <option value="amount-asc">Lowest Amount</option>
-                                        <option value="name-asc">Name A-Z</option>
-                                        <option value="name-desc">Name Z-A</option>
-                                    </select>
-                                </div>
+                    <h2 class="card-title">Your Expenses</h2>
+                </div>
+                <div class="card-content">
+                    <!-- Search and Filter Section -->
+                    <div v-if="expenses.length > 0" class="filters-section">
+                        <div class="filter-grid">
+                            <div class="input-group">
+                                <label for="search-expenses" class="input-label">Search</label>
+                                <input type="text" id="search-expenses" v-model="searchQuery" placeholder="Search expenses..." class="form-input">
                             </div>
-                            <div class="filter-actions">
-                                <button @click="clearFilters" class="btn-secondary">
-                                    <i class="fas fa-times"></i> Clear Filters
-                                </button>
-                                <span class="filter-results">{{ filteredExpenses.length }} of {{ expenses.length }} expenses</span>
+                            <div class="input-group">
+                                <label for="filter-category" class="input-label">Category</label>
+                                <select id="filter-category" v-model="categoryFilter" class="form-input">
+                                    <option value="">All Categories</option>
+                                    <option v-for="category in expenseCategories" :value="category.id" :key="category.id">
+                                        {{ category.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="filter-frequency" class="input-label">Frequency</label>
+                                <select id="filter-frequency" v-model="frequencyFilter" class="form-input">
+                                    <option value="">All Frequencies</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="fortnightly">Fortnightly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="sort-by" class="input-label">Sort By</label>
+                                <select id="sort-by" v-model="sortBy" class="form-input">
+                                    <option value="date-desc">Newest First</option>
+                                    <option value="date-asc">Oldest First</option>
+                                    <option value="amount-desc">Highest Amount</option>
+                                    <option value="amount-asc">Lowest Amount</option>
+                                    <option value="name-asc">Name A-Z</option>
+                                    <option value="name-desc">Name Z-A</option>
+                                </select>
                             </div>
                         </div>
-                        <div v-if="filteredExpenses.length === 0 && expenses.length > 0" class="text-center py-8 text-secondary">
-                            <i class="fas fa-search fa-3x mb-4"></i>
-                            <p>No expenses match your current filters.</p>
-                            <button @click="clearFilters" class="btn-secondary">Clear Filters</button>
+                        <div class="filter-footer">
+                            <button @click="clearFilters" class="btn-secondary">
+                                <i class="fas fa-times"></i>
+                                Clear Filters
+                            </button>
+                            <span class="filter-count">{{ filteredExpenses.length }} of {{ expenses.length }} expenses</span>
                         </div>
-                        <div v-else-if="expenses.length === 0" class="text-center py-8 text-secondary">
-                            <i class="fas fa-inbox fa-3x mb-4"></i>
-                            <p>No expenses added yet. Add your first expense above!</p>
+                    </div>
+
+                    <!-- Empty States -->
+                    <div v-if="filteredExpenses.length === 0 && expenses.length > 0" class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-search"></i>
                         </div>
-                        <ul v-else class="expense-list">
-                            <li v-for="(expense, index) in filteredExpenses" :key="expense.name + index" class="expense-item">
-                                <div class="expense-info">
-                                    <div class="expense-name">
-                                        <i :class="getCategoryById(expense.category).icon" :style="{ color: getCategoryById(expense.category).color }" class="mr-2"></i>
-                                        {{ expense.name }}
-                                    </div>
-                                    <div class="expense-details">
-                                        <span class="category-badge" :style="{ backgroundColor: getCategoryById(expense.category).color }">
-                                            <i :class="getCategoryById(expense.category).icon"></i>
+                        <h3 class="empty-title">No matching expenses</h3>
+                        <p class="empty-text">Try adjusting your filters or search terms.</p>
+                        <button @click="clearFilters" class="btn-secondary">Clear Filters</button>
+                    </div>
+                    <div v-else-if="expenses.length === 0" class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <h3 class="empty-title">No expenses yet</h3>
+                        <p class="empty-text">Add your first expense using the form above.</p>
+                    </div>
+
+                    <!-- Expenses List -->
+                    <div v-else class="expenses-list">
+                        <div v-for="(expense, index) in filteredExpenses" :key="expense.name + index" class="expense-card">
+                            <div class="expense-header">
+                                <div class="expense-icon" :style="{ backgroundColor: getCategoryById(expense.category).color }">
+                                    <i :class="getCategoryById(expense.category).icon"></i>
+                                </div>
+                                <div class="expense-main">
+                                    <h3 class="expense-name">{{ expense.name }}</h3>
+                                    <div class="expense-meta">
+                                        <span class="category-tag" :style="{ backgroundColor: getCategoryById(expense.category).color }">
                                             {{ getCategoryById(expense.category).name }}
                                         </span>
-                                        <span><i class="fas fa-calendar-alt"></i> {{ expense.frequency }}</span>
-                                        <span><i class="fas fa-calendar-day"></i> {{ expense.day }}</span>
-                                        <span v-if="expense.startDate"><i class="fas fa-calendar"></i> Started {{ formatDate(expense.startDate) }}</span>
+                                        <span class="frequency-tag">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            {{ expense.frequency }}
+                                        </span>
+                                        <span class="day-tag">
+                                            <i class="fas fa-calendar-day"></i>
+                                            {{ expense.day }}
+                                        </span>
                                     </div>
                                 </div>
-                                <div class="expense-amount">${{ expense.amount }}</div>
-                                <div class="expense-actions">
-                                    <button @click="editExpense(index)" class="btn-warning edit-expense" aria-label="Edit Expense" title="Edit this expense">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button @click="deleteExpense(index)" class="btn-danger" aria-label="Delete Expense" title="Delete this expense">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                <div class="expense-amount">
+                                    <span class="amount-value">${{ expense.amount }}</span>
                                 </div>
-                            </li>
-                        </ul>
-                        <div class="mt-4 flex gap-2 flex-wrap">
-                            <button @click="calculateTotalExpenses" class="btn-primary" title="Calculate total expenses" aria-label="Calculate total expenses">
-                                <i class="fas fa-calculator"></i> Calculate Totals
-                            </button>
-                            <button @click="exportToCSV" class="btn-success" title="Export expenses to CSV" aria-label="Export to CSV">
-                                <i class="fas fa-download"></i> Export CSV
-                            </button>
-                            <label for="csv-import" class="btn-secondary" title="Import expenses from CSV" style="cursor: pointer;">
-                                <i class="fas fa-upload"></i> Import CSV
-                            </label>
-                            <input type="file" id="csv-import" accept=".csv" @change="importFromCSV" style="display: none;">
-                            <button @click="backupData" class="btn-info" title="Backup all data" aria-label="Backup data">
-                                <i class="fas fa-save"></i> Backup Data
-                            </button>
-                            <button @click="clearAllExpenses" class="btn-danger" title="Clear all expenses" aria-label="Clear all expenses">
-                                <i class="fas fa-trash-alt"></i> Clear All
-                            </button>
+                            </div>
+                            <div v-if="expense.startDate" class="expense-footer">
+                                <span class="start-date">
+                                    <i class="fas fa-calendar"></i>
+                                    Started {{ formatDate(expense.startDate) }}
+                                </span>
+                            </div>
+                            <div class="expense-actions">
+                                <button @click="editExpense(index)" class="btn-icon btn-warning">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button @click="deleteExpense(index)" class="btn-icon btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Action Buttons -->
+                    <div v-if="expenses.length > 0" class="action-buttons">
+                        <button @click="calculateTotalExpenses" class="btn-primary">
+                            <i class="fas fa-calculator"></i>
+                            Calculate Totals
+                        </button>
+                        <button @click="exportToCSV" class="btn-success">
+                            <i class="fas fa-download"></i>
+                            Export CSV
+                        </button>
+                        <label for="csv-import" class="btn-secondary">
+                            <i class="fas fa-upload"></i>
+                            Import CSV
+                        </label>
+                        <input type="file" id="csv-import" accept=".csv" @change="importFromCSV" style="display: none;">
+                        <button @click="backupData" class="btn-info">
+                            <i class="fas fa-save"></i>
+                            Backup Data
+                        </button>
+                        <button @click="clearAllExpenses" class="btn-danger">
+                            <i class="fas fa-trash-alt"></i>
+                            Clear All
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
 
         <!-- Analytics Page -->
-        <div v-show="currentPage === 'analytics'" class="page-container">
-            <div class="container">
-                <!-- Charts Section -->
-                <div class="card" v-if="expenses.length > 0">
+        <main v-show="currentPage === 'analytics'" class="page-content">
+            <!-- Analytics Content -->
+            <section v-if="expenses.length > 0" class="analytics-section">
+                <!-- Charts Grid -->
+                <div class="charts-grid">
+                    <!-- Category Breakdown Pie Chart -->
+                    <section class="card chart-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <h2 class="card-title">Expenses by Category</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-wrapper">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Frequency Breakdown Bar Chart -->
+                    <section class="card chart-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <h2 class="card-title">Expenses by Frequency</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-wrapper">
+                                <canvas id="frequencyChart"></canvas>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Budget vs Actual Comparison -->
+                <section v-if="budget > 0" class="card budget-comparison-card">
                     <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-chart-pie"></i> Expense Analytics
-                        </h2>
+                        <div class="card-icon">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <h2 class="card-title">Budget vs Actual Spending</h2>
                     </div>
-                    <div class="card-body">
-                        <div class="grid-tablet">
-                            <!-- Category Breakdown Pie Chart -->
-                            <div class="chart-container">
-                                <h3 class="text-lg font-semibold mb-4">Expenses by Category</h3>
-                                <canvas id="categoryChart" width="300" height="300"></canvas>
+                    <div class="card-content">
+                        <div class="budget-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill budget-fill" :style="{ width: budgetPercentage + '%' }"></div>
+                                <div class="progress-fill actual-fill" :style="{ width: actualPercentage + '%' }"></div>
                             </div>
-
-                            <!-- Frequency Breakdown Bar Chart -->
-                            <div class="chart-container">
-                                <h3 class="text-lg font-semibold mb-4">Expenses by Frequency</h3>
-                                <canvas id="frequencyChart" width="300" height="300"></canvas>
+                            <div class="progress-labels">
+                                <span class="progress-label">
+                                    <span class="label-dot budget-dot"></span>
+                                    Budget: ${{ budget }}
+                                </span>
+                                <span class="progress-label">
+                                    <span class="label-dot actual-dot"></span>
+                                    Spent: ${{ totalExpenses }}
+                                </span>
                             </div>
                         </div>
-
-                        <!-- Budget vs Actual Comparison -->
-                        <div class="mt-6" v-if="budget > 0">
-                            <h3 class="text-lg font-semibold mb-4">Budget vs Actual Spending</h3>
-                            <div class="budget-comparison">
-                                <div class="comparison-bar">
-                                    <div class="budget-fill" :style="{ width: budgetPercentage + '%' }"></div>
-                                    <div class="actual-fill" :style="{ width: actualPercentage + '%' }"></div>
-                                </div>
-                                <div class="comparison-labels mt-2 flex justify-between text-sm">
-                                    <span>Budget: ${{ budget }}</span>
-                                    <span>Spent: ${{ totalExpenses }}</span>
-                                </div>
+                        <div class="budget-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Remaining</span>
+                                <span class="stat-value" :class="remainingBalance >= 0 ? 'text-success' : 'text-danger'">
+                                    ${{ remainingBalance }}
+                                </span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Utilization</span>
+                                <span class="stat-value">{{ Math.round((totalExpenses / budget) * 100) }}%</span>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div v-else class="card">
-                    <div class="card-body text-center py-8 text-secondary">
-                        <i class="fas fa-chart-bar fa-3x mb-4"></i>
-                        <p>No expenses to analyze yet. Add some expenses to see your analytics!</p>
+                </section>
+            </section>
+
+            <!-- Empty State -->
+            <section v-else class="empty-analytics">
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-chart-bar"></i>
                     </div>
+                    <h2 class="empty-title">No Analytics Yet</h2>
+                    <p class="empty-text">Add some expenses to see detailed analytics and insights about your spending patterns.</p>
+                    <button @click="switchPage('expenses')" class="btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Add Your First Expense
+                    </button>
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
 
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
