@@ -32,6 +32,76 @@ document.addEventListener('DOMContentLoaded', function() {
         icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     }
 
+    // PWA Installation functionality
+    let deferredPrompt;
+    const installBanner = document.getElementById('pwa-install-banner');
+    const installBtn = document.getElementById('install-btn');
+    const dismissBtn = document.getElementById('dismiss-btn');
+
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        // App is already installed, hide banner
+        installBanner.style.display = 'none';
+    }
+
+    // Listen for the beforeinstallprompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('PWA: Install prompt triggered');
+        // Prevent the mini-infobar from appearing on mobile
+        e.preventDefault();
+        // Stash the event so it can be triggered later
+        deferredPrompt = e;
+
+        // Show the install banner after a short delay
+        setTimeout(() => {
+            // Check if user has already dismissed the banner
+            const dismissed = localStorage.getItem('pwa-install-dismissed');
+            if (!dismissed) {
+                installBanner.style.display = 'block';
+            }
+        }, 3000); // Show after 3 seconds
+    });
+
+    // Handle install button click
+    installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) {
+            console.log('PWA: Install prompt not available');
+            return;
+        }
+
+        // Show the install prompt
+        deferredPrompt.prompt();
+
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+
+        console.log(`PWA: User response to install prompt: ${outcome}`);
+
+        // Reset the deferred prompt variable
+        deferredPrompt = null;
+
+        // Hide the banner
+        installBanner.style.display = 'none';
+    });
+
+    // Handle dismiss button click
+    dismissBtn.addEventListener('click', () => {
+        installBanner.style.display = 'none';
+        // Remember that user dismissed the banner
+        localStorage.setItem('pwa-install-dismissed', 'true');
+    });
+
+    // Listen for successful installation
+    window.addEventListener('appinstalled', (evt) => {
+        console.log('PWA: App was installed successfully');
+        installBanner.style.display = 'none';
+    });
+
+    // Check if running in standalone mode (already installed)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('PWA: Running in standalone mode');
+    }
+
     new Vue({
         el: '#app',
         data: {

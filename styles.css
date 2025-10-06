@@ -1531,3 +1531,255 @@ button:focus {
         background: var(--primary-color);
     }
 }
+
+/* ===== PWA INSTALL BANNER ===== */
+
+.pwa-install-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, var(--primary-color), #0056b3);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 2000;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+}
+
+.pwa-install-banner.show {
+    transform: translateY(0);
+}
+
+.install-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.install-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-lg);
+    margin-right: var(--spacing-md);
+}
+
+.install-text {
+    flex: 1;
+}
+
+.install-text h3 {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+}
+
+.install-text p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    opacity: 0.9;
+}
+
+.install-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-left: var(--spacing-md);
+}
+
+.install-actions .btn-primary,
+.install-actions .btn-secondary {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--font-size-sm);
+    min-height: 36px;
+}
+
+/* Mobile adjustments for install banner */
+@media (max-width: 767px) {
+    .install-banner-content {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-md);
+    }
+
+    .install-icon {
+        margin-right: 0;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .install-actions {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .install-actions .btn-primary,
+    .install-actions .btn-secondary {
+        flex: 1;
+    }
+}
+
+/* ===== iOS PWA ENHANCEMENTS ===== */
+
+/* iOS Safari specific styles */
+@supports (-webkit-touch-callout: none) {
+    /* iOS specific viewport fixes */
+    .page-content {
+        padding-bottom: calc(var(--spacing-xl) + 80px + env(safe-area-inset-bottom));
+    }
+
+    .bottom-nav {
+        padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    }
+
+    /* iOS status bar spacing */
+    body {
+        padding-top: env(safe-area-inset-top);
+    }
+
+    .app-header {
+        padding-top: calc(var(--spacing-xl) + env(safe-area-inset-top));
+    }
+}
+
+/* iOS standalone mode adjustments */
+@media all and (display-mode: standalone) {
+    /* Hide browser UI when in standalone mode */
+    .theme-toggle {
+        top: calc(10px + env(safe-area-inset-top));
+    }
+
+    .pwa-install-banner {
+        display: none !important;
+    }
+}
+
+/* ===== OFFLINE EXPERIENCE ===== */
+
+.offline-indicator {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--danger-color);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    box-shadow: var(--shadow);
+    z-index: 1500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.offline-indicator.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ===== PWA INSTALLATION INSTRUCTIONS ===== */
+
+/* Add installation instructions for users */
+.install-instructions {
+    position: fixed;
+    bottom: 100px;
+    left: var(--spacing-lg);
+    right: var(--spacing-lg);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 1500;
+    max-height: 60vh;
+    overflow-y: auto;
+    display: none;
+}
+
+.install-instructions.show {
+    display: block;
+}
+
+.install-instructions h3 {
+    margin-top: 0;
+    color: var(--text-color);
+}
+
+.install-steps {
+    margin: var(--spacing-md) 0;
+}
+
+.install-step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-sm);
+}
+
+.step-number {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    flex-shrink: 0;
+}
+
+.step-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-color);
+    line-height: 1.4;
+}
+
+.install-close {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    font-size: var(--font-size-lg);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+}
+
+/* ===== PWA SUCCESS INDICATOR ===== */
+
+.pwa-installed-badge {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--success-color);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    box-shadow: var(--shadow);
+    z-index: 1500;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+}
+
+.pwa-installed-badge.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.pwa-installed-badge i {
+    margin-right: var(--spacing-xs);
+}
