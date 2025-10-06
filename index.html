@@ -17,95 +17,324 @@
     <link rel="stylesheet" href="styles.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script> <!-- Add Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Add Chart.js -->
     <link rel="manifest" href="manifest.json"> <!-- Link to the manifest file -->
     <script src="indexeddb.js"></script> <!-- Add IndexedDB script -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ics/2.20.0/ics.min.js"></script> <!-- Add ics library -->
     <title>Budget App</title>
 </head>
-<body class="bg-gray-100">
+<body>
+    <!-- Dark Mode Toggle -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <i class="fas fa-moon"></i>
+    </button>
+
     <div id="app">
-        <header class="text-center py-4">
-            <h1 class="text-4xl font-bold text-white">
-                Budget App
-            </h1>
+        <header>
+            <h1>Budget Expense Tracker</h1>
         </header>
-        <div class="container mx-auto mt-4 bg-white p-6 rounded-lg shadow-md">
-            <div class="budget-input mb-4">
-                <label for="budget" class="font-bold text-lg"><i class="fas fa-money-bill-wave"></i> Budget</label>
-                <input type="number" v-model="budget" class="border border-gray-300 p-2 rounded w-full" placeholder="Enter your budget" required aria-label="Enter your budget">
-                <button @click="setBudget" class="pretty-blue text-white p-2 rounded hover:bg-blue-600 transition duration-300 mt-2" title="Set your budget" aria-label="Set your budget">
-                    <i class="fas fa-pencil-alt"></i> Set Budget
-                </button>
-            </div>
-            <div class="expense-input mb-4">
-                <label for="expense-name" class="font-bold text-lg"><i class="fas fa-tag"></i> Expense Name</label>
-                <input type="text" v-model="newExpense.name" class="border border-gray-300 p-2 rounded w-full" placeholder="Groceries, Rent, etc." required aria-label="Expense Name">
-                <label for="expense-amount" class="font-bold text-lg"><i class="fas fa-money-bill-wave"></i> Expense Amount</label>
-                <input type="number" v-model="newExpense.amount" class="border border-gray-300 p-2 rounded w-full" placeholder="Amount" required aria-label="Expense Amount">
-                <label for="expense-frequency" class="font-bold text-lg"><i class="fas fa-calendar-alt"></i> Expense Frequency</label>
-                <select v-model="newExpense.frequency" class="border border-gray-300 p-2 rounded w-full mb-2" aria-label="Expense Frequency">
-                    <option value="weekly">Weekly</option>
-                    <option value="fortnightly">Fortnightly</option>
-                    <option value="monthly">Monthly</option>
-                </select>
-                <label for="expense-day" class="font-bold text-lg"><i class="fas fa-calendar-day"></i> Expense Day</label>
-                <select v-model="newExpense.day" class="border border-gray-300 p-2 rounded w-full mb-2" aria-label="Expense Day">
-                    <option value="monday">Monday</option>
-                    <option value="tuesday">Tuesday</option>
-                    <option value="wednesday">Wednesday</option>
-                    <option value="thursday">Thursday</option>
-                    <option value="friday">Friday</option>
-                    <option value="saturday">Saturday</option>
-                    <option value="sunday">Sunday</option>
-                </select>
-                <button @click="addExpense" class="pretty-blue text-white p-2 rounded hover:bg-blue-600 transition duration-300 mt-2" title="Add a new expense" aria-label="Add a new expense">
-                    <i class="fas fa-plus"></i> {{ isEditing ? 'Edit Expense' : 'Add Expense' }}
-                </button>
-            </div>
-            <ul id="expense-list" class="list-disc pl-4 pr-4 border border-gray-300 rounded-lg p-4 bg-gray-50">
-                <li v-for="(expense, index) in expenses" :key="index" class="flex flex-row justify-between items-center border-b border-gray-200 py-2 w-full">
-                    <span class="expense-name font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">{{ expense.name }}</span>
-                    <span class="expense-amount font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">${{ expense.amount }}</span>
-                    <span class="expense-frequency font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">{{ expense.frequency }}</span>
-                    <span class="expense-day font-bold text-lg text-gray-800 hover:text-gray-600 transition duration-300">{{ expense.day }}</span>
-                    <div class="flex space-x-2 mt-2 md:mt-0">
-                        <button @click="editExpense(index)" class="edit-expense bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300" aria-label="Edit Expense" title="Edit this expense"><i class="fas fa-edit"></i></button>
-                        <button @click="saveEdits" class="save-expense bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300" aria-label="Save Expense" title="Save this expense" style="display: none;"><i class="fas fa-save"></i></button>
-                        <button @click="deleteExpense(index)" class="delete-expense bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300" aria-label="Delete Expense" title="Delete this expense"><i class="fas fa-trash"></i></button>
+        <div class="container">
+            <!-- Budget Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-money-bill-wave"></i> Set Your Budget
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="budget" class="form-label">Monthly Budget Amount</label>
+                        <input type="number" id="budget" v-model="budget" placeholder="Enter your monthly budget" required aria-label="Enter your budget">
+                        <button @click="setBudget" class="btn-primary" title="Set your budget" aria-label="Set your budget">
+                            <i class="fas fa-save"></i> Set Budget
+                        </button>
                     </div>
-                </li>
-            </ul>
-            <div class="budget-input mb-4">
-                <button @click="calculateTotalExpenses" class="pretty-blue text-white p-2 rounded hover:bg-blue-600 transition duration-300" title="Calculate total expenses" aria-label="Calculate total expenses">
-                    Calculate Total Expenses
-                </button>
-                <button @click="clearAllExpenses" class="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300" title="Clear all expenses" aria-label="Clear all expenses">
-                    Clear All Expenses
-                </button>
-            </div>
-            <div class="summary mt-6 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
-                <h2 class="font-bold text-xl">
-                    <i class="fas fa-clipboard-list"></i> Summary
-                </h2>
-                <div class="flex flex-col space-y-2 mt-4">
-                    <p class="font-bold text-lg text-green-600">Total Weekly Expenses: $<span>{{ deductions.weekly }}</span></p>
-                    <p class="font-bold text-lg text-green-600">Total Fortnightly Expenses: $<span>{{ deductions.fortnightly }}</span></p>
-                    <p class="font-bold text-lg text-green-600">Total Monthly Expenses: $<span>{{ deductions.monthly }}</span></p>
-                    <p class="font-bold text-lg text-green-600">Total Expenses: $<span>{{ totalExpenses }}</span></p>
-                    <p class="font-bold text-lg text-green-600">Remaining Balance: $<span>{{ remainingBalance }}</span></p>
-                    <p class="font-bold text-lg text-green-600">Budget: $<span>{{ budget }}</span></p>
                 </div>
             </div>
-            <div class="next-deduction mt-6 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
-                <h2 class="font-bold text-xl">
-                    <i class="fas fa-calendar-day"></i> Next Upcoming Deduction
-                </h2>
-                <div class="flex flex-col space-y-2 mt-4">
-                    <p class="font-bold text-lg text-blue-600">Expense Name: <span>{{ nextDeduction.name }}</span></p>
-                    <p class="font-bold text-lg text-blue-600">Amount: $<span>{{ nextDeduction.amount }}</span></p>
-                    <p class="font-bold text-lg text-blue-600">Frequency: <span>{{ nextDeduction.frequency }}</span></p>
-                    <p class="font-bold text-lg text-blue-600">Day: <span>{{ nextDeduction.day }}</span></p>
-                    <p class="font-bold text-lg text-blue-600">Next Due Date: <span>{{ nextDeduction.nextDueDate }}</span></p>
+
+            <!-- Add Expense Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-plus-circle"></i> {{ isEditing ? 'Edit Expense' : 'Add New Expense' }}
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expense-name" class="form-label">Expense Name</label>
+                            <input type="text" id="expense-name" v-model="newExpense.name" placeholder="e.g., Groceries, Rent, Utilities" required aria-label="Expense Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-amount" class="form-label">Amount ($)</label>
+                            <input type="number" id="expense-amount" v-model="newExpense.amount" placeholder="0.00" step="0.01" required aria-label="Expense Amount">
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-frequency" class="form-label">Frequency</label>
+                            <select id="expense-frequency" v-model="newExpense.frequency" aria-label="Expense Frequency">
+                                <option value="weekly">Weekly</option>
+                                <option value="fortnightly">Fortnightly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-category" class="form-label">Category</label>
+                            <select id="expense-category" v-model="newExpense.category" aria-label="Expense Category">
+                                <option v-for="category in expenseCategories" :value="category.id" :key="category.id">
+                                    {{ category.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-start-date" class="form-label">Start Date</label>
+                            <input type="date" id="expense-start-date" v-model="newExpense.startDate" aria-label="Expense Start Date">
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-day" class="form-label">Day of Week</label>
+                            <select id="expense-day" v-model="newExpense.day" aria-label="Expense Day">
+                                <option value="monday">Monday</option>
+                                <option value="tuesday">Tuesday</option>
+                                <option value="wednesday">Wednesday</option>
+                                <option value="thursday">Thursday</option>
+                                <option value="friday">Friday</option>
+                                <option value="saturday">Saturday</option>
+                                <option value="sunday">Sunday</option>
+                            </select>
+                        </div>
+                        <button @click="addExpense" class="btn-success" title="Add a new expense" aria-label="Add a new expense">
+                            <i class="fas fa-plus"></i> {{ isEditing ? 'Update Expense' : 'Add Expense' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expenses List -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-list"></i> Your Expenses
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <!-- Search and Filter Section -->
+                    <div class="search-filter-section" v-if="expenses.length > 0">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="search-expenses" class="form-label">Search Expenses</label>
+                                <input type="text" id="search-expenses" v-model="searchQuery" placeholder="Search by name..." aria-label="Search expenses">
+                            </div>
+                            <div class="form-group">
+                                <label for="filter-category" class="form-label">Filter by Category</label>
+                                <select id="filter-category" v-model="categoryFilter" aria-label="Filter by category">
+                                    <option value="">All Categories</option>
+                                    <option v-for="category in expenseCategories" :value="category.id" :key="category.id">
+                                        {{ category.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="filter-frequency" class="form-label">Filter by Frequency</label>
+                                <select id="filter-frequency" v-model="frequencyFilter" aria-label="Filter by frequency">
+                                    <option value="">All Frequencies</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="fortnightly">Fortnightly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="sort-by" class="form-label">Sort By</label>
+                                <select id="sort-by" v-model="sortBy" aria-label="Sort expenses">
+                                    <option value="date-desc">Newest First</option>
+                                    <option value="date-asc">Oldest First</option>
+                                    <option value="amount-desc">Highest Amount</option>
+                                    <option value="amount-asc">Lowest Amount</option>
+                                    <option value="name-asc">Name A-Z</option>
+                                    <option value="name-desc">Name Z-A</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-actions">
+                            <button @click="clearFilters" class="btn-secondary">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                            <span class="filter-results">{{ filteredExpenses.length }} of {{ expenses.length }} expenses</span>
+                        </div>
+                    </div>
+                    <div v-if="filteredExpenses.length === 0 && expenses.length > 0" class="text-center py-8 text-secondary">
+                        <i class="fas fa-search fa-3x mb-4"></i>
+                        <p>No expenses match your current filters.</p>
+                        <button @click="clearFilters" class="btn-secondary">Clear Filters</button>
+                    </div>
+                    <div v-else-if="expenses.length === 0" class="text-center py-8 text-secondary">
+                        <i class="fas fa-inbox fa-3x mb-4"></i>
+                        <p>No expenses added yet. Add your first expense above!</p>
+                    </div>
+                    <ul v-else class="expense-list">
+                        <li v-for="(expense, index) in filteredExpenses" :key="expense.name + index" class="expense-item">
+                            <div class="expense-info">
+                                <div class="expense-name">
+                                    <i :class="getCategoryById(expense.category).icon" :style="{ color: getCategoryById(expense.category).color }" class="mr-2"></i>
+                                    {{ expense.name }}
+                                </div>
+                                <div class="expense-details">
+                                    <span class="category-badge" :style="{ backgroundColor: getCategoryById(expense.category).color }">
+                                        <i :class="getCategoryById(expense.category).icon"></i>
+                                        {{ getCategoryById(expense.category).name }}
+                                    </span>
+                                    <span><i class="fas fa-calendar-alt"></i> {{ expense.frequency }}</span>
+                                    <span><i class="fas fa-calendar-day"></i> {{ expense.day }}</span>
+                                    <span v-if="expense.startDate"><i class="fas fa-calendar"></i> Started {{ formatDate(expense.startDate) }}</span>
+                                </div>
+                            </div>
+                            <div class="expense-amount">${{ expense.amount }}</div>
+                            <div class="expense-actions">
+                                <button @click="editExpense(index)" class="btn-warning edit-expense" aria-label="Edit Expense" title="Edit this expense">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button @click="deleteExpense(index)" class="btn-danger" aria-label="Delete Expense" title="Delete this expense">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="mt-4 flex gap-2 flex-wrap">
+                        <button @click="calculateTotalExpenses" class="btn-primary" title="Calculate total expenses" aria-label="Calculate total expenses">
+                            <i class="fas fa-calculator"></i> Calculate Totals
+                        </button>
+                        <button @click="exportToCSV" class="btn-success" title="Export expenses to CSV" aria-label="Export to CSV">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                        <label for="csv-import" class="btn-secondary" title="Import expenses from CSV" style="cursor: pointer;">
+                            <i class="fas fa-upload"></i> Import CSV
+                        </label>
+                        <input type="file" id="csv-import" accept=".csv" @change="importFromCSV" style="display: none;">
+                        <button @click="backupData" class="btn-info" title="Backup all data" aria-label="Backup data">
+                            <i class="fas fa-save"></i> Backup Data
+                        </button>
+                        <button @click="clearAllExpenses" class="btn-danger" title="Clear all expenses" aria-label="Clear all expenses">
+                            <i class="fas fa-trash-alt"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary and Next Deduction Grid -->
+            <div class="grid-tablet">
+                <!-- Summary Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-chart-bar"></i> Financial Summary
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-light rounded">
+                                <span class="font-medium">Budget</span>
+                                <span class="font-bold text-primary">${{ budget }}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-light rounded">
+                                <span class="font-medium">Total Expenses</span>
+                                <span class="font-bold text-danger">${{ totalExpenses }}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-light rounded">
+                                <span class="font-medium">Remaining Balance</span>
+                                <span class="font-bold" :class="remainingBalance >= 0 ? 'text-success' : 'text-danger'">
+                                    ${{ remainingBalance }}
+                                </span>
+                            </div>
+                            <hr>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span>Weekly Expenses</span>
+                                    <span>${{ deductions.weekly }}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span>Fortnightly Expenses</span>
+                                    <span>${{ deductions.fortnightly }}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span>Monthly Expenses</span>
+                                    <span>${{ deductions.monthly }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Deduction Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-calendar-check"></i> Next Deduction
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div v-if="nextDeduction.name" class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-light rounded">
+                                <span class="font-medium">Expense</span>
+                                <span class="font-bold">{{ nextDeduction.name }}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-light rounded">
+                                <span class="font-medium">Amount</span>
+                                <span class="font-bold text-danger">${{ nextDeduction.amount }}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-light rounded">
+                                <span class="font-medium">Frequency</span>
+                                <span>{{ nextDeduction.frequency }}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-light rounded">
+                                <span class="font-medium">Day</span>
+                                <span>{{ nextDeduction.day }}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-info rounded text-white">
+                                <span class="font-medium">Next Due</span>
+                                <span class="font-bold">{{ nextDeduction.nextDueDate }}</span>
+                            </div>
+                        </div>
+                        <div v-else class="text-center py-8 text-secondary">
+                            <i class="fas fa-calendar-times fa-3x mb-4"></i>
+                            <p>No upcoming deductions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="card" v-if="expenses.length > 0">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-chart-pie"></i> Expense Analytics
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="grid-tablet">
+                        <!-- Category Breakdown Pie Chart -->
+                        <div class="chart-container">
+                            <h3 class="text-lg font-semibold mb-4">Expenses by Category</h3>
+                            <canvas id="categoryChart" width="300" height="300"></canvas>
+                        </div>
+
+                        <!-- Frequency Breakdown Bar Chart -->
+                        <div class="chart-container">
+                            <h3 class="text-lg font-semibold mb-4">Expenses by Frequency</h3>
+                            <canvas id="frequencyChart" width="300" height="300"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Budget vs Actual Comparison -->
+                    <div class="mt-6" v-if="budget > 0">
+                        <h3 class="text-lg font-semibold mb-4">Budget vs Actual Spending</h3>
+                        <div class="budget-comparison">
+                            <div class="comparison-bar">
+                                <div class="budget-fill" :style="{ width: budgetPercentage + '%' }"></div>
+                                <div class="actual-fill" :style="{ width: actualPercentage + '%' }"></div>
+                            </div>
+                            <div class="comparison-labels mt-2 flex justify-between text-sm">
+                                <span>Budget: ${{ budget }}</span>
+                                <span>Spent: ${{ totalExpenses }}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
