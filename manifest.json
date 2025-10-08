@@ -2,7 +2,7 @@
   "name": "Budget Expense Tracker",
   "short_name": "Budget Tracker",
   "description": "Professional budget and expense management app with analytics",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f7fafc",
   "theme_color": "#007bff",
@@ -65,7 +65,7 @@
       "name": "Add Expense",
       "short_name": "Add Expense",
       "description": "Quickly add a new expense",
-      "url": "/index.html#expenses",
+      "url": "./index.html#expenses",
       "icons": [
         {
           "src": "icons/icon-96x96.png",
@@ -77,7 +77,7 @@
       "name": "View Analytics",
       "short_name": "Analytics",
       "description": "Check your spending analytics",
-      "url": "/index.html#analytics",
+      "url": "./index.html#analytics",
       "icons": [
         {
           "src": "icons/icon-96x96.png",
