@@ -12,50 +12,58 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Budget App">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2" defer></script>
     <link rel="manifest" href="manifest.json">
     <title>Budget Expense Tracker</title>
 </head>
 <body>
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- ARIA Live Region for Screen Reader Announcements -->
+    <div id="sr-announcements" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="sr-alerts" class="sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+    
     <!-- PWA Install Banner -->
-    <div id="pwa-install-banner" class="pwa-install-banner" style="display: none;">
+    <div id="pwa-install-banner" class="pwa-install-banner" style="display: none;" role="dialog" aria-labelledby="install-title" aria-describedby="install-desc">
         <div class="install-banner-content">
-            <div class="install-icon">
-                <i class="fas fa-mobile-alt"></i>
+            <div class="install-icon" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
             </div>
             <div class="install-text">
-                <h3>Add to Home Screen</h3>
-                <p>Install our app for the best experience!</p>
+                <h3 id="install-title">Add to Home Screen</h3>
+                <p id="install-desc">Install our app for the best experience!</p>
             </div>
             <div class="install-actions">
-                <button id="install-btn" class="btn-primary">Install</button>
-                <button id="dismiss-btn" class="btn-secondary">Not Now</button>
+                <button id="install-btn" class="btn-primary" aria-label="Install app">Install</button>
+                <button id="dismiss-btn" class="btn-secondary" aria-label="Dismiss install prompt">Not Now</button>
             </div>
         </div>
     </div>
 
     <div id="app">
-        <header class="app-header">
+        <header class="app-header" role="banner">
             <h1>Budget Expense Tracker</h1>
             <div class="header-controls">
-                <button class="color-picker-btn" id="color-picker-btn" aria-label="Customize theme color">
-                    <i class="fas fa-palette"></i>
+                <button class="color-picker-btn" id="color-picker-btn" aria-label="Customize theme color" aria-haspopup="true" aria-expanded="false">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
                 </button>
-                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
-                    <i class="fas fa-moon"></i>
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
                 </button>
             </div>
         </header>
 
         <!-- Color Picker Panel -->
-        <div class="color-picker-panel" id="color-picker-panel">
+        <div class="color-picker-panel" id="color-picker-panel" role="dialog" aria-labelledby="color-picker-title" aria-hidden="true">
             <div class="color-picker-header">
-                <h3>Theme Color</h3>
-                <button class="color-picker-close" id="color-picker-close">
-                    <i class="fas fa-times"></i>
+                <h3 id="color-picker-title">Theme Color</h3>
+                <button class="color-picker-close" id="color-picker-close" aria-label="Close color picker">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
             </div>
             <div class="color-presets">
@@ -96,12 +104,12 @@
         <!-- Dashboard Page -->
         <main v-show="currentPage === 'dashboard'" class="page-content">
             <!-- Budget Section -->
-            <section class="card budget-card">
+            <section class="card budget-card" aria-labelledby="budget-card-title">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-money-bill-wave"></i>
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
                     </div>
-                    <h2 class="card-title">{{ budgetEnabled ? 'Set Your Budget' : 'Expense Tracking Mode' }}</h2>
+                    <h2 class="card-title" id="budget-card-title">{{ budgetEnabled ? 'Set Your Budget' : 'Expense Tracking Mode' }}</h2>
                 </div>
                 <div class="card-content">
                     <!-- Budget Mode Toggle -->
@@ -124,16 +132,16 @@
                             <label for="budget" class="input-label">Monthly Budget Amount</label>
                             <div class="input-wrapper">
                                 <span class="input-prefix">{{ getCurrencySymbol() }}</span>
-                                <input type="number" id="budget" v-model="budget" placeholder="0.00" step="0.01" class="form-input" inputmode="decimal" autocomplete="off">
+                                <input type="number" id="budget" v-model="budget" placeholder="0.00" step="0.01" class="form-input" inputmode="decimal" autocomplete="off" aria-label="Budget amount">
                             </div>
                         </div>
                         <div class="budget-actions">
                             <button type="submit" class="btn-primary">
-                                <i class="fas fa-save"></i>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
                                 Set Budget
                             </button>
                             <button v-if="budget > 0" type="button" @click="clearBudget" class="btn-secondary">
-                                <i class="fas fa-times"></i>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                                 Clear
                             </button>
                         </div>
@@ -141,8 +149,8 @@
                     
                     <!-- Expense-only mode message -->
                     <div v-else class="expense-only-info">
-                        <div class="info-icon">
-                            <i class="fas fa-info-circle"></i>
+                        <div class="info-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                         </div>
                         <p>You're in expense-tracking mode. Add expenses and see your spending breakdown without setting a budget limit. Enable budget tracking above if you want to set spending limits.</p>
                     </div>
@@ -166,8 +174,8 @@
             <!-- Quick Insights Panel -->
             <section v-if="spendingInsights.length > 0" class="card insights-card">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-lightbulb"></i>
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>
                     </div>
                     <h2 class="card-title">Quick Insights</h2>
                 </div>
@@ -175,8 +183,14 @@
                     <div class="insights-list">
                         <div v-for="(insight, index) in spendingInsights.slice(0, 3)" :key="index" 
                              class="insight-item" :class="'insight-' + insight.type">
-                            <div class="insight-icon">
-                                <i :class="'fas ' + insight.icon"></i>
+                            <div class="insight-icon" aria-hidden="true">
+                                <svg v-if="insight.icon === 'fa-lightbulb'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                                <svg v-else-if="insight.icon === 'fa-exclamation-triangle'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                                <svg v-else-if="insight.icon === 'fa-check-circle'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                <svg v-else-if="insight.icon === 'fa-info-circle'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                                <svg v-else-if="insight.icon === 'fa-arrow-up'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+                                <svg v-else-if="insight.icon === 'fa-arrow-down'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                                <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                             </div>
                             <div class="insight-content">
                                 <h4 class="insight-title">{{ insight.title }}</h4>
@@ -192,8 +206,8 @@
                 <!-- Financial Summary -->
                 <section class="card summary-card">
                     <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-chart-bar"></i>
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
                         </div>
                         <h2 class="card-title">Financial Summary</h2>
                     </div>
@@ -274,8 +288,8 @@
                 <!-- Upcoming Deductions -->
                 <section class="card upcoming-deductions-card">
                     <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-calendar-check"></i>
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
                         </div>
                         <h2 class="card-title">Upcoming Expenses</h2>
                     </div>
@@ -302,8 +316,8 @@
                             </div>
                         </div>
                         <div v-else class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-calendar-times"></i>
+                            <div class="empty-icon" aria-hidden="true">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zm-7-4h-2v2h2v-2z"/></svg>
                             </div>
                             <p class="empty-text">No upcoming expenses</p>
                         </div>
@@ -317,8 +331,8 @@
             <!-- Add/Edit Expense Form -->
             <section class="card expense-form-card">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-plus-circle"></i>
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
                     </div>
                     <h2 class="card-title">{{ isEditing ? 'Edit Expense' : 'Add New Expense' }}</h2>
                 </div>
@@ -394,11 +408,11 @@
                             <textarea id="expense-notes" v-model="newExpense.notes" placeholder="Add any notes or description..." class="form-input notes-input" rows="2"></textarea>
                         </div>
                         <button type="submit" class="btn-success btn-full">
-                            <i class="fas fa-plus"></i>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                             {{ isEditing ? 'Update Expense' : 'Add Expense' }}
                         </button>
                         <button v-if="isEditing" type="button" @click="resetNewExpense" class="btn-secondary btn-full" style="margin-top: 8px;">
-                            <i class="fas fa-times"></i>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                             Cancel Edit
                         </button>
                     </form>
@@ -408,8 +422,8 @@
             <!-- Expenses List -->
             <section class="card expenses-list-card">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-list"></i>
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
                     </div>
                     <h2 class="card-title">Your Expenses</h2>
                 </div>
@@ -419,10 +433,10 @@
                         <!-- Search Input -->
                         <div class="search-section">
                             <div class="search-input-wrapper">
-                                <i class="fas fa-search search-icon"></i>
+                                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
                                 <input type="text" v-model="searchQuery" placeholder="Search expenses by name, category, or notes..." class="form-input search-input">
-                                <button v-if="searchQuery" @click="searchQuery = ''" class="search-clear-btn">
-                                    <i class="fas fa-times"></i>
+                                <button v-if="searchQuery" @click="searchQuery = ''" class="search-clear-btn" aria-label="Clear search">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                                 </button>
                             </div>
                         </div>
@@ -462,7 +476,7 @@
                         </div>
                         <div class="filter-footer">
                             <button @click="clearFilters" class="btn-secondary">
-                                <i class="fas fa-times"></i>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                                 Clear Filters
                             </button>
                             <span class="filter-count">{{ filteredExpenses.length }} of {{ expenses.length }} expenses</span>
@@ -471,16 +485,16 @@
 
                     <!-- Empty States -->
                     <div v-if="filteredExpenses.length === 0 && expenses.length > 0" class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-search"></i>
+                        <div class="empty-icon" aria-hidden="true">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
                         </div>
                         <h3 class="empty-title">No matching expenses</h3>
                         <p class="empty-text">Try adjusting your filters or search terms.</p>
                         <button @click="clearFilters" class="btn-secondary">Clear Filters</button>
                     </div>
                     <div v-else-if="expenses.length === 0" class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-inbox"></i>
+                        <div class="empty-icon" aria-hidden="true">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H4.99c-1.11 0-1.98.89-1.98 2L3 19c0 1.1.88 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H4.99V5H19v10z"/></svg>
                         </div>
                         <h3 class="empty-title">No expenses yet</h3>
                         <p class="empty-text">Add your first expense using the form above.</p>
@@ -500,11 +514,11 @@
                                             {{ getCategoryById(expense.category).name }}
                                         </span>
                                         <span class="frequency-tag">
-                                            <i class="fas fa-calendar-alt"></i>
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
                                             {{ expense.frequency }}
                                         </span>
                                         <span class="day-tag">
-                                            <i class="fas fa-calendar-day"></i>
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
                                             {{ expense.frequency === 'monthly' ? 'Day ' + (expense.dayOfMonth || 1) : expense.day }}
                                         </span>
                                     </div>
@@ -515,17 +529,17 @@
                             </div>
                             <div v-if="expense.startDate || expense.notes" class="expense-footer">
                                 <span v-if="expense.startDate" class="start-date">
-                                    <i class="fas fa-calendar"></i>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
                                     Started {{ formatDate(expense.startDate) }}
                                 </span>
                                 <p v-if="expense.notes" class="expense-notes">{{ expense.notes }}</p>
                             </div>
                             <div class="expense-actions">
-                                <button @click="editExpense(index)" class="btn-icon btn-warning" title="Edit">
-                                    <i class="fas fa-edit"></i>
+                                <button @click="editExpense(index)" class="btn-icon btn-warning" title="Edit" aria-label="Edit expense">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                                 </button>
-                                <button @click="deleteExpense(index)" class="btn-icon btn-danger" title="Delete">
-                                    <i class="fas fa-trash"></i>
+                                <button @click="deleteExpense(index)" class="btn-icon btn-danger" title="Delete" aria-label="Delete expense">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                                 </button>
                             </div>
                         </div>
@@ -534,16 +548,16 @@
                     <!-- Action Buttons -->
                     <div v-if="expenses.length > 0" class="action-buttons">
                         <button @click="backupData" class="btn-info">
-                            <i class="fas fa-save"></i>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
                             Backup
                         </button>
                         <label for="restore-import" class="btn-secondary" style="display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-undo"></i>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
                             Restore
                         </label>
                         <input type="file" id="restore-import" accept=".json" @change="restoreData" style="display: none;">
                         <button @click="clearAllExpenses" class="btn-danger">
-                            <i class="fas fa-trash-alt"></i>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                             Clear All
                         </button>
                     </div>
@@ -558,8 +572,8 @@
                 <!-- Spending Insights -->
                 <section v-if="spendingInsights.length > 0" class="card insights-card">
                     <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-lightbulb"></i>
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
                         </div>
                         <h2 class="card-title">Spending Insights</h2>
                     </div>
@@ -567,8 +581,14 @@
                         <div class="insights-list">
                             <div v-for="(insight, index) in spendingInsights" :key="index" 
                                  class="insight-item" :class="'insight-' + insight.type">
-                                <div class="insight-icon">
-                                    <i :class="'fas ' + insight.icon"></i>
+                                <div class="insight-icon" aria-hidden="true">
+                                    <svg v-if="insight.icon === 'fa-lightbulb'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                                    <svg v-else-if="insight.icon === 'fa-exclamation-triangle'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                                    <svg v-else-if="insight.icon === 'fa-check-circle'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                    <svg v-else-if="insight.icon === 'fa-info-circle'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                                    <svg v-else-if="insight.icon === 'fa-arrow-up'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+                                    <svg v-else-if="insight.icon === 'fa-arrow-down'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                                    <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                                 </div>
                                 <div class="insight-content">
                                     <h4 class="insight-title">{{ insight.title }}</h4>
@@ -582,16 +602,16 @@
                 <!-- Statistics Overview -->
                 <section class="card stats-card">
                     <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-chart-line"></i>
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
                         </div>
                         <h2 class="card-title">Statistics Overview</h2>
                     </div>
                     <div class="card-content">
                         <div class="stats-grid">
                             <div class="stat-box">
-                                <div class="stat-icon">
-                                    <i class="fas fa-receipt"></i>
+                                <div class="stat-icon" aria-hidden="true">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
                                 </div>
                                 <div class="stat-info">
                                     <span class="stat-value">{{ expenseStatistics.expenseCount }}</span>
@@ -599,8 +619,8 @@
                                 </div>
                             </div>
                             <div class="stat-box">
-                                <div class="stat-icon">
-                                    <i class="fas fa-calculator"></i>
+                                <div class="stat-icon" aria-hidden="true">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
                                 </div>
                                 <div class="stat-info">
                                     <span class="stat-value">{{ formatCurrency(expenseStatistics.averageExpense) }}</span>
@@ -608,8 +628,8 @@
                                 </div>
                             </div>
                             <div class="stat-box">
-                                <div class="stat-icon">
-                                    <i class="fas fa-calendar-day"></i>
+                                <div class="stat-icon" aria-hidden="true">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
                                 </div>
                                 <div class="stat-info">
                                     <span class="stat-value">{{ formatCurrency(expenseStatistics.dailyAverage) }}</span>
@@ -617,8 +637,8 @@
                                 </div>
                             </div>
                             <div class="stat-box">
-                                <div class="stat-icon">
-                                    <i class="fas fa-calendar-week"></i>
+                                <div class="stat-icon" aria-hidden="true">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
                                 </div>
                                 <div class="stat-info">
                                     <span class="stat-value">{{ formatCurrency(expenseStatistics.weeklyAverage) }}</span>
@@ -628,11 +648,11 @@
                         </div>
                         <div v-if="expenseStatistics.highestExpense" class="extreme-expenses">
                             <div class="extreme-item highest">
-                                <span class="extreme-label"><i class="fas fa-arrow-up"></i> Highest Expense</span>
+                                <span class="extreme-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg> Highest Expense</span>
                                 <span class="extreme-value">{{ expenseStatistics.highestExpense.name }} - {{ formatCurrency(expenseStatistics.highestExpense.amount) }}/mo</span>
                             </div>
                             <div v-if="expenseStatistics.lowestExpense" class="extreme-item lowest">
-                                <span class="extreme-label"><i class="fas fa-arrow-down"></i> Lowest Expense</span>
+                                <span class="extreme-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg> Lowest Expense</span>
                                 <span class="extreme-value">{{ expenseStatistics.lowestExpense.name }} - {{ formatCurrency(expenseStatistics.lowestExpense.amount) }}/mo</span>
                             </div>
                         </div>
@@ -644,8 +664,8 @@
                     <!-- Category Breakdown Pie Chart -->
                     <section class="card chart-card">
                         <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-chart-pie"></i>
+                            <div class="card-icon" aria-hidden="true">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z"/></svg>
                             </div>
                             <h2 class="card-title">Expenses by Category</h2>
                         </div>
@@ -672,8 +692,8 @@
                     <!-- Frequency Breakdown Bar Chart -->
                     <section class="card chart-card">
                         <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-chart-bar"></i>
+                            <div class="card-icon" aria-hidden="true">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
                             </div>
                             <h2 class="card-title">Expenses by Frequency</h2>
                         </div>
@@ -682,7 +702,7 @@
                                 <canvas id="frequencyChart"></canvas>
                             </div>
                             <div class="frequency-legend">
-                                <p class="legend-note"><i class="fas fa-info-circle"></i> Chart shows monthly equivalent values for accurate comparison</p>
+                                <p class="legend-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg> Chart shows monthly equivalent values for accurate comparison</p>
                             </div>
                         </div>
                     </section>
@@ -691,8 +711,8 @@
                 <!-- Spending Trend Chart -->
                 <section v-if="spendingHistory.length >= 2" class="card trend-card">
                     <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-chart-line"></i>
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
                         </div>
                         <h2 class="card-title">Spending Trend</h2>
                     </div>
@@ -702,7 +722,9 @@
                         </div>
                         <div class="trend-summary">
                             <div class="trend-indicator" :class="'trend-' + getSpendingTrend()">
-                                <i :class="'fas ' + (getSpendingTrend() === 'increasing' ? 'fa-arrow-up' : getSpendingTrend() === 'decreasing' ? 'fa-arrow-down' : 'fa-minus')"></i>
+                                <svg v-if="getSpendingTrend() === 'increasing'" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+                                <svg v-else-if="getSpendingTrend() === 'decreasing'" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13H5v-2h14v2z"/></svg>
                                 <span>Your spending is {{ getSpendingTrend() }}</span>
                             </div>
                         </div>
@@ -712,8 +734,8 @@
                 <!-- Currency Converter -->
                 <section class="card currency-converter-card">
                     <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-exchange-alt"></i>
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
                         </div>
                         <h2 class="card-title">Currency Converter</h2>
                     </div>
@@ -728,18 +750,19 @@
                                 </select>
                             </div>
                             <button @click="fetchExchangeRates" class="btn-primary" :disabled="currencyConverter.isLoading">
-                                <i class="fas" :class="currencyConverter.isLoading ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+                                <svg v-if="currencyConverter.isLoading" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="spin-animation"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
                                 {{ currencyConverter.isLoading ? 'Updating...' : 'Update Rates' }}
                             </button>
                         </div>
                         
                         <div v-if="currencyConverter.error" class="converter-error">
-                            <i class="fas fa-exclamation-triangle"></i>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
                             {{ currencyConverter.error }}
                         </div>
                         
                         <div v-if="currencyConverter.lastUpdated" class="rates-updated">
-                            <i class="fas fa-clock"></i>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
                             Rates last updated: {{ new Date(currencyConverter.lastUpdated).toLocaleString() }}
                         </div>
                         
@@ -761,7 +784,7 @@
                         </div>
                         
                         <div class="converter-note">
-                            <i class="fas fa-info-circle"></i>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                             Exchange rates are provided by ExchangeRate-API and cached for 24 hours.
                         </div>
                     </div>
@@ -770,8 +793,8 @@
                 <!-- Budget vs Actual Comparison -->
                 <section v-if="budget > 0" class="card budget-comparison-card">
                     <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-balance-scale"></i>
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
                         </div>
                         <h2 class="card-title">Budget vs Actual Spending</h2>
                     </div>
@@ -811,8 +834,8 @@
                 <!-- Category Budget Alerts -->
                 <section v-if="Object.keys(categoryBudgets).length > 0" class="card category-budgets-card">
                     <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-tags"></i>
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
                         </div>
                         <h2 class="card-title">Category Budget Status</h2>
                     </div>
@@ -851,13 +874,13 @@
             <!-- Empty State -->
             <section v-else class="empty-analytics">
                 <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-chart-bar"></i>
+                    <div class="empty-icon" aria-hidden="true">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
                     </div>
                     <h2 class="empty-title">No Analytics Yet</h2>
                     <p class="empty-text">Add some expenses to see detailed analytics and insights about your spending patterns.</p>
                     <button @click="switchPage('expenses')" class="btn-primary">
-                        <i class="fas fa-plus"></i>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                         Add Your First Expense
                     </button>
                 </div>
@@ -876,19 +899,214 @@
             </div>
         </div>
 
+        <!-- Settings Page -->
+        <main v-show="currentPage === 'settings'" class="page-content">
+            <!-- Data Management -->
+            <section class="card settings-card">
+                <div class="card-header">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                    </div>
+                    <h2 class="card-title">Data Management</h2>
+                </div>
+                <div class="card-content">
+                    <div class="settings-list">
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-label">Export Data</span>
+                                <span class="settings-item-desc">Download all your data as a JSON file</span>
+                            </div>
+                            <button @click="exportData" class="btn-primary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                                Export
+                            </button>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-label">Import Data</span>
+                                <span class="settings-item-desc">Restore data from a backup file</span>
+                            </div>
+                            <label for="import-file" class="btn-secondary" style="display: flex; align-items: center;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                                Import
+                            </label>
+                            <input type="file" id="import-file" accept=".json" @change="importData" style="display: none;">
+                        </div>
+                        <div class="settings-item danger-zone">
+                            <div class="settings-item-info">
+                                <span class="settings-item-label">Clear All Data</span>
+                                <span class="settings-item-desc">Permanently delete all expenses and settings</span>
+                            </div>
+                            <button @click="clearAllData" class="btn-danger">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                Clear All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Category Management -->
+            <section class="card categories-card">
+                <div class="card-header">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </div>
+                    <h2 class="card-title">Categories</h2>
+                </div>
+                <div class="card-content">
+                    <div class="categories-list">
+                        <div v-for="category in expenseCategories" :key="category.id" class="category-item">
+                            <div class="category-preview" :style="{ backgroundColor: category.color }">
+                                <i :class="category.icon"></i>
+                            </div>
+                            <div class="category-details">
+                                <span class="category-name">{{ category.name }}</span>
+                                <span class="category-id">{{ category.id }}</span>
+                            </div>
+                            <div class="category-actions">
+                                <button @click="editCategory(category)" class="btn-icon btn-warning" title="Edit" aria-label="Edit category">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                </button>
+                                <button v-if="!category.isDefault" @click="deleteCategory(category.id)" class="btn-icon btn-danger" title="Delete" aria-label="Delete category">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button @click="showAddCategoryModal = true" class="btn-success btn-full" style="margin-top: var(--space-lg);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        Add New Category
+                    </button>
+                </div>
+            </section>
+
+            <!-- Templates -->
+            <section class="card templates-card">
+                <div class="card-header">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    </div>
+                    <h2 class="card-title">Expense Templates</h2>
+                </div>
+                <div class="card-content">
+                    <div v-if="templates.length > 0" class="templates-list">
+                        <div v-for="(template, index) in templates" :key="index" class="template-item">
+                            <div class="template-info">
+                                <span class="template-name">{{ template.name }}</span>
+                                <div class="template-meta">
+                                    <span class="template-amount">{{ formatCurrency(template.amount) }}</span>
+                                    <span class="template-frequency">{{ template.frequency }}</span>
+                                </div>
+                            </div>
+                            <div class="template-actions">
+                                <button @click="applyTemplate(template)" class="btn-icon btn-primary" title="Use Template" aria-label="Use template">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                </button>
+                                <button @click="deleteTemplate(index)" class="btn-icon btn-danger" title="Delete" aria-label="Delete template">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="empty-state">
+                        <div class="empty-icon" aria-hidden="true">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                        </div>
+                        <h3 class="empty-title">No Templates Yet</h3>
+                        <p class="empty-text">Save an expense as a template for quick entry later.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- App Info -->
+            <section class="card info-card">
+                <div class="card-header">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    </div>
+                    <h2 class="card-title">About</h2>
+                </div>
+                <div class="card-content">
+                    <div class="info-list">
+                        <div class="info-item">
+                            <span class="info-label">Version</span>
+                            <span class="info-value">1.0.0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Storage Used</span>
+                            <span class="info-value">{{ getStorageUsed() }}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Add Category Modal -->
+        <div v-if="showAddCategoryModal" class="modal-overlay show" @click.self="showAddCategoryModal = false">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>{{ editingCategory ? 'Edit Category' : 'Add New Category' }}</h3>
+                    <button @click="closeCategoryModal" class="modal-close" aria-label="Close modal">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label for="category-name" class="input-label">Category Name</label>
+                        <input type="text" id="category-name" v-model="newCategory.name" placeholder="e.g., Entertainment" class="form-input" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Color</label>
+                        <div class="color-options">
+                            <button v-for="color in categoryColors" :key="color" 
+                                    class="color-option" 
+                                    :class="{ active: newCategory.color === color }"
+                                    :style="{ backgroundColor: color }"
+                                    @click="newCategory.color = color"
+                                    :aria-label="'Select color ' + color">
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Icon</label>
+                        <div class="icon-options">
+                            <button v-for="icon in categoryIcons" :key="icon" 
+                                    class="icon-option" 
+                                    :class="{ active: newCategory.icon === icon }"
+                                    @click="newCategory.icon = icon"
+                                    :aria-label="'Select icon ' + icon">
+                                <i :class="icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="closeCategoryModal" class="btn-secondary">Cancel</button>
+                    <button @click="saveCategory" class="btn-primary">
+                        {{ editingCategory ? 'Update' : 'Add Category' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Bottom Navigation -->
-        <nav class="bottom-nav">
-            <button @click="switchPage('dashboard')" :class="{ active: currentPage === 'dashboard' }" class="nav-item">
-                <i class="fas fa-home"></i>
+        <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
+            <button @click="switchPage('dashboard')" :class="{ active: currentPage === 'dashboard' }" class="nav-item" :aria-current="currentPage === 'dashboard' ? 'page' : null">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
                 <span>Dashboard</span>
             </button>
-            <button @click="switchPage('expenses')" :class="{ active: currentPage === 'expenses' }" class="nav-item">
-                <i class="fas fa-list"></i>
+            <button @click="switchPage('expenses')" :class="{ active: currentPage === 'expenses' }" class="nav-item" :aria-current="currentPage === 'expenses' ? 'page' : null">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
                 <span>Expenses</span>
             </button>
-            <button @click="switchPage('analytics')" :class="{ active: currentPage === 'analytics' }" class="nav-item">
-                <i class="fas fa-chart-bar"></i>
+            <button @click="switchPage('analytics')" :class="{ active: currentPage === 'analytics' }" class="nav-item" :aria-current="currentPage === 'analytics' ? 'page' : null">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
                 <span>Analytics</span>
+            </button>
+            <button @click="switchPage('settings')" :class="{ active: currentPage === 'settings' }" class="nav-item" :aria-current="currentPage === 'settings' ? 'page' : null">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                <span>Settings</span>
             </button>
         </nav>
     </div>

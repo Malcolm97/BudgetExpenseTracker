@@ -1,6 +1,121 @@
 // Budget Expense Tracker - Production Ready Version
 // Optimized and enhanced with modern features
 
+// ===== ACCESSIBILITY UTILITIES =====
+const AccessibilityUtils = {
+    // Announce message to screen readers
+    announce(message, priority = 'polite') {
+        const announcer = document.getElementById('sr-announcer');
+        const announcerAssertive = document.getElementById('sr-announcer-assertive');
+        
+        if (priority === 'assertive' && announcerAssertive) {
+            announcerAssertive.textContent = '';
+            setTimeout(() => {
+                announcerAssertive.textContent = message;
+            }, 100);
+        } else if (announcer) {
+            announcer.textContent = '';
+            setTimeout(() => {
+                announcer.textContent = message;
+            }, 100);
+        }
+    },
+    
+    // Focus management
+    focusFirst(element) {
+        if (!element) return;
+        const focusable = element.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length > 0) {
+            focusable[0].focus();
+        }
+    },
+    
+    focusLast(element) {
+        if (!element) return;
+        const focusable = element.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length > 0) {
+            focusable[focusable.length - 1].focus();
+        }
+    },
+    
+    // Trap focus within an element (for modals)
+    trapFocus(element) {
+        const focusableElements = element.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+        
+        element.addEventListener('keydown', (e) => {
+            if (e.key !== 'Tab') return;
+            
+            if (e.shiftKey) {
+                if (document.activeElement === firstFocusable) {
+                    lastFocusable.focus();
+                    e.preventDefault();
+                }
+            } else {
+                if (document.activeElement === lastFocusable) {
+                    firstFocusable.focus();
+                    e.preventDefault();
+                }
+            }
+        });
+    },
+    
+    // Handle escape key
+    handleEscape(callback) {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                callback();
+            }
+        });
+    }
+};
+
+// ===== LAZY LOADING FOR CHART.JS =====
+let chartJsLoaded = false;
+let chartJsLoading = false;
+let chartJsCallbacks = [];
+
+function loadChartJs(callback) {
+    if (chartJsLoaded) {
+        if (callback) callback();
+        return;
+    }
+    
+    if (chartJsLoading) {
+        if (callback) chartJsCallbacks.push(callback);
+        return;
+    }
+    
+    chartJsLoading = true;
+    chartJsCallbacks.push(callback);
+    
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+    script.async = true;
+    
+    script.onload = () => {
+        chartJsLoaded = true;
+        chartJsLoading = false;
+        chartJsCallbacks.forEach(cb => cb && cb());
+        chartJsCallbacks = [];
+    };
+    
+    script.onerror = () => {
+        chartJsLoading = false;
+        console.error('Failed to load Chart.js');
+        chartJsCallbacks = [];
+    };
+    
+    document.head.appendChild(script);
+}
+
 // ===== INDEXEDDB STORAGE SYSTEM =====
 const DB_NAME = 'BudgetExpenseTrackerDB';
 const DB_VERSION = 1;
@@ -256,7 +371,8 @@ if ('serviceWorker' in navigator) {
 function showUpdateNotification() {
     const notification = document.createElement('div');
     notification.className = 'update-notification';
-    notification.innerHTML = '<div class="update-content"><i class="fas fa-sync-alt"></i><span>New version available!</span><button onclick="window.location.reload()" class="btn-primary btn-sm">Update</button></div>';
+    const syncIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>';
+    notification.innerHTML = '<div class="update-content">' + syncIcon + '<span>New version available!</span><button onclick="window.location.reload()" class="btn-primary btn-sm">Update</button></div>';
     document.body.appendChild(notification);
     setTimeout(() => notification.classList.add('show'), 100);
 }
@@ -401,8 +517,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function updateThemeIcon(theme) {
-        const icon = themeToggle.querySelector('i');
-        if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        const iconContainer = themeToggle.querySelector('.theme-icon');
+        if (iconContainer) {
+            const sunIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+            const moonIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+            iconContainer.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
+        }
     }
     
     // Initialize color picker
@@ -411,7 +531,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== OFFLINE INDICATOR =====
     const offlineIndicator = document.createElement('div');
     offlineIndicator.className = 'offline-indicator';
-    offlineIndicator.innerHTML = '<i class="fas fa-wifi-slash"></i> You are offline';
+    const wifiSlashIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>';
+    offlineIndicator.innerHTML = wifiSlashIcon + ' You are offline';
     document.body.appendChild(offlineIndicator);
 
     function updateOnlineStatus() {
@@ -528,18 +649,18 @@ document.addEventListener('DOMContentLoaded', function() {
             // Confirmation modal
             confirmModal: { show: false, title: '', message: '', onConfirm: null },
             
-            // Categories
+            // Categories with inline SVG icons
             expenseCategories: [
-                { id: 'food', name: 'Food & Dining', icon: 'fas fa-utensils', color: '#ff6b6b' },
-                { id: 'transport', name: 'Transportation', icon: 'fas fa-car', color: '#4ecdc4' },
-                { id: 'shopping', name: 'Shopping', icon: 'fas fa-shopping-bag', color: '#45b7d1' },
-                { id: 'entertainment', name: 'Entertainment', icon: 'fas fa-film', color: '#f9ca24' },
-                { id: 'bills', name: 'Bills & Utilities', icon: 'fas fa-bolt', color: '#6c5ce7' },
-                { id: 'health', name: 'Health & Fitness', icon: 'fas fa-heartbeat', color: '#fd79a8' },
-                { id: 'education', name: 'Education', icon: 'fas fa-graduation-cap', color: '#00b894' },
-                { id: 'travel', name: 'Travel', icon: 'fas fa-plane', color: '#a29bfe' },
-                { id: 'subscriptions', name: 'Subscriptions', icon: 'fas fa-repeat', color: '#e17055' },
-                { id: 'other', name: 'Other', icon: 'fas fa-ellipsis-h', color: '#636e72' }
+                { id: 'food', name: 'Food & Dining', icon: 'utensils', color: '#ff6b6b' },
+                { id: 'transport', name: 'Transportation', icon: 'car', color: '#4ecdc4' },
+                { id: 'shopping', name: 'Shopping', icon: 'shopping-bag', color: '#45b7d1' },
+                { id: 'entertainment', name: 'Entertainment', icon: 'film', color: '#f9ca24' },
+                { id: 'bills', name: 'Bills & Utilities', icon: 'bolt', color: '#6c5ce7' },
+                { id: 'health', name: 'Health & Fitness', icon: 'heartbeat', color: '#fd79a8' },
+                { id: 'education', name: 'Education', icon: 'graduation-cap', color: '#00b894' },
+                { id: 'travel', name: 'Travel', icon: 'plane', color: '#a29bfe' },
+                { id: 'subscriptions', name: 'Subscriptions', icon: 'repeat', color: '#e17055' },
+                { id: 'other', name: 'Other', icon: 'ellipsis-h', color: '#636e72' }
             ],
             
             // Currencies
@@ -576,6 +697,88 @@ document.addEventListener('DOMContentLoaded', function() {
                 { value: 'quarterly', label: 'Quarterly', multiplier: 1/3 },
                 { value: 'yearly', label: 'Yearly', multiplier: 1/12 }
             ],
+            
+            // Expense Templates
+            expenseTemplates: [
+                { name: 'Rent', amount: 1500, frequency: 'monthly', category: 'bills', dayOfMonth: 1 },
+                { name: 'Groceries', amount: 200, frequency: 'weekly', category: 'food', day: 'saturday' },
+                { name: 'Electricity Bill', amount: 150, frequency: 'monthly', category: 'bills', dayOfMonth: 15 },
+                { name: 'Internet', amount: 80, frequency: 'monthly', category: 'bills', dayOfMonth: 1 },
+                { name: 'Gas Bill', amount: 60, frequency: 'monthly', category: 'bills', dayOfMonth: 10 },
+                { name: 'Water Bill', amount: 40, frequency: 'quarterly', category: 'bills', dayOfMonth: 1 },
+                { name: 'Car Insurance', amount: 120, frequency: 'monthly', category: 'transport', dayOfMonth: 1 },
+                { name: 'Health Insurance', amount: 200, frequency: 'monthly', category: 'health', dayOfMonth: 1 },
+                { name: 'Gym Membership', amount: 50, frequency: 'monthly', category: 'health', dayOfMonth: 1 },
+                { name: 'Netflix', amount: 15.99, frequency: 'monthly', category: 'subscriptions', dayOfMonth: 1 },
+                { name: 'Spotify', amount: 9.99, frequency: 'monthly', category: 'subscriptions', dayOfMonth: 1 },
+                { name: 'Phone Plan', amount: 50, frequency: 'monthly', category: 'bills', dayOfMonth: 1 },
+                { name: 'Public Transport', amount: 30, frequency: 'weekly', category: 'transport', day: 'monday' },
+                { name: 'Fuel', amount: 80, frequency: 'weekly', category: 'transport', day: 'friday' },
+                { name: 'Dining Out', amount: 100, frequency: 'weekly', category: 'food', day: 'friday' },
+                { name: 'Entertainment', amount: 50, frequency: 'weekly', category: 'entertainment', day: 'saturday' },
+                { name: 'Streaming Services', amount: 30, frequency: 'monthly', category: 'subscriptions', dayOfMonth: 15 },
+                { name: 'Home Insurance', amount: 100, frequency: 'monthly', category: 'bills', dayOfMonth: 1 },
+                { name: 'Life Insurance', amount: 50, frequency: 'monthly', category: 'bills', dayOfMonth: 1 },
+                { name: 'Pet Expenses', amount: 50, frequency: 'monthly', category: 'other', dayOfMonth: 1 }
+            ],
+            
+            // Show templates panel
+            showTemplates: false,
+            
+            // Category management
+            showCategoryManager: false,
+            editingCategory: null,
+            newCategory: {
+                name: '',
+                color: '#636e72',
+                icon: 'ellipsis-h'
+            },
+            
+            // Available icons for categories
+            availableIcons: [
+                { id: 'utensils', name: 'Utensils' },
+                { id: 'car', name: 'Car' },
+                { id: 'shopping-bag', name: 'Shopping Bag' },
+                { id: 'film', name: 'Film' },
+                { id: 'bolt', name: 'Bolt' },
+                { id: 'heartbeat', name: 'Heart' },
+                { id: 'graduation-cap', name: 'Graduation Cap' },
+                { id: 'plane', name: 'Plane' },
+                { id: 'repeat', name: 'Repeat' },
+                { id: 'ellipsis-h', name: 'More' },
+                { id: 'home', name: 'Home' },
+                { id: 'gift', name: 'Gift' },
+                { id: 'coffee', name: 'Coffee' },
+                { id: 'briefcase', name: 'Briefcase' },
+                { id: 'music', name: 'Music' }
+            ],
+            
+            // Custom categories (user-added)
+            customCategories: [],
+            
+            // Category modal
+            showAddCategoryModal: false,
+            editingCategory: null,
+            newCategory: {
+                name: '',
+                color: '#636e72',
+                icon: 'ellipsis-h'
+            },
+            categoryColors: [
+                '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7',
+                '#fd79a8', '#00b894', '#a29bfe', '#e17055', '#636e72',
+                '#2d3436', '#00cec9', '#ff7675', '#74b9ff', '#55a3ff'
+            ],
+            categoryIcons: [
+                'fas fa-utensils', 'fas fa-car', 'fas fa-shopping-bag',
+                'fas fa-film', 'fas fa-bolt', 'fas fa-heartbeat',
+                'fas fa-graduation-cap', 'fas fa-plane', 'fas fa-repeat',
+                'fas fa-ellipsis-h', 'fas fa-home', 'fas fa-gift',
+                'fas fa-coffee', 'fas fa-briefcase', 'fas fa-music'
+            ],
+            
+            // Templates
+            templates: [],
             
             // IndexedDB ready state
             dbReady: false,
@@ -1009,6 +1212,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.confirmModal.message = message;
                 this.confirmModal.onConfirm = onConfirm;
                 this.confirmModal.show = true;
+                
+                // Announce to screen readers
+                AccessibilityUtils.announce(title + ': ' + message, 'assertive');
+                
+                // Focus management - focus the confirm button when modal opens
+                this.$nextTick(() => {
+                    const modal = document.querySelector('.confirm-modal-content');
+                    if (modal) {
+                        AccessibilityUtils.trapFocus(modal);
+                        const confirmBtn = modal.querySelector('.btn-danger');
+                        if (confirmBtn) confirmBtn.focus();
+                    }
+                });
             },
             
             confirmAction() {
@@ -1454,13 +1670,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 return breakdown.sort((a, b) => b.amount - a.amount);
             },
             
+            // ===== SVG ICON HELPER =====
+            getSvgIcon(name, size = 16, color = 'currentColor') {
+                const icons = {
+                    'exclamation-triangle': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+                    'check-circle': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+                    'info-circle': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
+                    'trash': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+                    'sync': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`,
+                    'wifi-slash': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>`,
+                    'sun': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`,
+                    'moon': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`,
+                    'utensils': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"></path></svg>`,
+                    'car': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path><circle cx="6.5" cy="16.5" r="2.5"></circle><circle cx="16.5" cy="16.5" r="2.5"></circle></svg>`,
+                    'shopping-bag': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
+                    'film': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>`,
+                    'bolt': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
+                    'heartbeat': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
+                    'graduation-cap': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>`,
+                    'plane': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>`,
+                    'repeat': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>`,
+                    'ellipsis-h': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`,
+                    'arrow-up': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>`,
+                    'chart-line': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>`,
+                    'tag': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>`,
+                    'palette': `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.555C21.965 6.012 17.461 2 12 2z"></path></svg>`
+                };
+                return icons[name] || '';
+            },
+            
+            getCategoryIcon(categoryId, size = 16) {
+                const category = this.expenseCategories.find(c => c.id === categoryId);
+                if (category) {
+                    return this.getSvgIcon(category.icon, size, category.color);
+                }
+                return this.getSvgIcon('ellipsis-h', size);
+            },
+            
             // ===== NOTIFICATIONS =====
             displayNotification(message, type) {
                 type = type || 'error';
                 const notification = document.createElement('div');
                 notification.className = 'notification ' + type + '-notification';
-                notification.innerHTML = '<div class="flex items-center gap-2"><i class="fas ' + (type === 'error' ? 'fa-exclamation-triangle' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle') + '"></i><span>' + message + '</span></div>';
+                notification.setAttribute('role', 'alert');
+                const iconName = type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle';
+                notification.innerHTML = '<div class="flex items-center gap-2">' + this.getSvgIcon(iconName, 18) + '<span>' + message + '</span></div>';
                 document.body.appendChild(notification);
+
+                // Announce to screen readers
+                const priority = type === 'error' ? 'assertive' : 'polite';
+                AccessibilityUtils.announce(message, priority);
 
                 setTimeout(() => { notification.style.display = 'block'; }, 10);
 
@@ -1484,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', function() {
             displayUndoNotification(message) {
                 const notification = document.createElement('div');
                 notification.className = 'notification warning-notification undo-notification';
-                notification.innerHTML = '<div class="flex items-center gap-2"><i class="fas fa-trash-alt"></i><span>' + message + '</span><button class="undo-btn" onclick="window.vueApp.undoDelete()">Undo</button></div>';
+                notification.innerHTML = '<div class="flex items-center gap-2">' + this.getSvgIcon('trash', 18) + '<span>' + message + '</span><button class="undo-btn" onclick="window.vueApp.undoDelete()">Undo</button></div>';
                 document.body.appendChild(notification);
 
                 setTimeout(() => { notification.style.display = 'block'; }, 10);
@@ -1509,10 +1768,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // ===== CHARTS =====
             createCharts() {
-                this.$nextTick(() => {
-                    this.createCategoryChart();
-                    this.createFrequencyChart();
-                    this.createTrendChart();
+                loadChartJs(() => {
+                    this.$nextTick(() => {
+                        this.createCategoryChart();
+                        this.createFrequencyChart();
+                        this.createTrendChart();
+                    });
                 });
             },
             
@@ -1947,6 +2208,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
+                // Load templates from localStorage
+                const storedTemplates = localStorage.getItem('templates');
+                if (storedTemplates) {
+                    try {
+                        this.templates = JSON.parse(storedTemplates);
+                    } catch (e) {
+                        console.error('Error parsing stored templates:', e);
+                        this.templates = [];
+                    }
+                }
+                
+                // Load custom categories from localStorage
+                const storedCustomCategories = localStorage.getItem('customCategories');
+                if (storedCustomCategories) {
+                    try {
+                        this.customCategories = JSON.parse(storedCustomCategories);
+                        this.updateExpenseCategories();
+                    } catch (e) {
+                        console.error('Error parsing stored custom categories:', e);
+                        this.customCategories = [];
+                    }
+                }
+                
                 this.updateTotalExpenses();
                 this.updateDeductions();
                 this.updateUpcomingDeductions();
@@ -1959,6 +2243,418 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.createCharts();
                     });
                 }
+            },
+            
+            // ===== EXPENSE TEMPLATES =====
+            toggleTemplates() {
+                this.showTemplates = !this.showTemplates;
+            },
+            
+            applyTemplate(template) {
+                this.newExpense = {
+                    name: template.name,
+                    amount: template.amount.toString(),
+                    frequency: template.frequency,
+                    day: template.day || 'monday',
+                    dayOfMonth: template.dayOfMonth || 1,
+                    category: template.category,
+                    startDate: new Date().toISOString().split('T')[0],
+                    notes: ''
+                };
+                this.showTemplates = false;
+                this.displaySuccess('Template applied! Review and save.');
+                
+                // Scroll to form
+                const formCard = document.querySelector('.expense-form-card');
+                if (formCard) formCard.scrollIntoView({ behavior: 'smooth' });
+            },
+            
+            // ===== CATEGORY MANAGEMENT =====
+            toggleCategoryManager() {
+                this.showCategoryManager = !this.showCategoryManager;
+                if (this.showCategoryManager) {
+                    this.loadCustomCategories();
+                }
+            },
+            
+            loadCustomCategories() {
+                const stored = localStorage.getItem('customCategories');
+                if (stored) {
+                    try {
+                        this.customCategories = JSON.parse(stored);
+                    } catch (e) {
+                        this.customCategories = [];
+                    }
+                }
+            },
+            
+            saveCustomCategories() {
+                localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
+            },
+            
+            startAddCategory() {
+                this.editingCategory = null;
+                this.newCategory = {
+                    name: '',
+                    color: '#636e72',
+                    icon: 'ellipsis-h'
+                };
+            },
+            
+            startEditCategory(category) {
+                this.editingCategory = category;
+                this.newCategory = {
+                    name: category.name,
+                    color: category.color,
+                    icon: category.icon
+                };
+            },
+            
+            saveCategory() {
+                if (!this.newCategory.name || !this.newCategory.name.trim()) {
+                    this.displayError('Please enter a category name.');
+                    return;
+                }
+                
+                // Check for duplicate names
+                const existingNames = this.expenseCategories.map(c => c.name.toLowerCase());
+                if (this.editingCategory) {
+                    // Allow same name if editing the same category
+                    const isSameCategory = this.customCategories.find(c => 
+                        c.id === this.editingCategory.id && c.name.toLowerCase() === this.newCategory.name.toLowerCase()
+                    );
+                    if (!isSameCategory && existingNames.includes(this.newCategory.name.toLowerCase())) {
+                        this.displayError('A category with this name already exists.');
+                        return;
+                    }
+                } else if (existingNames.includes(this.newCategory.name.toLowerCase())) {
+                    this.displayError('A category with this name already exists.');
+                    return;
+                }
+                
+                if (this.editingCategory) {
+                    // Update existing category
+                    const index = this.customCategories.findIndex(c => c.id === this.editingCategory.id);
+                    if (index >= 0) {
+                        this.$set(this.customCategories, index, {
+                            ...this.customCategories[index],
+                            name: this.newCategory.name.trim(),
+                            color: this.newCategory.color,
+                            icon: this.newCategory.icon
+                        });
+                    }
+                    this.displaySuccess('Category updated!');
+                } else {
+                    // Add new category
+                    const newCat = {
+                        id: 'custom_' + generateId(),
+                        name: this.newCategory.name.trim(),
+                        color: this.newCategory.color,
+                        icon: this.newCategory.icon,
+                        isCustom: true
+                    };
+                    this.customCategories.push(newCat);
+                    this.displaySuccess('Category added!');
+                }
+                
+                this.saveCustomCategories();
+                this.updateExpenseCategories();
+                this.editingCategory = null;
+                this.newCategory = {
+                    name: '',
+                    color: '#636e72',
+                    icon: 'ellipsis-h'
+                };
+            },
+            
+            deleteCategory(categoryId) {
+                this.showConfirmationModal(
+                    'Delete Category',
+                    'Are you sure you want to delete this category? Expenses using this category will be moved to "Other".',
+                    () => {
+                        // Move expenses to "Other"
+                        this.expenses.forEach(expense => {
+                            if (expense.category === categoryId) {
+                                expense.category = 'other';
+                            }
+                        });
+                        this.saveExpenses();
+                        
+                        // Remove from custom categories
+                        const index = this.customCategories.findIndex(c => c.id === categoryId);
+                        if (index >= 0) {
+                            this.customCategories.splice(index, 1);
+                        }
+                        this.saveCustomCategories();
+                        this.updateExpenseCategories();
+                        
+                        this.displaySuccess('Category deleted!');
+                    }
+                );
+            },
+            
+            cancelCategoryEdit() {
+                this.editingCategory = null;
+                this.newCategory = {
+                    name: '',
+                    color: '#636e72',
+                    icon: 'ellipsis-h'
+                };
+            },
+            
+            updateExpenseCategories() {
+                // Combine default and custom categories
+                const defaultCategories = [
+                    { id: 'food', name: 'Food & Dining', icon: 'utensils', color: '#ff6b6b' },
+                    { id: 'transport', name: 'Transportation', icon: 'car', color: '#4ecdc4' },
+                    { id: 'shopping', name: 'Shopping', icon: 'shopping-bag', color: '#45b7d1' },
+                    { id: 'entertainment', name: 'Entertainment', icon: 'film', color: '#f9ca24' },
+                    { id: 'bills', name: 'Bills & Utilities', icon: 'bolt', color: '#6c5ce7' },
+                    { id: 'health', name: 'Health & Fitness', icon: 'heartbeat', color: '#fd79a8' },
+                    { id: 'education', name: 'Education', icon: 'graduation-cap', color: '#00b894' },
+                    { id: 'travel', name: 'Travel', icon: 'plane', color: '#a29bfe' },
+                    { id: 'subscriptions', name: 'Subscriptions', icon: 'repeat', color: '#e17055' },
+                    { id: 'other', name: 'Other', icon: 'ellipsis-h', color: '#636e72' }
+                ];
+                
+                this.expenseCategories = [...defaultCategories, ...this.customCategories];
+            },
+            
+            // ===== SETTINGS PAGE METHODS =====
+            exportData() {
+                try {
+                    const exportData = {
+                        budget: this.budget,
+                        budgetEnabled: this.budgetEnabled,
+                        expenses: this.expenses,
+                        currency: this.currency,
+                        categoryBudgets: this.categoryBudgets,
+                        spendingHistory: this.spendingHistory,
+                        customCategories: this.customCategories,
+                        templates: this.templates,
+                        theme: localStorage.getItem('theme') || 'light',
+                        primaryColor: localStorage.getItem('primaryColor') || '#007bff',
+                        timestamp: new Date().toISOString(),
+                        version: '3.0',
+                        exportedBy: 'Budget Expense Tracker'
+                    };
+
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const link = document.createElement('a');
+
+                    if (link.download !== undefined) {
+                        const url = URL.createObjectURL(blob);
+                        link.setAttribute('href', url);
+                        link.setAttribute('download', 'budget_expense_tracker_export_' + new Date().toISOString().split('T')[0] + '.json');
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        this.displaySuccess('Data exported successfully!');
+                    } else {
+                        this.displayError('Export not supported in this browser.');
+                    }
+                } catch (error) {
+                    console.error('Export error:', error);
+                    this.displayError('Error exporting data. Please try again.');
+                }
+            },
+            
+            importData(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        // Validate the file structure
+                        if (!data.version && !data.expenses) {
+                            this.displayError('Invalid backup file format.');
+                            return;
+                        }
+                        
+                        // Restore data
+                        if (data.budget !== undefined) {
+                            this.budget = parseFloat(data.budget);
+                            localStorage.setItem('budget', this.budget.toString());
+                        }
+                        
+                        if (data.budgetEnabled !== undefined) {
+                            this.budgetEnabled = data.budgetEnabled === true || data.budgetEnabled === 'true';
+                            localStorage.setItem('budgetEnabled', this.budgetEnabled.toString());
+                        }
+                        
+                        if (data.expenses && Array.isArray(data.expenses)) {
+                            this.expenses = data.expenses.map(exp => ({
+                                ...exp,
+                                id: exp.id || generateId(),
+                                notes: exp.notes || '',
+                                dayOfMonth: exp.dayOfMonth || null
+                            }));
+                            this.saveExpenses();
+                        }
+                        
+                        if (data.categoryBudgets) {
+                            this.categoryBudgets = data.categoryBudgets;
+                            localStorage.setItem('categoryBudgets', JSON.stringify(this.categoryBudgets));
+                        }
+                        
+                        if (data.spendingHistory) {
+                            this.spendingHistory = data.spendingHistory;
+                            localStorage.setItem('spendingHistory', JSON.stringify(this.spendingHistory));
+                        }
+                        
+                        if (data.customCategories) {
+                            this.customCategories = data.customCategories;
+                            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
+                            this.updateExpenseCategories();
+                        }
+                        
+                        if (data.templates) {
+                            this.templates = data.templates;
+                            localStorage.setItem('templates', JSON.stringify(this.templates));
+                        }
+                        
+                        if (data.currency) {
+                            this.currency = data.currency;
+                            localStorage.setItem('currency', this.currency);
+                        }
+                        
+                        if (data.theme) {
+                            localStorage.setItem('theme', data.theme);
+                            document.documentElement.setAttribute('data-theme', data.theme);
+                        }
+                        
+                        if (data.primaryColor) {
+                            localStorage.setItem('primaryColor', data.primaryColor);
+                            applyPrimaryColor(data.primaryColor);
+                        }
+                        
+                        this.updateTotalExpenses();
+                        this.updateDeductions();
+                        this.updateUpcomingDeductions();
+                        this.displaySuccess('Data imported successfully!');
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        this.displayError('Error importing data. Invalid backup file.');
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            },
+            
+            clearAllData() {
+                this.showConfirmationModal(
+                    'Clear All Data',
+                    'Are you sure you want to delete all data? This will remove all expenses, budgets, templates, and settings. This action cannot be undone.',
+                    () => {
+                        // Clear all data
+                        this.budget = 0;
+                        this.budgetEnabled = true;
+                        this.expenses = [];
+                        this.categoryBudgets = {};
+                        this.spendingHistory = [];
+                        this.customCategories = [];
+                        this.templates = [];
+                        this.resetBudgetAlerts();
+                        
+                        // Clear localStorage
+                        localStorage.removeItem('budget');
+                        localStorage.removeItem('budgetEnabled');
+                        localStorage.removeItem('expenses');
+                        localStorage.removeItem('categoryBudgets');
+                        localStorage.removeItem('spendingHistory');
+                        localStorage.removeItem('customCategories');
+                        localStorage.removeItem('templates');
+                        
+                        // Update UI
+                        this.updateTotalExpenses();
+                        this.updateDeductions();
+                        this.updateUpcomingDeductions();
+                        this.updateExpenseCategories();
+                        
+                        this.displaySuccess('All data cleared successfully!');
+                    }
+                );
+            },
+            
+            editCategory(category) {
+                this.editingCategory = category;
+                this.newCategory = {
+                    name: category.name,
+                    color: category.color,
+                    icon: category.icon
+                };
+                this.showAddCategoryModal = true;
+            },
+            
+            closeCategoryModal() {
+                this.showAddCategoryModal = false;
+                this.editingCategory = null;
+                this.newCategory = {
+                    name: '',
+                    color: '#636e72',
+                    icon: 'ellipsis-h'
+                };
+            },
+            
+            getStorageUsed() {
+                let total = 0;
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        total += localStorage.getItem(key).length * 2; // UTF-16 encoding
+                    }
+                }
+                
+                // Convert to human-readable format
+                if (total < 1024) {
+                    return total + ' bytes';
+                } else if (total < 1024 * 1024) {
+                    return (total / 1024).toFixed(2) + ' KB';
+                } else {
+                    return (total / (1024 * 1024)).toFixed(2) + ' MB';
+                }
+            },
+            
+            // ===== TEMPLATE METHODS =====
+            saveAsTemplate(expense) {
+                const template = {
+                    name: expense.name,
+                    amount: expense.amount,
+                    frequency: expense.frequency,
+                    category: expense.category,
+                    day: expense.day,
+                    dayOfMonth: expense.dayOfMonth
+                };
+                
+                this.templates.push(template);
+                localStorage.setItem('templates', JSON.stringify(this.templates));
+                this.displaySuccess('Template saved!');
+            },
+            
+            applyTemplate(template) {
+                this.newExpense = {
+                    name: template.name,
+                    amount: template.amount.toString(),
+                    frequency: template.frequency,
+                    day: template.day || 'monday',
+                    dayOfMonth: template.dayOfMonth || 1,
+                    category: template.category,
+                    startDate: new Date().toISOString().split('T')[0],
+                    notes: ''
+                };
+                this.switchPage('expenses');
+                this.displaySuccess('Template applied! Review and save.');
+            },
+            
+            deleteTemplate(index) {
+                this.templates.splice(index, 1);
+                localStorage.setItem('templates', JSON.stringify(this.templates));
+                this.displaySuccess('Template deleted!');
             }
         },
         computed: {
@@ -2049,6 +2745,103 @@ document.addEventListener('DOMContentLoaded', function() {
             this.requestNotificationPermission();
             this.loadFromLocalStorage();
             this.initCurrencyConverter();
+            this.initKeyboardShortcuts();
+        },
+        
+        // ===== KEYBOARD SHORTCUTS =====
+        initKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Skip if user is typing in an input field
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                    // Allow Escape to blur the input
+                    if (e.key === 'Escape') {
+                        e.target.blur();
+                    }
+                    return;
+                }
+                
+                // Escape - Close modal
+                if (e.key === 'Escape' && this.confirmModal.show) {
+                    this.closeConfirmModal();
+                    return;
+                }
+                
+                // Ctrl/Cmd + N - New expense (focus name input)
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    const nameInput = document.getElementById('expense-name');
+                    if (nameInput) {
+                        nameInput.focus();
+                        AccessibilityUtils.announce('Focus moved to expense name input', 'polite');
+                    }
+                    return;
+                }
+                
+                // Ctrl/Cmd + B - Focus budget input
+                if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                    e.preventDefault();
+                    const budgetInput = document.getElementById('budget-input');
+                    if (budgetInput) {
+                        budgetInput.focus();
+                        budgetInput.select();
+                        AccessibilityUtils.announce('Focus moved to budget input', 'polite');
+                    }
+                    return;
+                }
+                
+                // Ctrl/Cmd + S - Save/backup data
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    this.backupData();
+                    return;
+                }
+                
+                // Ctrl/Cmd + / - Toggle theme
+                if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                    e.preventDefault();
+                    document.getElementById('theme-toggle').click();
+                    return;
+                }
+                
+                // 1-4 - Switch pages
+                if (e.key === '1') {
+                    this.switchPage('dashboard');
+                    AccessibilityUtils.announce('Switched to Dashboard', 'polite');
+                } else if (e.key === '2') {
+                    this.switchPage('expenses');
+                    AccessibilityUtils.announce('Switched to Expenses', 'polite');
+                } else if (e.key === '3') {
+                    this.switchPage('analytics');
+                    AccessibilityUtils.announce('Switched to Analytics', 'polite');
+                } else if (e.key === '4') {
+                    this.switchPage('settings');
+                    AccessibilityUtils.announce('Switched to Settings', 'polite');
+                }
+                
+                // ? - Show keyboard shortcuts help
+                if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+                    this.showKeyboardShortcutsHelp();
+                }
+            });
+        },
+        
+        showKeyboardShortcutsHelp() {
+            const shortcuts = [
+                { key: 'Ctrl/Cmd + N', action: 'Focus expense name input' },
+                { key: 'Ctrl/Cmd + B', action: 'Focus budget input' },
+                { key: 'Ctrl/Cmd + S', action: 'Backup data' },
+                { key: 'Ctrl/Cmd + /', action: 'Toggle dark/light theme' },
+                { key: '1-4', action: 'Switch between pages' },
+                { key: '?', action: 'Show this help' },
+                { key: 'Escape', action: 'Close modals or blur inputs' }
+            ];
+            
+            let message = 'Keyboard Shortcuts:\n\n';
+            shortcuts.forEach(s => {
+                message += s.key + ' - ' + s.action + '\n';
+            });
+            
+            alert(message);
         }
     });
 });
