@@ -199,12 +199,14 @@ body {
     transform: translateY(-10px);
     transition: var(--transition);
     border: 1px solid var(--border-color);
+    pointer-events: none;
 }
 
 .color-picker-panel.show {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    pointer-events: auto;
 }
 
 .color-picker-header {
@@ -346,6 +348,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: var(--space-md);
+    z-index: 150;
 }
 
 .app-header h1 {
