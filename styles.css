@@ -107,9 +107,13 @@ body {
    ============================================ */
 
 .header-controls {
+    position: absolute;
+    top: calc(var(--space-lg) + env(safe-area-inset-top, 0px));
+    right: var(--space-lg);
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+    z-index: 160;
 }
 
 /* ============================================
@@ -341,6 +345,7 @@ body {
     color: white;
     padding: var(--space-xl) var(--space-lg);
     padding-top: calc(var(--space-xl) + env(safe-area-inset-top, 0px));
+    padding-right: calc(var(--space-lg) + 100px);
     text-align: center;
     position: relative;
     flex-shrink: 0;
