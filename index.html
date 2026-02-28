@@ -306,31 +306,39 @@
                                     </option>
                                 </select>
                             </div>
-                            <div class="input-group">
-                                <label for="expense-start-date" class="input-label">Start Date</label>
-                                <input type="date" id="expense-start-date" v-model="newExpense.startDate" class="form-input">
-                            </div>
-                            <!-- Day of Week (for weekly/fortnightly) -->
-                            <div v-if="newExpense.frequency !== 'monthly'" class="input-group">
-                                <label for="expense-day" class="input-label">Day of Week</label>
-                                <select id="expense-day" v-model="newExpense.day" class="form-input">
-                                    <option value="monday">Monday</option>
-                                    <option value="tuesday">Tuesday</option>
-                                    <option value="wednesday">Wednesday</option>
-                                    <option value="thursday">Thursday</option>
-                                    <option value="friday">Friday</option>
-                                    <option value="saturday">Saturday</option>
-                                    <option value="sunday">Sunday</option>
-                                </select>
-                            </div>
-                            <!-- Day of Month (for monthly) -->
-                            <div v-if="newExpense.frequency === 'monthly'" class="input-group">
-                                <label for="expense-day-of-month" class="input-label">Day of Month</label>
-                                <select id="expense-day-of-month" v-model="newExpense.dayOfMonth" class="form-input">
-                                    <option v-for="day in 31" :value="day" :key="day">{{ day }}{{ day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th' }}</option>
-                                </select>
+                        </div>
+                        
+                        <!-- Schedule Options -->
+                        <div class="schedule-section">
+                            <div class="form-grid">
+                                <!-- Day of Week (for weekly/fortnightly) -->
+                                <div v-if="newExpense.frequency !== 'monthly'" class="input-group">
+                                    <label for="expense-day" class="input-label">Day of Week</label>
+                                    <select id="expense-day" v-model="newExpense.day" class="form-input">
+                                        <option value="monday">Monday</option>
+                                        <option value="tuesday">Tuesday</option>
+                                        <option value="wednesday">Wednesday</option>
+                                        <option value="thursday">Thursday</option>
+                                        <option value="friday">Friday</option>
+                                        <option value="saturday">Saturday</option>
+                                        <option value="sunday">Sunday</option>
+                                    </select>
+                                </div>
+                                <!-- Day of Month (for monthly) -->
+                                <div v-if="newExpense.frequency === 'monthly'" class="input-group">
+                                    <label for="expense-day-of-month" class="input-label">Day of Month</label>
+                                    <select id="expense-day-of-month" v-model="newExpense.dayOfMonth" class="form-input">
+                                        <option v-for="day in 31" :value="day" :key="day">{{ day }}{{ day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th' }}</option>
+                                    </select>
+                                </div>
+                                <!-- Start Date (Optional) -->
+                                <div class="input-group">
+                                    <label for="expense-start-date" class="input-label">Start Date (Optional)</label>
+                                    <input type="date" id="expense-start-date" v-model="newExpense.startDate" class="form-input" placeholder="When does this expense start?">
+                                </div>
                             </div>
                         </div>
+                        
                         <!-- Notes Field -->
                         <div class="input-group">
                             <label for="expense-notes" class="input-label">Notes (Optional)</label>
@@ -357,13 +365,9 @@
                     <h2 class="card-title">Your Expenses</h2>
                 </div>
                 <div class="card-content">
-                    <!-- Search and Filter Section -->
+                    <!-- Filter Section -->
                     <div v-if="expenses.length > 0" class="filters-section">
                         <div class="filter-grid">
-                            <div class="input-group">
-                                <label for="search-expenses" class="input-label">Search</label>
-                                <input type="text" id="search-expenses" v-model="searchQuery" placeholder="Search expenses..." class="form-input">
-                            </div>
                             <div class="input-group">
                                 <label for="filter-category" class="input-label">Category</label>
                                 <select id="filter-category" v-model="categoryFilter" class="form-input">
@@ -392,17 +396,6 @@
                                     <option value="name-asc">Name A-Z</option>
                                     <option value="name-desc">Name Z-A</option>
                                 </select>
-                            </div>
-                        </div>
-                        <!-- Date Filter -->
-                        <div class="date-filter-row" style="margin-top: 12px;">
-                            <div class="input-group" style="margin-bottom: 0;">
-                                <label for="date-start" class="input-label">From Date</label>
-                                <input type="date" id="date-start" v-model="dateFilterStart" class="form-input">
-                            </div>
-                            <div class="input-group" style="margin-bottom: 0;">
-                                <label for="date-end" class="input-label">To Date</label>
-                                <input type="date" id="date-end" v-model="dateFilterEnd" class="form-input">
                             </div>
                         </div>
                         <div class="filter-footer">
@@ -478,19 +471,6 @@
 
                     <!-- Action Buttons -->
                     <div v-if="expenses.length > 0" class="action-buttons">
-                        <button @click="calculateTotalExpenses" class="btn-primary">
-                            <i class="fas fa-calculator"></i>
-                            Calculate
-                        </button>
-                        <button @click="exportToCSV" class="btn-success">
-                            <i class="fas fa-download"></i>
-                            Export CSV
-                        </button>
-                        <label for="csv-import" class="btn-secondary" style="display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-upload"></i>
-                            Import CSV
-                        </label>
-                        <input type="file" id="csv-import" accept=".csv" @change="importFromCSV" style="display: none;">
                         <button @click="backupData" class="btn-info">
                             <i class="fas fa-save"></i>
                             Backup

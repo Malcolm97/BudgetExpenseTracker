@@ -157,13 +157,10 @@ document.addEventListener('DOMContentLoaded', function() {
             isEditing: false,
             isLoading: false,
             
-            // Search and filter
-            searchQuery: '',
-            categoryFilter: '',
-            frequencyFilter: '',
-            dateFilterStart: '',
-            dateFilterEnd: '',
-            sortBy: 'date-desc',
+            // Filters
+                categoryFilter: '',
+                frequencyFilter: '',
+                sortBy: 'date-desc',
             
             // Currency
             currency: localStorage.getItem('currency') || 'USD',
@@ -1194,125 +1191,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // ===== FILTERS =====
             clearFilters() {
-                this.searchQuery = '';
                 this.categoryFilter = '';
                 this.frequencyFilter = '';
-                this.dateFilterStart = '';
-                this.dateFilterEnd = '';
                 this.sortBy = 'date-desc';
             },
             
             // ===== IMPORT/EXPORT =====
-            exportToCSV() {
-                if (this.expenses.length === 0) {
-                    this.displayError('No expenses to export.');
-                    return;
-                }
-
-                const headers = ['Name', 'Amount', 'Frequency', 'Category', 'Day', 'Day of Month', 'Start Date', 'Notes'];
-                const csvRows = this.expenses.map(expense => [
-                    expense.name,
-                    expense.amount,
-                    expense.frequency,
-                    this.getCategoryById(expense.category).name,
-                    expense.day || '',
-                    expense.dayOfMonth || '',
-                    expense.startDate || '',
-                    expense.notes || ''
-                ]);
-
-                const csvContent = [headers, ...csvRows]
-                    .map(row => row.map(field => '"' + field + '"').join(','))
-                    .join('\n');
-
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-
-                if (link.download !== undefined) {
-                    const url = URL.createObjectURL(blob);
-                    link.setAttribute('href', url);
-                    link.setAttribute('download', 'expenses_' + new Date().toISOString().split('T')[0] + '.csv');
-                    link.style.visibility = 'hidden';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    this.displaySuccess('Expenses exported successfully!');
-                } else {
-                    this.displayError('Export not supported in this browser.');
-                }
-            },
-            
-            importFromCSV(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const csvText = e.target.result;
-                        const lines = csvText.split('\n').filter(line => line.trim());
-                        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-
-                        const expectedHeaders = ['Name', 'Amount', 'Frequency', 'Category', 'Day'];
-                        const isValidFormat = expectedHeaders.every(header => headers.includes(header));
-
-                        if (!isValidFormat) {
-                            this.displayError('Invalid CSV format. Please use the exported format.');
-                            return;
-                        }
-
-                        const importedExpenses = [];
-                        for (let i = 1; i < lines.length; i++) {
-                            const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
-                            if (values.length >= 5) {
-                                const name = values[0];
-                                const amount = values[1];
-                                const frequency = values[2];
-                                const category = values[3];
-                                const day = values[4];
-                                const dayOfMonth = values[5] || null;
-                                const startDate = values[6] || new Date().toISOString().split('T')[0];
-                                const notes = values[7] || '';
-
-                                const categoryId = this.expenseCategories.find(cat =>
-                                    cat.name.toLowerCase() === category.toLowerCase()
-                                )?.id || 'other';
-
-                                if (name && amount && !isNaN(parseFloat(amount))) {
-                                    importedExpenses.push({
-                                        id: generateId(),
-                                        name: name.trim(),
-                                        amount: parseFloat(amount),
-                                        frequency: frequency.toLowerCase().trim(),
-                                        category: categoryId,
-                                        day: frequency.toLowerCase() !== 'monthly' ? day.toLowerCase().trim() : '',
-                                        dayOfMonth: frequency.toLowerCase() === 'monthly' ? parseInt(dayOfMonth) || 1 : null,
-                                        startDate: startDate.trim(),
-                                        notes: notes.trim()
-                                    });
-                                }
-                            }
-                        }
-
-                        if (importedExpenses.length > 0) {
-                            this.expenses = [...this.expenses, ...importedExpenses];
-                            this.saveExpenses();
-                            this.updateTotalExpenses();
-                            this.updateDeductions();
-                            this.updateUpcomingDeductions();
-                            this.displaySuccess('Successfully imported ' + importedExpenses.length + ' expenses!');
-                        } else {
-                            this.displayError('No valid expenses found in the CSV file.');
-                        }
-                    } catch (error) {
-                        console.error('Import error:', error);
-                        this.displayError('Error reading CSV file. Please check the format.');
-                    }
-                };
-                reader.readAsText(file);
-                event.target.value = '';
-            },
-            
             backupData() {
                 try {
                     const backupData = {
@@ -1508,28 +1392,12 @@ document.addEventListener('DOMContentLoaded', function() {
             filteredExpenses() {
                 let filtered = [...this.expenses];
 
-                if (this.searchQuery.trim()) {
-                    const query = this.searchQuery.toLowerCase();
-                    filtered = filtered.filter(expense =>
-                        expense.name.toLowerCase().includes(query) ||
-                        (expense.notes && expense.notes.toLowerCase().includes(query))
-                    );
-                }
-
                 if (this.categoryFilter) {
                     filtered = filtered.filter(expense => expense.category === this.categoryFilter);
                 }
 
                 if (this.frequencyFilter) {
                     filtered = filtered.filter(expense => expense.frequency === this.frequencyFilter);
-                }
-                
-                if (this.dateFilterStart) {
-                    filtered = filtered.filter(expense => expense.startDate >= this.dateFilterStart);
-                }
-                
-                if (this.dateFilterEnd) {
-                    filtered = filtered.filter(expense => expense.startDate <= this.dateFilterEnd);
                 }
 
                 filtered.sort((a, b) => {
