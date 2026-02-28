@@ -7,7 +7,6 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./service-worker.js').then(function(registration) {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
             
-            // Check for updates
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
                 if (newWorker) {
@@ -51,7 +50,6 @@ function generateId() {
 
 // ===== MAIN APPLICATION =====
 document.addEventListener('DOMContentLoaded', function() {
-    // Theme toggle functionality
     const themeToggle = document.getElementById('theme-toggle');
     const html = document.documentElement;
 
@@ -145,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 amount: '',
                 frequency: 'weekly',
                 day: 'monday',
+                dayOfMonth: 1,
                 category: 'other',
                 startDate: new Date().toISOString().split('T')[0],
                 notes: ''
@@ -153,6 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
             remainingBalance: 0,
             deductions: { weekly: 0, fortnightly: 0, monthly: 0, daily: 0 },
             nextDeduction: { name: '', amount: 0, frequency: '', day: '', nextDueDate: '' },
+            upcomingDeductions: [],
             editingIndex: null,
             isEditing: false,
             isLoading: false,
@@ -168,16 +168,27 @@ document.addEventListener('DOMContentLoaded', function() {
             // Currency
             currency: localStorage.getItem('currency') || 'USD',
             
+            // Budget tracking mode
+            budgetEnabled: localStorage.getItem('budgetEnabled') !== 'false',
+            
             // Undo functionality
             lastDeleted: null,
             undoTimeout: null,
             
-            // Chart instances (FIXES MEMORY LEAK)
+            // Chart instances
             categoryChart: null,
             frequencyChart: null,
+            trendChart: null,
             
             // Budget alerts
             budgetAlerts: { 50: false, 75: false, 90: false, 100: false },
+            
+            // Category budgets and alerts
+            categoryBudgets: {},
+            categoryAlerts: {},
+            
+            // Spending history for trends
+            spendingHistory: [],
             
             // Confirmation modal
             confirmModal: { show: false, title: '', message: '', onConfirm: null },
@@ -237,9 +248,33 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             
             // ===== BUDGET =====
+            toggleBudgetEnabled() {
+                this.budgetEnabled = !this.budgetEnabled;
+                localStorage.setItem('budgetEnabled', this.budgetEnabled.toString());
+                
+                if (!this.budgetEnabled) {
+                    this.budget = 0;
+                    localStorage.removeItem('budget');
+                    this.resetBudgetAlerts();
+                    this.displaySuccess('Budget tracking disabled. Focus on expense tracking!');
+                } else {
+                    this.displaySuccess('Budget tracking enabled. Set your budget below.');
+                }
+                
+                this.updateTotalExpenses();
+            },
+            
             setBudget() {
                 try {
                     const totalBudget = parseFloat(this.budget);
+                    
+                    if (!this.budgetEnabled) {
+                        this.budget = 0;
+                        localStorage.removeItem('budget');
+                        this.updateTotalExpenses();
+                        return;
+                    }
+                    
                     if (isNaN(totalBudget) || totalBudget <= 0) {
                         this.displayError('Please enter a valid budget amount greater than 0.');
                         return;
@@ -253,6 +288,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Error setting budget:', error);
                     this.displayError('Failed to set budget. Please try again.');
                 }
+            },
+            
+            clearBudget() {
+                this.showConfirmationModal(
+                    'Clear Budget',
+                    'Are you sure you want to clear your budget? You can still track expenses without a budget.',
+                    () => {
+                        this.budget = 0;
+                        localStorage.removeItem('budget');
+                        this.resetBudgetAlerts();
+                        this.updateTotalExpenses();
+                        this.displaySuccess('Budget cleared. Continue tracking expenses!');
+                    }
+                );
             },
             
             resetBudgetAlerts() {
@@ -278,10 +327,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             
+            // ===== CATEGORY BUDGETS =====
+            setCategoryBudget(categoryId, amount) {
+                if (amount && parseFloat(amount) > 0) {
+                    this.$set(this.categoryBudgets, categoryId, parseFloat(amount));
+                } else {
+                    this.$delete(this.categoryBudgets, categoryId);
+                }
+                localStorage.setItem('categoryBudgets', JSON.stringify(this.categoryBudgets));
+            },
+            
+            getCategoryBudget(categoryId) {
+                return this.categoryBudgets[categoryId] || 0;
+            },
+            
+            getCategorySpending(categoryId) {
+                let total = 0;
+                this.expenses.forEach(expense => {
+                    if (expense.category === categoryId) {
+                        total += this.convertToMonthly(parseFloat(expense.amount), expense.frequency);
+                    }
+                });
+                return total;
+            },
+            
+            getCategoryUtilization(categoryId) {
+                const budget = this.getCategoryBudget(categoryId);
+                if (budget <= 0) return 0;
+                return Math.min((this.getCategorySpending(categoryId) / budget) * 100, 100);
+            },
+            
+            checkCategoryAlerts() {
+                this.expenseCategories.forEach(category => {
+                    const budget = this.getCategoryBudget(category.id);
+                    if (budget > 0) {
+                        const spending = this.getCategorySpending(category.id);
+                        const percentage = (spending / budget) * 100;
+                        
+                        if (percentage >= 90 && !this.categoryAlerts[category.id + '_90']) {
+                            this.$set(this.categoryAlerts, category.id + '_90', true);
+                            this.displayNotification(category.name + ' category is at ' + Math.round(percentage) + '% of budget!', 'warning');
+                        }
+                    }
+                });
+            },
+            
             // ===== EXPENSES =====
             addExpense() {
                 try {
-                    const { name, amount, frequency, day, category, startDate, notes } = this.newExpense;
+                    const { name, amount, frequency, day, dayOfMonth, category, startDate, notes } = this.newExpense;
                     const parsedAmount = parseFloat(amount);
                     
                     if (!name || name.trim().length === 0) {
@@ -299,9 +393,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             id: this.expenses[this.editingIndex].id || generateId(),
                             name: name.trim(),
                             amount: parsedAmount,
-                            frequency,
-                            day,
-                            category,
+                            frequency: frequency,
+                            day: frequency !== 'monthly' ? day : '',
+                            dayOfMonth: frequency === 'monthly' ? parseInt(dayOfMonth) : null,
+                            category: category,
                             startDate: startDate || new Date().toISOString().split('T')[0],
                             notes: notes ? notes.trim() : '',
                             updatedAt: new Date().toISOString()
@@ -315,9 +410,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             id: generateId(),
                             name: name.trim(),
                             amount: parsedAmount,
-                            frequency,
-                            day,
-                            category,
+                            frequency: frequency,
+                            day: frequency !== 'monthly' ? day : '',
+                            dayOfMonth: frequency === 'monthly' ? parseInt(dayOfMonth) : null,
+                            category: category,
                             startDate: startDate || new Date().toISOString().split('T')[0],
                             notes: notes ? notes.trim() : '',
                             createdAt: new Date().toISOString()
@@ -332,6 +428,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.updateUpcomingDeductions();
                     this.saveExpenses();
                     this.checkBudgetAlerts();
+                    this.checkCategoryAlerts();
+                    this.recordMonthlySpending();
                     
                 } catch (error) {
                     console.error('Error adding expense:', error);
@@ -345,6 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     amount: '',
                     frequency: 'weekly',
                     day: 'monday',
+                    dayOfMonth: 1,
                     category: 'other',
                     startDate: new Date().toISOString().split('T')[0],
                     notes: ''
@@ -363,7 +462,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         name: this.expenses[editIndex].name,
                         amount: this.expenses[editIndex].amount.toString(),
                         frequency: this.expenses[editIndex].frequency,
-                        day: this.expenses[editIndex].day,
+                        day: this.expenses[editIndex].day || 'monday',
+                        dayOfMonth: this.expenses[editIndex].dayOfMonth || 1,
                         category: this.expenses[editIndex].category,
                         startDate: this.expenses[editIndex].startDate,
                         notes: this.expenses[editIndex].notes || ''
@@ -395,6 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.updateDeductions();
                     this.updateUpcomingDeductions();
                     this.saveExpenses();
+                    this.recordMonthlySpending();
                     
                     this.displayUndoNotification('Deleted "' + expense.name + '"');
                     
@@ -414,6 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.updateDeductions();
                     this.updateUpcomingDeductions();
                     this.saveExpenses();
+                    this.recordMonthlySpending();
                     this.displaySuccess('Expense restored!');
                     this.lastDeleted = null;
                     if (this.undoTimeout) {
@@ -454,29 +556,27 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.updateUpcomingDeductions();
                         localStorage.removeItem('expenses');
                         this.resetBudgetAlerts();
+                        this.recordMonthlySpending();
                         this.displaySuccess('All expenses cleared.');
                     }
                 );
             },
             
-            // ===== CALCULATIONS =====
-            // Frequency conversion constants (for normalizing to monthly)
+            // ===== CALCULATIONS (OPTIMIZED) =====
             getFrequencyMultipliers() {
                 return {
-                    weekly: 4.34524,      // 52 weeks / 12 months = 4.34524
-                    fortnightly: 2.17262, // 26 fortnights / 12 months = 2.17262
+                    weekly: 4.34524,      // 52 weeks / 12 months
+                    fortnightly: 2.17262, // 26 fortnights / 12 months
                     monthly: 1
                 };
             },
             
-            // Convert an amount to monthly equivalent
             convertToMonthly(amount, frequency) {
                 const multipliers = this.getFrequencyMultipliers();
                 return amount * (multipliers[frequency] || 1);
             },
             
             updateTotalExpenses() {
-                // Calculate monthly equivalent for ALL expenses (normalized to monthly)
                 let monthlyEquivalent = 0;
                 
                 this.expenses.forEach(expense => {
@@ -489,18 +589,16 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             
             updateDeductions() {
-                // Raw totals by frequency (what user actually pays per period)
                 const rawWeekly = this.calculateDeductions('weekly');
                 const rawFortnightly = this.calculateDeductions('fortnightly');
                 const rawMonthly = this.calculateDeductions('monthly');
                 
-                // Store raw amounts for display
                 this.deductions.weekly = rawWeekly;
                 this.deductions.fortnightly = rawFortnightly;
                 this.deductions.monthly = rawMonthly;
                 
-                // Daily average from monthly equivalent total
-                this.deductions.daily = parseFloat((this.totalExpenses / 30.44).toFixed(2)); // Average days per month
+                // Daily average: 365.25 days/year / 12 months = 30.4375 days/month
+                this.deductions.daily = parseFloat((this.totalExpenses / 30.4375).toFixed(2));
                 
                 this.updateUpcomingDeductions();
             },
@@ -511,7 +609,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 0);
             },
             
-            // Get monthly equivalent breakdown for display
             getMonthlyEquivalentBreakdown() {
                 const rawWeekly = this.calculateDeductions('weekly');
                 const rawFortnightly = this.calculateDeductions('fortnightly');
@@ -525,64 +622,300 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             },
             
-            getNextDueDate(frequency, now, day) {
+            // ===== NEXT DUE DATE CALCULATIONS (IMPROVED) =====
+            getNextDueDate(expense, now) {
                 const nextDueDate = new Date(now);
-                const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-                const targetDay = daysOfWeek.indexOf(day);
-                const currentDay = now.getDay();
-                let daysUntilNext = (targetDay - currentDay + 7) % 7;
-
-                if (frequency === 'weekly') {
-                    daysUntilNext = daysUntilNext === 0 ? 7 : daysUntilNext;
-                } else if (frequency === 'fortnightly') {
-                    daysUntilNext = daysUntilNext === 0 ? 14 : daysUntilNext + 7;
-                } else if (frequency === 'monthly') {
-                    nextDueDate.setMonth(now.getMonth() + 1);
-                    nextDueDate.setDate(1);
-                    return nextDueDate;
+                
+                if (expense.frequency === 'monthly' && expense.dayOfMonth) {
+                    const targetDay = parseInt(expense.dayOfMonth);
+                    const currentDay = now.getDate();
+                    const currentMonth = now.getMonth();
+                    
+                    if (currentDay >= targetDay) {
+                        nextDueDate.setMonth(currentMonth + 1);
+                    }
+                    
+                    const lastDayOfTargetMonth = new Date(nextDueDate.getFullYear(), nextDueDate.getMonth() + 1, 0).getDate();
+                    const actualDay = Math.min(targetDay, lastDayOfTargetMonth);
+                    nextDueDate.setDate(actualDay);
+                    
+                } else if (expense.frequency === 'weekly' || expense.frequency === 'fortnightly') {
+                    const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                    const targetDay = daysOfWeek.indexOf(expense.day);
+                    const currentDay = now.getDay();
+                    let daysUntilNext = (targetDay - currentDay + 7) % 7;
+                    
+                    if (daysUntilNext === 0) {
+                        daysUntilNext = 0;
+                    }
+                    
+                    if (expense.frequency === 'fortnightly') {
+                        const startDate = expense.startDate ? new Date(expense.startDate) : new Date();
+                        const weeksSinceStart = Math.floor((now - startDate) / (7 * 24 * 60 * 60 * 1000));
+                        const isAlternateWeek = weeksSinceStart % 2 === 0;
+                        
+                        if (daysUntilNext === 0) {
+                            const dayOfWeek = now.getDay();
+                            const refDayOfWeek = startDate.getDay();
+                            const daysDiff = (dayOfWeek - refDayOfWeek + 7) % 7;
+                            if (!isAlternateWeek && daysDiff <= 6) {
+                                daysUntilNext = 0;
+                            } else {
+                                daysUntilNext = 7;
+                            }
+                        } else {
+                            if (!isAlternateWeek) {
+                                daysUntilNext += 7;
+                            }
+                        }
+                    }
+                    
+                    if (daysUntilNext === 0 && now.getHours() >= 12) {
+                        daysUntilNext = expense.frequency === 'weekly' ? 7 : 14;
+                    }
+                    
+                    nextDueDate.setDate(now.getDate() + daysUntilNext);
                 }
-
-                nextDueDate.setDate(now.getDate() + daysUntilNext);
+                
+                nextDueDate.setHours(0, 0, 0, 0);
                 return nextDueDate;
             },
             
             updateUpcomingDeductions() {
                 const now = new Date();
-                let upcomingDeductions = [];
+                let allUpcoming = [];
 
                 this.expenses.forEach(expense => {
-                    if (expense.frequency === 'weekly') {
-                        const nextDueDate = this.getNextDueDate(expense.frequency, now, expense.day);
-                        upcomingDeductions.push({ ...expense, nextDueDate });
-                    }
+                    const nextDueDate = this.getNextDueDate(expense, now);
+                    allUpcoming.push({
+                        ...expense,
+                        nextDueDate: nextDueDate,
+                        daysUntil: Math.ceil((nextDueDate - now) / (1000 * 60 * 60 * 24))
+                    });
                 });
 
-                if (upcomingDeductions.length === 0) {
-                    this.expenses.forEach(expense => {
-                        if (expense.frequency === 'fortnightly') {
-                            const nextDueDate = this.getNextDueDate(expense.frequency, now, expense.day);
-                            upcomingDeductions.push({ ...expense, nextDueDate });
-                        }
+                allUpcoming.sort((a, b) => a.nextDueDate - b.nextDueDate);
+                
+                this.upcomingDeductions = allUpcoming.slice(0, 10);
+                
+                if (allUpcoming.length > 0) {
+                    const next = allUpcoming[0];
+                    this.nextDeduction = {
+                        name: next.name,
+                        amount: next.amount,
+                        frequency: next.frequency,
+                        day: next.frequency === 'monthly' ? 'Day ' + next.dayOfMonth : next.day,
+                        nextDueDate: next.nextDueDate
+                    };
+                } else {
+                    this.nextDeduction = { name: '', amount: 0, frequency: '', day: '', nextDueDate: '' };
+                }
+            },
+            
+            // ===== SPENDING HISTORY =====
+            recordMonthlySpending() {
+                const now = new Date();
+                const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                
+                const categoryBreakdown = {};
+                this.expenseCategories.forEach(cat => {
+                    categoryBreakdown[cat.id] = this.getCategorySpending(cat.id);
+                });
+                
+                const existingIndex = this.spendingHistory.findIndex(h => h.month === monthKey);
+                const record = {
+                    month: monthKey,
+                    total: this.totalExpenses,
+                    categories: categoryBreakdown,
+                    budget: this.budget,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                if (existingIndex >= 0) {
+                    this.$set(this.spendingHistory, existingIndex, record);
+                } else {
+                    this.spendingHistory.push(record);
+                }
+                
+                if (this.spendingHistory.length > 24) {
+                    this.spendingHistory = this.spendingHistory.slice(-24);
+                }
+                
+                localStorage.setItem('spendingHistory', JSON.stringify(this.spendingHistory));
+            },
+            
+            getSpendingTrend() {
+                if (this.spendingHistory.length < 2) return 'stable';
+                
+                const recent = this.spendingHistory.slice(-3);
+                const avgRecent = recent.reduce((sum, h) => sum + h.total, 0) / recent.length;
+                const older = this.spendingHistory.slice(-6, -3);
+                
+                if (older.length === 0) return 'stable';
+                
+                const avgOlder = older.reduce((sum, h) => sum + h.total, 0) / older.length;
+                
+                if (avgRecent > avgOlder * 1.1) return 'increasing';
+                if (avgRecent < avgOlder * 0.9) return 'decreasing';
+                return 'stable';
+            },
+            
+            // ===== STATISTICS & INSIGHTS =====
+            getExpenseStatistics() {
+                if (this.expenses.length === 0) {
+                    return {
+                        totalExpenses: 0,
+                        expenseCount: 0,
+                        averageExpense: 0,
+                        highestExpense: null,
+                        lowestExpense: null,
+                        projectedMonthly: 0,
+                        dailyAverage: 0,
+                        weeklyAverage: 0
+                    };
+                }
+                
+                const monthlyAmounts = this.expenses.map(e => ({
+                    expense: e,
+                    monthlyAmount: this.convertToMonthly(parseFloat(e.amount), e.frequency)
+                }));
+                
+                const sortedByAmount = [...monthlyAmounts].sort((a, b) => b.monthlyAmount - a.monthlyAmount);
+                
+                return {
+                    totalExpenses: this.totalExpenses,
+                    expenseCount: this.expenses.length,
+                    averageExpense: parseFloat((this.totalExpenses / this.expenses.length).toFixed(2)),
+                    highestExpense: sortedByAmount[0] ? {
+                        name: sortedByAmount[0].expense.name,
+                        amount: sortedByAmount[0].monthlyAmount,
+                        category: sortedByAmount[0].expense.category
+                    } : null,
+                    lowestExpense: sortedByAmount[sortedByAmount.length - 1] ? {
+                        name: sortedByAmount[sortedByAmount.length - 1].expense.name,
+                        amount: sortedByAmount[sortedByAmount.length - 1].monthlyAmount
+                    } : null,
+                    projectedMonthly: this.totalExpenses,
+                    dailyAverage: parseFloat((this.totalExpenses / 30.4375).toFixed(2)),
+                    weeklyAverage: parseFloat((this.totalExpenses / 4.34524).toFixed(2))
+                };
+            },
+            
+            getSpendingInsights() {
+                const insights = [];
+                const stats = this.getExpenseStatistics();
+                const utilization = this.budgetUtilization;
+                
+                if (this.budget > 0) {
+                    if (utilization >= 100) {
+                        insights.push({
+                            type: 'danger',
+                            icon: 'fa-exclamation-circle',
+                            title: 'Budget Exceeded',
+                            message: 'You have exceeded your budget by ' + this.formatCurrency(Math.abs(this.remainingBalance)) + '. Consider reviewing your expenses.'
+                        });
+                    } else if (utilization >= 90) {
+                        insights.push({
+                            type: 'warning',
+                            icon: 'fa-exclamation-triangle',
+                            title: 'Budget Alert',
+                            message: 'You have used ' + Math.round(utilization) + '% of your budget. Only ' + this.formatCurrency(this.remainingBalance) + ' remaining.'
+                        });
+                    } else if (utilization >= 75) {
+                        insights.push({
+                            type: 'warning',
+                            icon: 'fa-info-circle',
+                            title: 'Budget Notice',
+                            message: 'You have used ' + Math.round(utilization) + '% of your budget. ' + this.formatCurrency(this.remainingBalance) + ' remaining.'
+                        });
+                    } else {
+                        insights.push({
+                            type: 'success',
+                            icon: 'fa-check-circle',
+                            title: 'On Track',
+                            message: 'You have used ' + Math.round(utilization) + '% of your budget. ' + this.formatCurrency(this.remainingBalance) + ' remaining.'
+                        });
+                    }
+                }
+                
+                if (stats.highestExpense) {
+                    const category = this.getCategoryById(stats.highestExpense.category);
+                    insights.push({
+                        type: 'info',
+                        icon: 'fa-arrow-up',
+                        title: 'Highest Expense',
+                        message: stats.highestExpense.name + ' is your largest expense at ' + this.formatCurrency(stats.highestExpense.amount) + '/month (' + category.name + ').'
                     });
                 }
-
-                if (upcomingDeductions.length === 0) {
-                    this.expenses.forEach(expense => {
-                        if (expense.frequency === 'monthly') {
-                            const nextDueDate = this.getNextDueDate(expense.frequency, now, expense.day);
-                            upcomingDeductions.push({ ...expense, nextDueDate });
-                        }
+                
+                const trend = this.getSpendingTrend();
+                if (trend === 'increasing') {
+                    insights.push({
+                        type: 'warning',
+                        icon: 'fa-chart-line',
+                        title: 'Spending Trend',
+                        message: 'Your spending has been increasing over recent months. Consider reviewing your budget.'
+                    });
+                } else if (trend === 'decreasing') {
+                    insights.push({
+                        type: 'success',
+                        icon: 'fa-chart-line',
+                        title: 'Spending Trend',
+                        message: 'Great job! Your spending has been decreasing over recent months.'
                     });
                 }
-
-                const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                upcomingDeductions.sort((a, b) => daysOfWeek.indexOf(a.day) - daysOfWeek.indexOf(b.day));
-
-                this.nextDeduction = upcomingDeductions[0] || { name: '', amount: 0, frequency: '', day: '', nextDueDate: '' };
+                
+                const topCategory = this.getTopSpendingCategory();
+                if (topCategory) {
+                    insights.push({
+                        type: 'info',
+                        icon: 'fa-tag',
+                        title: 'Top Category',
+                        message: topCategory.name + ' is your highest spending category at ' + this.formatCurrency(topCategory.amount) + '/month.'
+                    });
+                }
+                
+                return insights;
+            },
+            
+            getTopSpendingCategory() {
+                let topCategory = null;
+                let topAmount = 0;
+                
+                this.expenseCategories.forEach(category => {
+                    const spending = this.getCategorySpending(category.id);
+                    if (spending > topAmount) {
+                        topAmount = spending;
+                        topCategory = {
+                            ...category,
+                            amount: spending
+                        };
+                    }
+                });
+                
+                return topCategory;
+            },
+            
+            getCategoryBreakdown() {
+                const breakdown = [];
+                this.expenseCategories.forEach(category => {
+                    const spending = this.getCategorySpending(category.id);
+                    if (spending > 0) {
+                        breakdown.push({
+                            ...category,
+                            amount: spending,
+                            percentage: this.totalExpenses > 0 ? ((spending / this.totalExpenses) * 100).toFixed(1) : 0,
+                            budget: this.getCategoryBudget(category.id),
+                            utilization: this.getCategoryUtilization(category.id)
+                        });
+                    }
+                });
+                return breakdown.sort((a, b) => b.amount - a.amount);
             },
             
             // ===== NOTIFICATIONS =====
-            displayNotification(message, type = 'error') {
+            displayNotification(message, type) {
+                type = type || 'error';
                 const notification = document.createElement('div');
                 notification.className = 'notification ' + type + '-notification';
                 notification.innerHTML = '<div class="flex items-center gap-2"><i class="fas ' + (type === 'error' ? 'fa-exclamation-triangle' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle') + '"></i><span>' + message + '</span></div>';
@@ -633,11 +966,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('expenses', JSON.stringify(this.expenses));
             },
             
-            // ===== CHARTS (WITH MEMORY LEAK FIX) =====
+            // ===== CHARTS =====
             createCharts() {
                 this.$nextTick(() => {
                     this.createCategoryChart();
                     this.createFrequencyChart();
+                    this.createTrendChart();
                 });
             },
             
@@ -650,13 +984,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.frequencyChart.destroy();
                     this.frequencyChart = null;
                 }
+                if (this.trendChart) {
+                    this.trendChart.destroy();
+                    this.trendChart = null;
+                }
             },
             
             createCategoryChart() {
                 const ctx = document.getElementById('categoryChart');
                 if (!ctx) return;
 
-                // Destroy existing chart first (FIXES MEMORY LEAK)
                 if (this.categoryChart) {
                     this.categoryChart.destroy();
                 }
@@ -664,8 +1001,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const categoryData = {};
                 this.expenses.forEach(expense => {
                     const category = this.getCategoryById(expense.category);
-                    const amount = parseFloat(expense.amount);
-                    categoryData[category.name] = (categoryData[category.name] || 0) + amount;
+                    const monthlyAmount = this.convertToMonthly(parseFloat(expense.amount), expense.frequency);
+                    categoryData[category.name] = (categoryData[category.name] || 0) + monthlyAmount;
                 });
 
                 const labels = Object.keys(categoryData);
@@ -696,10 +1033,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             },
                             tooltip: {
                                 callbacks: {
-                                    label: function(context) {
+                                    label: (context) => {
                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                         const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                        return context.label + ': $' + context.parsed + ' (' + percentage + '%)';
+                                        return context.label + ': ' + this.formatCurrency(context.parsed) + ' (' + percentage + '%)';
                                     }
                                 }
                             }
@@ -712,12 +1049,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const ctx = document.getElementById('frequencyChart');
                 if (!ctx) return;
 
-                // Destroy existing chart first (FIXES MEMORY LEAK)
                 if (this.frequencyChart) {
                     this.frequencyChart.destroy();
                 }
 
-                // Calculate both raw amounts and monthly equivalents
                 const rawData = { 'Weekly': 0, 'Fortnightly': 0, 'Monthly': 0 };
                 const monthlyEquivalentData = { 'Weekly': 0, 'Fortnightly': 0, 'Monthly': 0 };
                 const multipliers = this.getFrequencyMultipliers();
@@ -737,7 +1072,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Monthly Equivalent ($)',
+                            label: 'Monthly Equivalent',
                             data: data,
                             backgroundColor: [
                                 'rgba(0, 123, 255, 0.8)',
@@ -759,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    callback: function(value) { return '$' + value; }
+                                    callback: (value) => this.formatCurrency(value)
                                 }
                             }
                         },
@@ -772,21 +1107,85 @@ document.addEventListener('DOMContentLoaded', function() {
                                         const monthlyEquiv = context.parsed.y;
                                         const rawAmount = rawData[label];
                                         if (label === 'Monthly') {
-                                            return 'Monthly: $' + rawAmount.toFixed(2);
+                                            return 'Monthly: ' + this.formatCurrency(rawAmount);
                                         } else if (label === 'Weekly') {
                                             return [
-                                                'Monthly Equivalent: $' + monthlyEquiv.toFixed(2),
-                                                'Raw Weekly: $' + rawAmount.toFixed(2) + '/week'
+                                                'Monthly Equivalent: ' + this.formatCurrency(monthlyEquiv),
+                                                'Raw Weekly: ' + this.formatCurrency(rawAmount) + '/week'
                                             ];
                                         } else if (label === 'Fortnightly') {
                                             return [
-                                                'Monthly Equivalent: $' + monthlyEquiv.toFixed(2),
-                                                'Raw Fortnightly: $' + rawAmount.toFixed(2) + '/fortnight'
+                                                'Monthly Equivalent: ' + this.formatCurrency(monthlyEquiv),
+                                                'Raw Fortnightly: ' + this.formatCurrency(rawAmount) + '/fortnight'
                                             ];
                                         }
-                                        return '$' + monthlyEquiv.toFixed(2);
+                                        return this.formatCurrency(monthlyEquiv);
                                     }
                                 }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            createTrendChart() {
+                const ctx = document.getElementById('trendChart');
+                if (!ctx) return;
+
+                if (this.trendChart) {
+                    this.trendChart.destroy();
+                }
+
+                if (this.spendingHistory.length < 2) {
+                    return;
+                }
+
+                const labels = this.spendingHistory.map(h => {
+                    const parts = h.month.split('-');
+                    const date = new Date(parts[0], parseInt(parts[1]) - 1);
+                    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                });
+                
+                const spendingData = this.spendingHistory.map(h => h.total);
+                const budgetData = this.spendingHistory.map(h => h.budget);
+
+                this.trendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Spending',
+                                data: spendingData,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Budget',
+                                data: budgetData,
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                backgroundColor: 'transparent',
+                                borderDash: [5, 5],
+                                tension: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: (value) => this.formatCurrency(value)
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
                             }
                         }
                     }
@@ -810,13 +1209,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                const headers = ['Name', 'Amount', 'Frequency', 'Category', 'Day', 'Start Date', 'Notes'];
+                const headers = ['Name', 'Amount', 'Frequency', 'Category', 'Day', 'Day of Month', 'Start Date', 'Notes'];
                 const csvRows = this.expenses.map(expense => [
                     expense.name,
                     expense.amount,
                     expense.frequency,
                     this.getCategoryById(expense.category).name,
-                    expense.day,
+                    expense.day || '',
+                    expense.dayOfMonth || '',
                     expense.startDate || '',
                     expense.notes || ''
                 ]);
@@ -853,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const lines = csvText.split('\n').filter(line => line.trim());
                         const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
 
-                        const expectedHeaders = ['Name', 'Amount', 'Frequency', 'Category', 'Day', 'Start Date'];
+                        const expectedHeaders = ['Name', 'Amount', 'Frequency', 'Category', 'Day'];
                         const isValidFormat = expectedHeaders.every(header => headers.includes(header));
 
                         if (!isValidFormat) {
@@ -865,7 +1265,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         for (let i = 1; i < lines.length; i++) {
                             const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
                             if (values.length >= 5) {
-                                const [name, amount, frequency, category, day, startDate, notes] = values;
+                                const name = values[0];
+                                const amount = values[1];
+                                const frequency = values[2];
+                                const category = values[3];
+                                const day = values[4];
+                                const dayOfMonth = values[5] || null;
+                                const startDate = values[6] || new Date().toISOString().split('T')[0];
+                                const notes = values[7] || '';
 
                                 const categoryId = this.expenseCategories.find(cat =>
                                     cat.name.toLowerCase() === category.toLowerCase()
@@ -878,9 +1285,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                         amount: parseFloat(amount),
                                         frequency: frequency.toLowerCase().trim(),
                                         category: categoryId,
-                                        day: day.toLowerCase().trim(),
-                                        startDate: startDate ? startDate.trim() : new Date().toISOString().split('T')[0],
-                                        notes: notes ? notes.trim() : ''
+                                        day: frequency.toLowerCase() !== 'monthly' ? day.toLowerCase().trim() : '',
+                                        dayOfMonth: frequency.toLowerCase() === 'monthly' ? parseInt(dayOfMonth) || 1 : null,
+                                        startDate: startDate.trim(),
+                                        notes: notes.trim()
                                     });
                                 }
                             }
@@ -909,11 +1317,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     const backupData = {
                         budget: this.budget,
+                        budgetEnabled: this.budgetEnabled,
                         expenses: this.expenses,
                         currency: this.currency,
+                        categoryBudgets: this.categoryBudgets,
+                        spendingHistory: this.spendingHistory,
                         theme: localStorage.getItem('theme') || 'light',
                         timestamp: new Date().toISOString(),
-                        version: '2.0'
+                        version: '3.0'
                     };
 
                     const dataStr = JSON.stringify(backupData, null, 2);
@@ -952,9 +1363,24 @@ document.addEventListener('DOMContentLoaded', function() {
                             localStorage.setItem('budget', this.budget.toString());
                         }
                         
+                        if (data.budgetEnabled !== undefined) {
+                            this.budgetEnabled = data.budgetEnabled === true || data.budgetEnabled === 'true';
+                            localStorage.setItem('budgetEnabled', this.budgetEnabled.toString());
+                        }
+                        
                         if (data.expenses && Array.isArray(data.expenses)) {
                             this.expenses = data.expenses;
                             this.saveExpenses();
+                        }
+                        
+                        if (data.categoryBudgets) {
+                            this.categoryBudgets = data.categoryBudgets;
+                            localStorage.setItem('categoryBudgets', JSON.stringify(this.categoryBudgets));
+                        }
+                        
+                        if (data.spendingHistory) {
+                            this.spendingHistory = data.spendingHistory;
+                            localStorage.setItem('spendingHistory', JSON.stringify(this.spendingHistory));
                         }
                         
                         if (data.currency) {
@@ -991,6 +1417,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             },
             
+            formatMonth(monthKey) {
+                if (!monthKey) return '';
+                const parts = monthKey.split('-');
+                const date = new Date(parts[0], parseInt(parts[1]) - 1);
+                return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            },
+            
             requestNotificationPermission() {
                 if ('Notification' in window && navigator.serviceWorker) {
                     Notification.requestPermission().then(permission => {
@@ -1009,15 +1442,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (storedExpenses) {
                     try {
                         this.expenses = JSON.parse(storedExpenses);
-                        // Ensure all expenses have IDs
                         this.expenses = this.expenses.map(exp => ({
                             ...exp,
                             id: exp.id || generateId(),
-                            notes: exp.notes || ''
+                            notes: exp.notes || '',
+                            dayOfMonth: exp.dayOfMonth || null
                         }));
                     } catch (e) {
                         console.error('Error parsing stored expenses:', e);
                         this.expenses = [];
+                    }
+                }
+                
+                const storedCategoryBudgets = localStorage.getItem('categoryBudgets');
+                if (storedCategoryBudgets) {
+                    try {
+                        this.categoryBudgets = JSON.parse(storedCategoryBudgets);
+                    } catch (e) {
+                        this.categoryBudgets = {};
+                    }
+                }
+                
+                const storedSpendingHistory = localStorage.getItem('spendingHistory');
+                if (storedSpendingHistory) {
+                    try {
+                        this.spendingHistory = JSON.parse(storedSpendingHistory);
+                    } catch (e) {
+                        this.spendingHistory = [];
                     }
                 }
                 
@@ -1047,6 +1498,12 @@ document.addEventListener('DOMContentLoaded', function() {
             budgetUtilization() {
                 if (this.budget <= 0) return 0;
                 return Math.min((this.totalExpenses / this.budget) * 100, 100);
+            },
+            monthlyEquivalentBreakdown() {
+                return this.getMonthlyEquivalentBreakdown();
+            },
+            spendingTrend() {
+                return this.getSpendingTrend();
             },
             filteredExpenses() {
                 let filtered = [...this.expenses];
@@ -1088,6 +1545,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 return filtered;
+            },
+            expenseStatistics() {
+                return this.getExpenseStatistics();
+            },
+            spendingInsights() {
+                return this.getSpendingInsights();
+            },
+            categoryBreakdown() {
+                return this.getCategoryBreakdown();
             }
         },
         watch: {
@@ -1108,7 +1574,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         mounted() {
-            // Make app accessible globally for undo button
             window.vueApp = this;
             
             this.requestNotificationPermission();

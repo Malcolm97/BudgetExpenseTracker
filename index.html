@@ -55,22 +55,51 @@
                     <div class="card-icon">
                         <i class="fas fa-money-bill-wave"></i>
                     </div>
-                    <h2 class="card-title">Set Your Budget</h2>
+                    <h2 class="card-title">{{ budgetEnabled ? 'Set Your Budget' : 'Expense Tracking Mode' }}</h2>
                 </div>
                 <div class="card-content">
-                    <form @submit.prevent="setBudget" class="budget-form">
+                    <!-- Budget Mode Toggle -->
+                    <div class="budget-mode-toggle">
+                        <div class="toggle-row">
+                            <div class="toggle-info">
+                                <span class="toggle-label">Budget Tracking</span>
+                                <span class="toggle-description">{{ budgetEnabled ? 'Set a monthly budget to track spending limits' : 'Track expenses without a budget limit' }}</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" v-model="budgetEnabled" @change="toggleBudgetEnabled">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Budget Form (only shown when budget is enabled) -->
+                    <form v-if="budgetEnabled" @submit.prevent="setBudget" class="budget-form">
                         <div class="input-group">
                             <label for="budget" class="input-label">Monthly Budget Amount</label>
                             <div class="input-wrapper">
                                 <span class="input-prefix">{{ getCurrencySymbol() }}</span>
-                                <input type="number" id="budget" v-model="budget" placeholder="0.00" step="0.01" required class="form-input" inputmode="decimal" autocomplete="off">
+                                <input type="number" id="budget" v-model="budget" placeholder="0.00" step="0.01" class="form-input" inputmode="decimal" autocomplete="off">
                             </div>
                         </div>
-                        <button type="submit" class="btn-primary btn-full">
-                            <i class="fas fa-save"></i>
-                            Set Budget
-                        </button>
+                        <div class="budget-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save"></i>
+                                Set Budget
+                            </button>
+                            <button v-if="budget > 0" type="button" @click="clearBudget" class="btn-secondary">
+                                <i class="fas fa-times"></i>
+                                Clear
+                            </button>
+                        </div>
                     </form>
+                    
+                    <!-- Expense-only mode message -->
+                    <div v-else class="expense-only-info">
+                        <div class="info-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <p>You're in expense-tracking mode. Add expenses and see your spending breakdown without setting a budget limit. Enable budget tracking above if you want to set spending limits.</p>
+                    </div>
                     
                     <!-- Currency Selector -->
                     <div class="settings-section">
@@ -82,6 +111,30 @@
                                         {{ curr.symbol }} {{ curr.name }}
                                     </option>
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Insights Panel -->
+            <section v-if="spendingInsights.length > 0" class="card insights-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h2 class="card-title">Quick Insights</h2>
+                </div>
+                <div class="card-content">
+                    <div class="insights-list">
+                        <div v-for="(insight, index) in spendingInsights.slice(0, 3)" :key="index" 
+                             class="insight-item" :class="'insight-' + insight.type">
+                            <div class="insight-icon">
+                                <i :class="'fas ' + insight.icon"></i>
+                            </div>
+                            <div class="insight-content">
+                                <h4 class="insight-title">{{ insight.title }}</h4>
+                                <p class="insight-message">{{ insight.message }}</p>
                             </div>
                         </div>
                     </div>
@@ -100,7 +153,8 @@
                     </div>
                     <div class="card-content">
                         <div class="summary-items">
-                            <div class="summary-item">
+                            <!-- Budget row - only shown when budget tracking is enabled -->
+                            <div v-if="budgetEnabled" class="summary-item">
                                 <span class="summary-label">Budget</span>
                                 <span class="summary-value text-primary">{{ formatCurrency(budget) }}</span>
                             </div>
@@ -108,15 +162,21 @@
                                 <span class="summary-label">Total Expenses</span>
                                 <span class="summary-value text-danger">{{ formatCurrency(totalExpenses) }}</span>
                             </div>
-                            <div class="summary-item">
+                            <!-- Remaining Balance - only shown when budget tracking is enabled -->
+                            <div v-if="budgetEnabled && budget > 0" class="summary-item">
                                 <span class="summary-label">Remaining Balance</span>
                                 <span class="summary-value" :class="remainingBalance >= 0 ? 'text-success' : 'text-danger'">
                                     {{ formatCurrency(remainingBalance) }}
-                                    <span v-if="budget > 0 && budgetUtilization >= 75" class="budget-warning-badge" :class="budgetUtilization >= 90 ? 'danger' : 'warning'">
+                                    <span v-if="budgetUtilization >= 75" class="budget-warning-badge" :class="budgetUtilization >= 90 ? 'danger' : 'warning'">
                                         <i class="fas fa-exclamation-triangle"></i>
                                         {{ Math.round(budgetUtilization) }}%
                                     </span>
                                 </span>
+                            </div>
+                            <!-- Expense count - shown when budget tracking is disabled -->
+                            <div v-if="!budgetEnabled" class="summary-item">
+                                <span class="summary-label">Total Expenses</span>
+                                <span class="summary-value text-info">{{ expenses.length }} items</span>
                             </div>
                         </div>
                         <div class="deduction-breakdown">
@@ -165,42 +225,41 @@
                     </div>
                 </section>
 
-                <!-- Next Deduction -->
-                <section class="card next-deduction-card">
+                <!-- Upcoming Deductions -->
+                <section class="card upcoming-deductions-card">
                     <div class="card-header">
                         <div class="card-icon">
                             <i class="fas fa-calendar-check"></i>
                         </div>
-                        <h2 class="card-title">Next Deduction</h2>
+                        <h2 class="card-title">Upcoming Expenses</h2>
                     </div>
                     <div class="card-content">
-                        <div v-if="nextDeduction.name" class="next-deduction-content">
-                            <div class="deduction-detail">
-                                <span class="detail-label">Expense</span>
-                                <span class="detail-value">{{ nextDeduction.name }}</span>
-                            </div>
-                            <div class="deduction-detail">
-                                <span class="detail-label">Amount</span>
-                                <span class="detail-value text-danger">{{ formatCurrency(nextDeduction.amount) }}</span>
-                            </div>
-                            <div class="deduction-detail">
-                                <span class="detail-label">Frequency</span>
-                                <span class="detail-value">{{ nextDeduction.frequency }}</span>
-                            </div>
-                            <div class="deduction-detail">
-                                <span class="detail-label">Day</span>
-                                <span class="detail-value">{{ nextDeduction.day }}</span>
-                            </div>
-                            <div class="next-due-highlight">
-                                <i class="fas fa-clock"></i>
-                                <span>{{ nextDeduction.nextDueDate ? formatDate(nextDeduction.nextDueDate) : 'N/A' }}</span>
+                        <div v-if="upcomingDeductions.length > 0" class="upcoming-list">
+                            <div v-for="(expense, index) in upcomingDeductions.slice(0, 5)" :key="expense.id || index" 
+                                 class="upcoming-item" :class="{ 'urgent': expense.daysUntil <= 3 }">
+                                <div class="upcoming-icon" :style="{ backgroundColor: getCategoryById(expense.category).color }">
+                                    <i :class="getCategoryById(expense.category).icon"></i>
+                                </div>
+                                <div class="upcoming-details">
+                                    <h4 class="upcoming-name">{{ expense.name }}</h4>
+                                    <div class="upcoming-meta">
+                                        <span class="upcoming-amount">{{ formatCurrency(expense.amount) }}</span>
+                                        <span class="upcoming-frequency">{{ expense.frequency }}</span>
+                                    </div>
+                                </div>
+                                <div class="upcoming-due">
+                                    <span class="days-until" :class="{ 'urgent-text': expense.daysUntil <= 3 }">
+                                        {{ expense.daysUntil === 0 ? 'Today' : expense.daysUntil === 1 ? 'Tomorrow' : expense.daysUntil + ' days' }}
+                                    </span>
+                                    <span class="due-date">{{ formatDate(expense.nextDueDate) }}</span>
+                                </div>
                             </div>
                         </div>
                         <div v-else class="empty-state">
                             <div class="empty-icon">
                                 <i class="fas fa-calendar-times"></i>
                             </div>
-                            <p class="empty-text">No upcoming deductions</p>
+                            <p class="empty-text">No upcoming expenses</p>
                         </div>
                     </div>
                 </section>
@@ -251,7 +310,8 @@
                                 <label for="expense-start-date" class="input-label">Start Date</label>
                                 <input type="date" id="expense-start-date" v-model="newExpense.startDate" class="form-input">
                             </div>
-                            <div class="input-group">
+                            <!-- Day of Week (for weekly/fortnightly) -->
+                            <div v-if="newExpense.frequency !== 'monthly'" class="input-group">
                                 <label for="expense-day" class="input-label">Day of Week</label>
                                 <select id="expense-day" v-model="newExpense.day" class="form-input">
                                     <option value="monday">Monday</option>
@@ -261,6 +321,13 @@
                                     <option value="friday">Friday</option>
                                     <option value="saturday">Saturday</option>
                                     <option value="sunday">Sunday</option>
+                                </select>
+                            </div>
+                            <!-- Day of Month (for monthly) -->
+                            <div v-if="newExpense.frequency === 'monthly'" class="input-group">
+                                <label for="expense-day-of-month" class="input-label">Day of Month</label>
+                                <select id="expense-day-of-month" v-model="newExpense.dayOfMonth" class="form-input">
+                                    <option v-for="day in 31" :value="day" :key="day">{{ day }}{{ day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th' }}</option>
                                 </select>
                             </div>
                         </div>
@@ -383,7 +450,7 @@
                                         </span>
                                         <span class="day-tag">
                                             <i class="fas fa-calendar-day"></i>
-                                            {{ expense.day }}
+                                            {{ expense.frequency === 'monthly' ? 'Day ' + (expense.dayOfMonth || 1) : expense.day }}
                                         </span>
                                     </div>
                                 </div>
@@ -446,6 +513,90 @@
         <main v-show="currentPage === 'analytics'" class="page-content">
             <!-- Analytics Content -->
             <section v-if="expenses.length > 0" class="analytics-section">
+                <!-- Spending Insights -->
+                <section v-if="spendingInsights.length > 0" class="card insights-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <h2 class="card-title">Spending Insights</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="insights-list">
+                            <div v-for="(insight, index) in spendingInsights" :key="index" 
+                                 class="insight-item" :class="'insight-' + insight.type">
+                                <div class="insight-icon">
+                                    <i :class="'fas ' + insight.icon"></i>
+                                </div>
+                                <div class="insight-content">
+                                    <h4 class="insight-title">{{ insight.title }}</h4>
+                                    <p class="insight-message">{{ insight.message }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Statistics Overview -->
+                <section class="card stats-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h2 class="card-title">Statistics Overview</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <div class="stat-icon">
+                                    <i class="fas fa-receipt"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value">{{ expenseStatistics.expenseCount }}</span>
+                                    <span class="stat-label">Total Expenses</span>
+                                </div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calculator"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value">{{ formatCurrency(expenseStatistics.averageExpense) }}</span>
+                                    <span class="stat-label">Average per Item</span>
+                                </div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calendar-day"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value">{{ formatCurrency(expenseStatistics.dailyAverage) }}</span>
+                                    <span class="stat-label">Daily Average</span>
+                                </div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calendar-week"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value">{{ formatCurrency(expenseStatistics.weeklyAverage) }}</span>
+                                    <span class="stat-label">Weekly Average</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="expenseStatistics.highestExpense" class="extreme-expenses">
+                            <div class="extreme-item highest">
+                                <span class="extreme-label"><i class="fas fa-arrow-up"></i> Highest Expense</span>
+                                <span class="extreme-value">{{ expenseStatistics.highestExpense.name }} - {{ formatCurrency(expenseStatistics.highestExpense.amount) }}/mo</span>
+                            </div>
+                            <div v-if="expenseStatistics.lowestExpense" class="extreme-item lowest">
+                                <span class="extreme-label"><i class="fas fa-arrow-down"></i> Lowest Expense</span>
+                                <span class="extreme-value">{{ expenseStatistics.lowestExpense.name }} - {{ formatCurrency(expenseStatistics.lowestExpense.amount) }}/mo</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Charts Grid -->
                 <div class="charts-grid">
                     <!-- Category Breakdown Pie Chart -->
@@ -459,6 +610,19 @@
                         <div class="card-content">
                             <div class="chart-wrapper">
                                 <canvas id="categoryChart"></canvas>
+                            </div>
+                            <!-- Category Breakdown List -->
+                            <div v-if="categoryBreakdown.length > 0" class="category-breakdown-list">
+                                <div v-for="category in categoryBreakdown" :key="category.id" class="category-breakdown-item">
+                                    <div class="category-info">
+                                        <span class="category-color" :style="{ backgroundColor: category.color }"></span>
+                                        <span class="category-name">{{ category.name }}</span>
+                                    </div>
+                                    <div class="category-stats">
+                                        <span class="category-amount">{{ formatCurrency(category.amount) }}</span>
+                                        <span class="category-percentage">({{ category.percentage }}%)</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -475,9 +639,33 @@
                             <div class="chart-wrapper">
                                 <canvas id="frequencyChart"></canvas>
                             </div>
+                            <div class="frequency-legend">
+                                <p class="legend-note"><i class="fas fa-info-circle"></i> Chart shows monthly equivalent values for accurate comparison</p>
+                            </div>
                         </div>
                     </section>
                 </div>
+
+                <!-- Spending Trend Chart -->
+                <section v-if="spendingHistory.length >= 2" class="card trend-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h2 class="card-title">Spending Trend</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="chart-wrapper trend-chart-wrapper">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                        <div class="trend-summary">
+                            <div class="trend-indicator" :class="'trend-' + getSpendingTrend()">
+                                <i :class="'fas ' + (getSpendingTrend() === 'increasing' ? 'fa-arrow-up' : getSpendingTrend() === 'decreasing' ? 'fa-arrow-down' : 'fa-minus')"></i>
+                                <span>Your spending is {{ getSpendingTrend() }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
                 <!-- Budget vs Actual Comparison -->
                 <section v-if="budget > 0" class="card budget-comparison-card">
@@ -515,6 +703,45 @@
                                 <span class="stat-value" :class="budgetUtilization >= 90 ? 'text-danger' : budgetUtilization >= 75 ? 'text-secondary' : 'text-success'">
                                     {{ Math.round(budgetUtilization) }}%
                                 </span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Category Budget Alerts -->
+                <section v-if="Object.keys(categoryBudgets).length > 0" class="card category-budgets-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <h2 class="card-title">Category Budget Status</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="category-budgets-list">
+                            <div v-for="category in expenseCategories" :key="category.id" 
+                                 v-if="getCategoryBudget(category.id) > 0" 
+                                 class="category-budget-item">
+                                <div class="category-budget-header">
+                                    <div class="category-info">
+                                        <span class="category-color" :style="{ backgroundColor: category.color }"></span>
+                                        <span class="category-name">{{ category.name }}</span>
+                                    </div>
+                                    <div class="category-budget-amounts">
+                                        <span class="spent">{{ formatCurrency(getCategorySpending(category.id)) }}</span>
+                                        <span class="separator">/</span>
+                                        <span class="budget">{{ formatCurrency(getCategoryBudget(category.id)) }}</span>
+                                    </div>
+                                </div>
+                                <div class="category-progress-bar">
+                                    <div class="category-progress-fill" 
+                                         :style="{ width: Math.min(getCategoryUtilization(category.id), 100) + '%', backgroundColor: category.color }">
+                                    </div>
+                                </div>
+                                <div class="category-budget-footer">
+                                    <span class="utilization" :class="{ 'over-budget': getCategoryUtilization(category.id) > 100 }">
+                                        {{ Math.round(getCategoryUtilization(category.id)) }}% utilized
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
