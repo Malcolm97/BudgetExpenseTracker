@@ -1,19 +1,60 @@
+// Budget Expense Tracker - Production Ready Version
+// Optimized and enhanced with modern features
+
+// ===== SERVICE WORKER REGISTRATION =====
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./service-worker.js').then(function(registration) {
-      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-    }, function(error) {
-      console.log('ServiceWorker registration failed: ', error);
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./service-worker.js').then(function(registration) {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateNotification();
+                        }
+                    });
+                }
+            });
+        }, function(error) {
+            console.log('ServiceWorker registration failed: ', error);
+        });
     });
-  });
 }
 
+function showUpdateNotification() {
+    const notification = document.createElement('div');
+    notification.className = 'update-notification';
+    notification.innerHTML = '<div class="update-content"><i class="fas fa-sync-alt"></i><span>New version available!</span><button onclick="window.location.reload()" class="btn-primary btn-sm">Update</button></div>';
+    document.body.appendChild(notification);
+    setTimeout(() => notification.classList.add('show'), 100);
+}
+
+// ===== UTILITY FUNCTIONS =====
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// ===== MAIN APPLICATION =====
 document.addEventListener('DOMContentLoaded', function() {
     // Theme toggle functionality
     const themeToggle = document.getElementById('theme-toggle');
     const html = document.documentElement;
 
-    // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'light';
     html.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
@@ -21,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
     themeToggle.addEventListener('click', () => {
         const currentTheme = html.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
         html.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
         updateThemeIcon(newTheme);
@@ -29,109 +69,120 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateThemeIcon(theme) {
         const icon = themeToggle.querySelector('i');
-        icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     }
 
-    // PWA Installation functionality
+    // ===== OFFLINE INDICATOR =====
+    const offlineIndicator = document.createElement('div');
+    offlineIndicator.className = 'offline-indicator';
+    offlineIndicator.innerHTML = '<i class="fas fa-wifi-slash"></i> You are offline';
+    document.body.appendChild(offlineIndicator);
+
+    function updateOnlineStatus() {
+        if (navigator.onLine) {
+            offlineIndicator.classList.remove('show');
+        } else {
+            offlineIndicator.classList.add('show');
+        }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
+    // ===== PWA INSTALLATION =====
     let deferredPrompt;
     const installBanner = document.getElementById('pwa-install-banner');
     const installBtn = document.getElementById('install-btn');
     const dismissBtn = document.getElementById('dismiss-btn');
 
-    // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
-        // App is already installed, hide banner
-        installBanner.style.display = 'none';
+        if (installBanner) installBanner.style.display = 'none';
     }
 
-    // Listen for the beforeinstallprompt event
     window.addEventListener('beforeinstallprompt', (e) => {
         console.log('PWA: Install prompt triggered');
-        // Prevent the mini-infobar from appearing on mobile
         e.preventDefault();
-        // Stash the event so it can be triggered later
         deferredPrompt = e;
-
-        // Show the install banner after a short delay
         setTimeout(() => {
-            // Check if user has already dismissed the banner
             const dismissed = localStorage.getItem('pwa-install-dismissed');
-            if (!dismissed) {
-                installBanner.style.display = 'block';
-            }
-        }, 3000); // Show after 3 seconds
+            if (!dismissed && installBanner) installBanner.style.display = 'block';
+        }, 3000);
     });
 
-    // Handle install button click
-    installBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) {
-            console.log('PWA: Install prompt not available');
-            return;
-        }
-
-        // Show the install prompt
-        deferredPrompt.prompt();
-
-        // Wait for the user to respond to the prompt
-        const { outcome } = await deferredPrompt.userChoice;
-
-        console.log(`PWA: User response to install prompt: ${outcome}`);
-
-        // Reset the deferred prompt variable
-        deferredPrompt = null;
-
-        // Hide the banner
-        installBanner.style.display = 'none';
-    });
-
-    // Handle dismiss button click
-    dismissBtn.addEventListener('click', () => {
-        installBanner.style.display = 'none';
-        // Remember that user dismissed the banner
-        localStorage.setItem('pwa-install-dismissed', 'true');
-    });
-
-    // Listen for successful installation
-    window.addEventListener('appinstalled', (evt) => {
-        console.log('PWA: App was installed successfully');
-        installBanner.style.display = 'none';
-    });
-
-    // Check if running in standalone mode (already installed)
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-        console.log('PWA: Running in standalone mode');
+    if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log('PWA: User response:', outcome);
+            deferredPrompt = null;
+            if (installBanner) installBanner.style.display = 'none';
+        });
     }
 
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', () => {
+            if (installBanner) installBanner.style.display = 'none';
+            localStorage.setItem('pwa-install-dismissed', 'true');
+        });
+    }
+
+    window.addEventListener('appinstalled', () => {
+        console.log('PWA: App installed successfully');
+        if (installBanner) installBanner.style.display = 'none';
+    });
+
+    // ===== VUE APPLICATION =====
     new Vue({
         el: '#app',
         data: {
-            currentPage: 'dashboard', // Default page
+            currentPage: 'dashboard',
             budget: 0,
             expenses: [],
             newExpense: {
                 name: '',
-                amount: 0,
+                amount: '',
                 frequency: 'weekly',
                 day: 'monday',
                 category: 'other',
-                startDate: new Date().toISOString().split('T')[0]
+                startDate: new Date().toISOString().split('T')[0],
+                notes: ''
             },
             totalExpenses: 0,
             remainingBalance: 0,
-            deductions: {
-                weekly: 0,
-                fortnightly: 0,
-                monthly: 0,
-                daily: 0
-            },
-            nextDeduction: {},
+            deductions: { weekly: 0, fortnightly: 0, monthly: 0, daily: 0 },
+            nextDeduction: { name: '', amount: 0, frequency: '', day: '', nextDueDate: '' },
             editingIndex: null,
             isEditing: false,
-            // Search and filter properties
+            isLoading: false,
+            
+            // Search and filter
             searchQuery: '',
             categoryFilter: '',
             frequencyFilter: '',
+            dateFilterStart: '',
+            dateFilterEnd: '',
             sortBy: 'date-desc',
+            
+            // Currency
+            currency: localStorage.getItem('currency') || 'USD',
+            
+            // Undo functionality
+            lastDeleted: null,
+            undoTimeout: null,
+            
+            // Chart instances (FIXES MEMORY LEAK)
+            categoryChart: null,
+            frequencyChart: null,
+            
+            // Budget alerts
+            budgetAlerts: { 50: false, 75: false, 90: false, 100: false },
+            
+            // Confirmation modal
+            confirmModal: { show: false, title: '', message: '', onConfirm: null },
+            
+            // Categories
             expenseCategories: [
                 { id: 'food', name: 'Food & Dining', icon: 'fas fa-utensils', color: '#ff6b6b' },
                 { id: 'transport', name: 'Transportation', icon: 'fas fa-car', color: '#4ecdc4' },
@@ -141,86 +192,339 @@ document.addEventListener('DOMContentLoaded', function() {
                 { id: 'health', name: 'Health & Fitness', icon: 'fas fa-heartbeat', color: '#fd79a8' },
                 { id: 'education', name: 'Education', icon: 'fas fa-graduation-cap', color: '#00b894' },
                 { id: 'travel', name: 'Travel', icon: 'fas fa-plane', color: '#a29bfe' },
+                { id: 'subscriptions', name: 'Subscriptions', icon: 'fas fa-repeat', color: '#e17055' },
                 { id: 'other', name: 'Other', icon: 'fas fa-ellipsis-h', color: '#636e72' }
+            ],
+            
+            // Currencies
+            availableCurrencies: [
+                { code: 'USD', name: 'US Dollar', symbol: '$' },
+                { code: 'EUR', name: 'Euro', symbol: '€' },
+                { code: 'GBP', name: 'British Pound', symbol: '£' },
+                { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+                { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+                { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+                { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+                { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' }
             ]
         },
         methods: {
+            // ===== CURRENCY =====
+            formatCurrency(amount) {
+                const currencies = {
+                    'USD': { symbol: '$', locale: 'en-US' },
+                    'EUR': { symbol: '€', locale: 'de-DE' },
+                    'GBP': { symbol: '£', locale: 'en-GB' },
+                    'JPY': { symbol: '¥', locale: 'ja-JP' },
+                    'AUD': { symbol: 'A$', locale: 'en-AU' },
+                    'CAD': { symbol: 'C$', locale: 'en-CA' },
+                    'INR': { symbol: '₹', locale: 'en-IN' },
+                    'CNY': { symbol: '¥', locale: 'zh-CN' }
+                };
+                const curr = currencies[this.currency] || currencies['USD'];
+                const num = parseFloat(amount) || 0;
+                return curr.symbol + num.toLocaleString(curr.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
+            
+            getCurrencySymbol() {
+                const curr = this.availableCurrencies.find(c => c.code === this.currency);
+                return curr ? curr.symbol : '$';
+            },
+            
+            setCurrency() {
+                localStorage.setItem('currency', this.currency);
+                this.displaySuccess('Currency changed to ' + this.currency);
+            },
+            
+            // ===== BUDGET =====
             setBudget() {
-                const totalBudget = parseFloat(this.budget);
-                if (!isNaN(totalBudget) && totalBudget > 0) {
-                    this.budget = totalBudget.toFixed(2);
-                    this.remainingBalance = totalBudget.toFixed(2);
+                try {
+                    const totalBudget = parseFloat(this.budget);
+                    if (isNaN(totalBudget) || totalBudget <= 0) {
+                        this.displayError('Please enter a valid budget amount greater than 0.');
+                        return;
+                    }
+                    this.budget = totalBudget;
                     this.updateTotalExpenses();
-                    localStorage.setItem('budget', this.budget); // Store budget in Local Storage
-                } else {
-                    this.displayError('Please enter a valid budget amount.');
+                    localStorage.setItem('budget', this.budget.toString());
+                    this.resetBudgetAlerts();
+                    this.displaySuccess('Budget set successfully!');
+                } catch (error) {
+                    console.error('Error setting budget:', error);
+                    this.displayError('Failed to set budget. Please try again.');
                 }
             },
+            
+            resetBudgetAlerts() {
+                this.budgetAlerts = { 50: false, 75: false, 90: false, 100: false };
+            },
+            
+            checkBudgetAlerts() {
+                if (this.budget <= 0) return;
+                const percentage = (this.totalExpenses / this.budget) * 100;
+                
+                if (percentage >= 100 && !this.budgetAlerts[100]) {
+                    this.budgetAlerts[100] = true;
+                    this.displayNotification('Budget Exceeded!', 'warning');
+                } else if (percentage >= 90 && !this.budgetAlerts[90]) {
+                    this.budgetAlerts[90] = true;
+                    this.displayNotification('You have used 90% of your budget!', 'warning');
+                } else if (percentage >= 75 && !this.budgetAlerts[75]) {
+                    this.budgetAlerts[75] = true;
+                    this.displayNotification('You have used 75% of your budget.', 'info');
+                } else if (percentage >= 50 && !this.budgetAlerts[50]) {
+                    this.budgetAlerts[50] = true;
+                    this.displayNotification('You have used 50% of your budget.', 'info');
+                }
+            },
+            
+            // ===== EXPENSES =====
             addExpense() {
-                const { name, amount, frequency, day, category, startDate } = this.newExpense;
-                const parsedAmount = parseFloat(amount);
-                if (name && !isNaN(parsedAmount) && parsedAmount > 0) {
+                try {
+                    const { name, amount, frequency, day, category, startDate, notes } = this.newExpense;
+                    const parsedAmount = parseFloat(amount);
+                    
+                    if (!name || name.trim().length === 0) {
+                        this.displayError('Please enter an expense name.');
+                        return;
+                    }
+                    
+                    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+                        this.displayError('Please enter a valid amount greater than 0.');
+                        return;
+                    }
+                    
                     if (this.editingIndex !== null) {
-                        this.expenses.splice(this.editingIndex, 1, { name, amount: parsedAmount.toFixed(2), frequency, day, category, startDate });
+                        const updatedExpense = {
+                            id: this.expenses[this.editingIndex].id || generateId(),
+                            name: name.trim(),
+                            amount: parsedAmount,
+                            frequency,
+                            day,
+                            category,
+                            startDate: startDate || new Date().toISOString().split('T')[0],
+                            notes: notes ? notes.trim() : '',
+                            updatedAt: new Date().toISOString()
+                        };
+                        this.expenses.splice(this.editingIndex, 1, updatedExpense);
                         this.editingIndex = null;
                         this.isEditing = false;
+                        this.displaySuccess('Expense updated successfully!');
                     } else {
-                        this.expenses.push({ name, amount: parsedAmount.toFixed(2), frequency, day, category, startDate });
+                        const newExpenseItem = {
+                            id: generateId(),
+                            name: name.trim(),
+                            amount: parsedAmount,
+                            frequency,
+                            day,
+                            category,
+                            startDate: startDate || new Date().toISOString().split('T')[0],
+                            notes: notes ? notes.trim() : '',
+                            createdAt: new Date().toISOString()
+                        };
+                        this.expenses.push(newExpenseItem);
+                        this.displaySuccess('Expense added successfully!');
                     }
+                    
                     this.resetNewExpense();
                     this.updateTotalExpenses();
                     this.updateDeductions();
                     this.updateUpcomingDeductions();
-                    localStorage.setItem('expenses', JSON.stringify(this.expenses)); // Store expenses in Local Storage
-                    this.displaySuccess('Expense added successfully!');
-                } else {
-                    this.displayError('Please enter valid expense details.');
+                    this.saveExpenses();
+                    this.checkBudgetAlerts();
+                    
+                } catch (error) {
+                    console.error('Error adding expense:', error);
+                    this.displayError('Failed to add expense. Please try again.');
                 }
             },
+            
             resetNewExpense() {
-                this.newExpense = { name: '', amount: 0, frequency: 'weekly', day: 'monday', category: 'other', startDate: new Date().toISOString().split('T')[0] };
+                this.newExpense = {
+                    name: '',
+                    amount: '',
+                    frequency: 'weekly',
+                    day: 'monday',
+                    category: 'other',
+                    startDate: new Date().toISOString().split('T')[0],
+                    notes: ''
+                };
                 this.isEditing = false;
+                this.editingIndex = null;
             },
-            getCategoryById(categoryId) {
-                return this.expenseCategories.find(cat => cat.id === categoryId) || this.expenseCategories.find(cat => cat.id === 'other');
+            
+            editExpense(index) {
+                try {
+                    const expense = this.filteredExpenses[index];
+                    const originalIndex = this.expenses.findIndex(e => e.id === expense.id);
+                    const editIndex = originalIndex === -1 ? index : originalIndex;
+                    
+                    this.newExpense = {
+                        name: this.expenses[editIndex].name,
+                        amount: this.expenses[editIndex].amount.toString(),
+                        frequency: this.expenses[editIndex].frequency,
+                        day: this.expenses[editIndex].day,
+                        category: this.expenses[editIndex].category,
+                        startDate: this.expenses[editIndex].startDate,
+                        notes: this.expenses[editIndex].notes || ''
+                    };
+                    this.editingIndex = editIndex;
+                    this.isEditing = true;
+                    
+                    const formCard = document.querySelector('.expense-form-card');
+                    if (formCard) formCard.scrollIntoView({ behavior: 'smooth' });
+                } catch (error) {
+                    console.error('Error editing expense:', error);
+                    this.displayError('Failed to edit expense.');
+                }
             },
-            formatDate(dateString) {
-                if (!dateString) return '';
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            deleteExpense(index) {
+                try {
+                    const expense = this.filteredExpenses[index];
+                    const originalIndex = this.expenses.findIndex(e => e.id === expense.id);
+                    const deleteIndex = originalIndex === -1 ? index : originalIndex;
+                    
+                    this.lastDeleted = {
+                        expense: { ...this.expenses[deleteIndex] },
+                        index: deleteIndex
+                    };
+                    
+                    this.expenses.splice(deleteIndex, 1);
+                    this.updateTotalExpenses();
+                    this.updateDeductions();
+                    this.updateUpcomingDeductions();
+                    this.saveExpenses();
+                    
+                    this.displayUndoNotification('Deleted "' + expense.name + '"');
+                    
+                    if (this.undoTimeout) clearTimeout(this.undoTimeout);
+                    this.undoTimeout = setTimeout(() => { this.lastDeleted = null; }, 5000);
+                    
+                } catch (error) {
+                    console.error('Error deleting expense:', error);
+                    this.displayError('Failed to delete expense.');
+                }
             },
-            updateTotalExpenses() {
-                let totalWeekly = 0;
-                let totalFortnightly = 0;
-                let totalMonthly = 0;
-
-                this.expenses.forEach(expense => {
-                    const amount = parseFloat(expense.amount);
-                    if (expense.frequency === 'weekly') {
-                        totalWeekly += amount;
-                    } else if (expense.frequency === 'fortnightly') {
-                        totalFortnightly += amount;
-                    } else if (expense.frequency === 'monthly') {
-                        totalMonthly += amount;
+            
+            undoDelete() {
+                if (this.lastDeleted) {
+                    this.expenses.splice(this.lastDeleted.index, 0, this.lastDeleted.expense);
+                    this.updateTotalExpenses();
+                    this.updateDeductions();
+                    this.updateUpcomingDeductions();
+                    this.saveExpenses();
+                    this.displaySuccess('Expense restored!');
+                    this.lastDeleted = null;
+                    if (this.undoTimeout) {
+                        clearTimeout(this.undoTimeout);
+                        this.undoTimeout = null;
                     }
+                }
+            },
+            
+            // ===== CONFIRMATION MODAL =====
+            showConfirmationModal(title, message, onConfirm) {
+                this.confirmModal.title = title;
+                this.confirmModal.message = message;
+                this.confirmModal.onConfirm = onConfirm;
+                this.confirmModal.show = true;
+            },
+            
+            confirmAction() {
+                if (this.confirmModal.onConfirm) this.confirmModal.onConfirm();
+                this.closeConfirmModal();
+            },
+            
+            closeConfirmModal() {
+                this.confirmModal.show = false;
+                this.confirmModal.title = '';
+                this.confirmModal.message = '';
+                this.confirmModal.onConfirm = null;
+            },
+            
+            clearAllExpenses() {
+                this.showConfirmationModal(
+                    'Clear All Expenses',
+                    'Are you sure you want to delete all expenses? This action cannot be undone.',
+                    () => {
+                        this.expenses = [];
+                        this.updateTotalExpenses();
+                        this.updateDeductions();
+                        this.updateUpcomingDeductions();
+                        localStorage.removeItem('expenses');
+                        this.resetBudgetAlerts();
+                        this.displaySuccess('All expenses cleared.');
+                    }
+                );
+            },
+            
+            // ===== CALCULATIONS =====
+            // Frequency conversion constants (for normalizing to monthly)
+            getFrequencyMultipliers() {
+                return {
+                    weekly: 4.34524,      // 52 weeks / 12 months = 4.34524
+                    fortnightly: 2.17262, // 26 fortnights / 12 months = 2.17262
+                    monthly: 1
+                };
+            },
+            
+            // Convert an amount to monthly equivalent
+            convertToMonthly(amount, frequency) {
+                const multipliers = this.getFrequencyMultipliers();
+                return amount * (multipliers[frequency] || 1);
+            },
+            
+            updateTotalExpenses() {
+                // Calculate monthly equivalent for ALL expenses (normalized to monthly)
+                let monthlyEquivalent = 0;
+                
+                this.expenses.forEach(expense => {
+                    const amount = parseFloat(expense.amount) || 0;
+                    monthlyEquivalent += this.convertToMonthly(amount, expense.frequency);
                 });
 
-                this.totalExpenses = (totalWeekly + totalFortnightly + totalMonthly).toFixed(2);
-                this.remainingBalance = (this.budget - this.totalExpenses).toFixed(2);
+                this.totalExpenses = parseFloat(monthlyEquivalent.toFixed(2));
+                this.remainingBalance = parseFloat((parseFloat(this.budget) - this.totalExpenses).toFixed(2));
             },
+            
             updateDeductions() {
-                const now = new Date();
-                this.deductions.weekly = this.calculateDeductions('weekly').toFixed(2);
-                this.deductions.fortnightly = this.calculateDeductions('fortnightly').toFixed(2);
-                this.deductions.monthly = this.calculateDeductions('monthly').toFixed(2);
-                this.deductions.daily = this.calculateDeductions('daily').toFixed(2);
+                // Raw totals by frequency (what user actually pays per period)
+                const rawWeekly = this.calculateDeductions('weekly');
+                const rawFortnightly = this.calculateDeductions('fortnightly');
+                const rawMonthly = this.calculateDeductions('monthly');
+                
+                // Store raw amounts for display
+                this.deductions.weekly = rawWeekly;
+                this.deductions.fortnightly = rawFortnightly;
+                this.deductions.monthly = rawMonthly;
+                
+                // Daily average from monthly equivalent total
+                this.deductions.daily = parseFloat((this.totalExpenses / 30.44).toFixed(2)); // Average days per month
+                
                 this.updateUpcomingDeductions();
             },
+            
             calculateDeductions(frequency) {
                 return this.expenses.reduce((total, expense) => {
                     return expense.frequency === frequency ? total + parseFloat(expense.amount) : total;
                 }, 0);
             },
+            
+            // Get monthly equivalent breakdown for display
+            getMonthlyEquivalentBreakdown() {
+                const rawWeekly = this.calculateDeductions('weekly');
+                const rawFortnightly = this.calculateDeductions('fortnightly');
+                const rawMonthly = this.calculateDeductions('monthly');
+                
+                return {
+                    weekly: parseFloat((rawWeekly * this.getFrequencyMultipliers().weekly).toFixed(2)),
+                    fortnightly: parseFloat((rawFortnightly * this.getFrequencyMultipliers().fortnightly).toFixed(2)),
+                    monthly: rawMonthly,
+                    total: this.totalExpenses
+                };
+            },
+            
             getNextDueDate(frequency, now, day) {
                 const nextDueDate = new Date(now);
                 const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -241,6 +545,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 nextDueDate.setDate(now.getDate() + daysUntilNext);
                 return nextDueDate;
             },
+            
             updateUpcomingDeductions() {
                 const now = new Date();
                 let upcomingDeductions = [];
@@ -273,120 +578,88 @@ document.addEventListener('DOMContentLoaded', function() {
                 const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
                 upcomingDeductions.sort((a, b) => daysOfWeek.indexOf(a.day) - daysOfWeek.indexOf(b.day));
 
-                this.nextDeduction = upcomingDeductions[0] || {};
+                this.nextDeduction = upcomingDeductions[0] || { name: '', amount: 0, frequency: '', day: '', nextDueDate: '' };
             },
+            
+            // ===== NOTIFICATIONS =====
             displayNotification(message, type = 'error') {
                 const notification = document.createElement('div');
-                notification.className = `notification ${type}-notification`;
-                notification.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i>
-                        <span>${message}</span>
-                    </div>
-                `;
+                notification.className = 'notification ' + type + '-notification';
+                notification.innerHTML = '<div class="flex items-center gap-2"><i class="fas ' + (type === 'error' ? 'fa-exclamation-triangle' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle') + '"></i><span>' + message + '</span></div>';
                 document.body.appendChild(notification);
 
-                // Trigger animation
-                setTimeout(() => {
-                    notification.style.display = 'block';
-                }, 10);
+                setTimeout(() => { notification.style.display = 'block'; }, 10);
 
-                // Auto-hide after 4 seconds
                 setTimeout(() => {
                     notification.style.opacity = '0';
                     notification.style.transform = 'translateX(100%)';
                     setTimeout(() => {
-                        if (notification.parentNode) {
-                            document.body.removeChild(notification);
-                        }
+                        if (notification.parentNode) notification.parentNode.removeChild(notification);
                     }, 300);
                 }, 4000);
 
-                // Allow manual dismissal
                 notification.addEventListener('click', () => {
                     notification.style.opacity = '0';
                     notification.style.transform = 'translateX(100%)';
                     setTimeout(() => {
-                        if (notification.parentNode) {
-                            document.body.removeChild(notification);
-                        }
+                        if (notification.parentNode) notification.parentNode.removeChild(notification);
                     }, 300);
                 });
             },
-            displayError(message) {
-                this.displayNotification(message, 'error');
+            
+            displayUndoNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'notification warning-notification undo-notification';
+                notification.innerHTML = '<div class="flex items-center gap-2"><i class="fas fa-trash-alt"></i><span>' + message + '</span><button class="undo-btn" onclick="window.vueApp.undoDelete()">Undo</button></div>';
+                document.body.appendChild(notification);
+
+                setTimeout(() => { notification.style.display = 'block'; }, 10);
+
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (notification.parentNode) notification.parentNode.removeChild(notification);
+                    }, 300);
+                }, 5000);
             },
-            displaySuccess(message) {
-                this.displayNotification(message, 'success');
+            
+            displayError(message) { this.displayNotification(message, 'error'); },
+            displaySuccess(message) { this.displayNotification(message, 'success'); },
+            
+            calculateTotalExpenses() { this.updateTotalExpenses(); },
+            
+            saveExpenses() {
+                localStorage.setItem('expenses', JSON.stringify(this.expenses));
             },
-            calculateTotalExpenses() {
-                this.updateTotalExpenses();
-            },
-            clearAllExpenses() {
-                this.expenses = [];
-                this.updateTotalExpenses();
-                this.updateDeductions();
-                this.updateUpcomingDeductions();
-                localStorage.removeItem('expenses'); // Remove expenses from Local Storage
-            },
-            editExpense(index) {
-                const expense = this.expenses[index];
-                this.newExpense = { ...expense };
-                this.editingIndex = index;
-                this.isEditing = true;
-                this.refreshExpenseButtons();
-            },
-            saveEdits() {
-                this.addExpense();
-                this.refreshExpenseButtons();
-            },
-            deleteExpense(index) {
-                this.expenses.splice(index, 1);
-                this.updateTotalExpenses();
-                this.updateDeductions();
-                this.updateUpcomingDeductions();
-                localStorage.setItem('expenses', JSON.stringify(this.expenses)); // Update expenses in Local Storage
-            },
-            refreshExpenseButtons() {
-                this.$nextTick(() => {
-                    document.querySelectorAll('.save-expense').forEach(button => button.style.display = 'none');
-                    document.querySelectorAll('.edit-expense').forEach(button => button.style.display = 'inline-block');
-                });
-            },
-            requestNotificationPermission() {
-                if ('Notification' in window && navigator.serviceWorker) {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            console.log('Notification permission granted.');
-                        } else {
-                            console.log('Notification permission denied.');
-                        }
-                    });
-                }
-            },
-            loadFromLocalStorage() {
-                const storedBudget = localStorage.getItem('budget');
-                if (storedBudget) {
-                    this.budget = parseFloat(storedBudget);
-                    this.remainingBalance = this.budget;
-                }
-                const storedExpenses = localStorage.getItem('expenses');
-                if (storedExpenses) {
-                    this.expenses = JSON.parse(storedExpenses);
-                    this.updateTotalExpenses();
-                    this.updateDeductions();
-                    this.updateUpcomingDeductions();
-                }
-            },
+            
+            // ===== CHARTS (WITH MEMORY LEAK FIX) =====
             createCharts() {
                 this.$nextTick(() => {
                     this.createCategoryChart();
                     this.createFrequencyChart();
                 });
             },
+            
+            destroyCharts() {
+                if (this.categoryChart) {
+                    this.categoryChart.destroy();
+                    this.categoryChart = null;
+                }
+                if (this.frequencyChart) {
+                    this.frequencyChart.destroy();
+                    this.frequencyChart = null;
+                }
+            },
+            
             createCategoryChart() {
                 const ctx = document.getElementById('categoryChart');
                 if (!ctx) return;
+
+                // Destroy existing chart first (FIXES MEMORY LEAK)
+                if (this.categoryChart) {
+                    this.categoryChart.destroy();
+                }
 
                 const categoryData = {};
                 this.expenses.forEach(expense => {
@@ -402,7 +675,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return category ? category.color : '#636e72';
                 });
 
-                new Chart(ctx, {
+                this.categoryChart = new Chart(ctx, {
                     type: 'pie',
                     data: {
                         labels: labels,
@@ -419,17 +692,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         plugins: {
                             legend: {
                                 position: 'bottom',
-                                labels: {
-                                    padding: 20,
-                                    usePointStyle: true
-                                }
+                                labels: { padding: 20, usePointStyle: true }
                             },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                         const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                        return `${context.label}: $${context.parsed} (${percentage}%)`;
+                                        return context.label + ': $' + context.parsed + ' (' + percentage + '%)';
                                     }
                                 }
                             }
@@ -437,31 +707,37 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             },
+            
             createFrequencyChart() {
                 const ctx = document.getElementById('frequencyChart');
                 if (!ctx) return;
 
-                const frequencyData = {
-                    'Weekly': 0,
-                    'Fortnightly': 0,
-                    'Monthly': 0
-                };
+                // Destroy existing chart first (FIXES MEMORY LEAK)
+                if (this.frequencyChart) {
+                    this.frequencyChart.destroy();
+                }
+
+                // Calculate both raw amounts and monthly equivalents
+                const rawData = { 'Weekly': 0, 'Fortnightly': 0, 'Monthly': 0 };
+                const monthlyEquivalentData = { 'Weekly': 0, 'Fortnightly': 0, 'Monthly': 0 };
+                const multipliers = this.getFrequencyMultipliers();
 
                 this.expenses.forEach(expense => {
                     const amount = parseFloat(expense.amount);
                     const frequency = expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1);
-                    frequencyData[frequency] += amount;
+                    rawData[frequency] += amount;
+                    monthlyEquivalentData[frequency] += amount * multipliers[expense.frequency];
                 });
 
-                const labels = Object.keys(frequencyData);
-                const data = Object.values(frequencyData);
+                const labels = Object.keys(monthlyEquivalentData);
+                const data = Object.values(monthlyEquivalentData);
 
-                new Chart(ctx, {
+                this.frequencyChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Amount ($)',
+                            label: 'Monthly Equivalent ($)',
                             data: data,
                             backgroundColor: [
                                 'rgba(0, 123, 255, 0.8)',
@@ -483,20 +759,32 @@ document.addEventListener('DOMContentLoaded', function() {
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    callback: function(value) {
-                                        return '$' + value;
-                                    }
+                                    callback: function(value) { return '$' + value; }
                                 }
                             }
                         },
                         plugins: {
-                            legend: {
-                                display: false
-                            },
+                            legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    label: function(context) {
-                                        return `$${context.parsed.y}`;
+                                    label: (context) => {
+                                        const label = context.label;
+                                        const monthlyEquiv = context.parsed.y;
+                                        const rawAmount = rawData[label];
+                                        if (label === 'Monthly') {
+                                            return 'Monthly: $' + rawAmount.toFixed(2);
+                                        } else if (label === 'Weekly') {
+                                            return [
+                                                'Monthly Equivalent: $' + monthlyEquiv.toFixed(2),
+                                                'Raw Weekly: $' + rawAmount.toFixed(2) + '/week'
+                                            ];
+                                        } else if (label === 'Fortnightly') {
+                                            return [
+                                                'Monthly Equivalent: $' + monthlyEquiv.toFixed(2),
+                                                'Raw Fortnightly: $' + rawAmount.toFixed(2) + '/fortnight'
+                                            ];
+                                        }
+                                        return '$' + monthlyEquiv.toFixed(2);
                                     }
                                 }
                             }
@@ -504,44 +792,46 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             },
+            
+            // ===== FILTERS =====
             clearFilters() {
                 this.searchQuery = '';
                 this.categoryFilter = '';
                 this.frequencyFilter = '';
+                this.dateFilterStart = '';
+                this.dateFilterEnd = '';
                 this.sortBy = 'date-desc';
             },
+            
+            // ===== IMPORT/EXPORT =====
             exportToCSV() {
                 if (this.expenses.length === 0) {
                     this.displayError('No expenses to export.');
                     return;
                 }
 
-                // Create CSV headers
-                const headers = ['Name', 'Amount', 'Frequency', 'Category', 'Day', 'Start Date'];
-
-                // Convert expenses to CSV rows
+                const headers = ['Name', 'Amount', 'Frequency', 'Category', 'Day', 'Start Date', 'Notes'];
                 const csvRows = this.expenses.map(expense => [
                     expense.name,
                     expense.amount,
                     expense.frequency,
                     this.getCategoryById(expense.category).name,
                     expense.day,
-                    expense.startDate || ''
+                    expense.startDate || '',
+                    expense.notes || ''
                 ]);
 
-                // Combine headers and rows
                 const csvContent = [headers, ...csvRows]
-                    .map(row => row.map(field => `"${field}"`).join(','))
+                    .map(row => row.map(field => '"' + field + '"').join(','))
                     .join('\n');
 
-                // Create and download the file
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
 
                 if (link.download !== undefined) {
                     const url = URL.createObjectURL(blob);
                     link.setAttribute('href', url);
-                    link.setAttribute('download', `expenses_${new Date().toISOString().split('T')[0]}.csv`);
+                    link.setAttribute('download', 'expenses_' + new Date().toISOString().split('T')[0] + '.csv');
                     link.style.visibility = 'hidden';
                     document.body.appendChild(link);
                     link.click();
@@ -551,6 +841,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.displayError('Export not supported in this browser.');
                 }
             },
+            
             importFromCSV(event) {
                 const file = event.target.files[0];
                 if (!file) return;
@@ -562,11 +853,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const lines = csvText.split('\n').filter(line => line.trim());
                         const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
 
-                        // Validate CSV format
                         const expectedHeaders = ['Name', 'Amount', 'Frequency', 'Category', 'Day', 'Start Date'];
-                        const isValidFormat = expectedHeaders.every(header =>
-                            headers.includes(header)
-                        );
+                        const isValidFormat = expectedHeaders.every(header => headers.includes(header));
 
                         if (!isValidFormat) {
                             this.displayError('Invalid CSV format. Please use the exported format.');
@@ -577,54 +865,55 @@ document.addEventListener('DOMContentLoaded', function() {
                         for (let i = 1; i < lines.length; i++) {
                             const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
                             if (values.length >= 5) {
-                                const [name, amount, frequency, category, day, startDate] = values;
+                                const [name, amount, frequency, category, day, startDate, notes] = values;
 
-                                // Validate and convert category
                                 const categoryId = this.expenseCategories.find(cat =>
                                     cat.name.toLowerCase() === category.toLowerCase()
                                 )?.id || 'other';
 
                                 if (name && amount && !isNaN(parseFloat(amount))) {
                                     importedExpenses.push({
+                                        id: generateId(),
                                         name: name.trim(),
-                                        amount: parseFloat(amount).toFixed(2),
+                                        amount: parseFloat(amount),
                                         frequency: frequency.toLowerCase().trim(),
                                         category: categoryId,
                                         day: day.toLowerCase().trim(),
-                                        startDate: startDate ? startDate.trim() : new Date().toISOString().split('T')[0]
+                                        startDate: startDate ? startDate.trim() : new Date().toISOString().split('T')[0],
+                                        notes: notes ? notes.trim() : ''
                                     });
                                 }
                             }
                         }
 
                         if (importedExpenses.length > 0) {
-                            // Merge with existing expenses
                             this.expenses = [...this.expenses, ...importedExpenses];
-                            localStorage.setItem('expenses', JSON.stringify(this.expenses));
+                            this.saveExpenses();
                             this.updateTotalExpenses();
                             this.updateDeductions();
                             this.updateUpcomingDeductions();
-                            this.displaySuccess(`Successfully imported ${importedExpenses.length} expenses!`);
+                            this.displaySuccess('Successfully imported ' + importedExpenses.length + ' expenses!');
                         } else {
                             this.displayError('No valid expenses found in the CSV file.');
                         }
                     } catch (error) {
+                        console.error('Import error:', error);
                         this.displayError('Error reading CSV file. Please check the format.');
                     }
                 };
                 reader.readAsText(file);
-
-                // Reset file input
                 event.target.value = '';
             },
+            
             backupData() {
                 try {
                     const backupData = {
                         budget: this.budget,
                         expenses: this.expenses,
+                        currency: this.currency,
                         theme: localStorage.getItem('theme') || 'light',
                         timestamp: new Date().toISOString(),
-                        version: '1.0'
+                        version: '2.0'
                     };
 
                     const dataStr = JSON.stringify(backupData, null, 2);
@@ -634,7 +923,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (link.download !== undefined) {
                         const url = URL.createObjectURL(blob);
                         link.setAttribute('href', url);
-                        link.setAttribute('download', `budget_backup_${new Date().toISOString().split('T')[0]}.json`);
+                        link.setAttribute('download', 'budget_backup_' + new Date().toISOString().split('T')[0] + '.json');
                         link.style.visibility = 'hidden';
                         document.body.appendChild(link);
                         link.click();
@@ -644,52 +933,101 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.displayError('Backup not supported in this browser.');
                     }
                 } catch (error) {
+                    console.error('Backup error:', error);
                     this.displayError('Error creating backup. Please try again.');
                 }
             },
-            validateExpenseData() {
-                let isValid = true;
-                const errors = [];
+            
+            restoreData(event) {
+                const file = event.target.files[0];
+                if (!file) return;
 
-                // Validate budget
-                if (this.budget && (isNaN(this.budget) || this.budget < 0)) {
-                    errors.push('Budget must be a valid positive number');
-                    isValid = false;
-                }
-
-                // Validate expenses
-                this.expenses.forEach((expense, index) => {
-                    if (!expense.name || expense.name.trim().length === 0) {
-                        errors.push(`Expense ${index + 1}: Name is required`);
-                        isValid = false;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        if (data.budget !== undefined) {
+                            this.budget = parseFloat(data.budget);
+                            localStorage.setItem('budget', this.budget.toString());
+                        }
+                        
+                        if (data.expenses && Array.isArray(data.expenses)) {
+                            this.expenses = data.expenses;
+                            this.saveExpenses();
+                        }
+                        
+                        if (data.currency) {
+                            this.currency = data.currency;
+                            localStorage.setItem('currency', this.currency);
+                        }
+                        
+                        if (data.theme) {
+                            localStorage.setItem('theme', data.theme);
+                            document.documentElement.setAttribute('data-theme', data.theme);
+                        }
+                        
+                        this.updateTotalExpenses();
+                        this.updateDeductions();
+                        this.updateUpcomingDeductions();
+                        this.displaySuccess('Data restored successfully!');
+                    } catch (error) {
+                        console.error('Restore error:', error);
+                        this.displayError('Error restoring data. Invalid backup file.');
                     }
-                    if (!expense.amount || isNaN(expense.amount) || expense.amount <= 0) {
-                        errors.push(`Expense ${index + 1}: Amount must be a valid positive number`);
-                        isValid = false;
-                    }
-                    if (!['weekly', 'fortnightly', 'monthly'].includes(expense.frequency)) {
-                        errors.push(`Expense ${index + 1}: Invalid frequency`);
-                        isValid = false;
-                    }
-                    if (!this.expenseCategories.find(cat => cat.id === expense.category)) {
-                        errors.push(`Expense ${index + 1}: Invalid category`);
-                        isValid = false;
-                    }
-                    if (!['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].includes(expense.day)) {
-                        errors.push(`Expense ${index + 1}: Invalid day`);
-                        isValid = false;
-                    }
-                });
-
-                if (!isValid) {
-                    this.displayError('Data validation failed: ' + errors.join('; '));
-                }
-
-                return isValid;
+                };
+                reader.readAsText(file);
+                event.target.value = '';
             },
+            
+            // ===== UTILITIES =====
+            getCategoryById(categoryId) {
+                return this.expenseCategories.find(cat => cat.id === categoryId) || this.expenseCategories.find(cat => cat.id === 'other');
+            },
+            
+            formatDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            },
+            
+            requestNotificationPermission() {
+                if ('Notification' in window && navigator.serviceWorker) {
+                    Notification.requestPermission().then(permission => {
+                        console.log('Notification permission:', permission);
+                    });
+                }
+            },
+            
+            loadFromLocalStorage() {
+                const storedBudget = localStorage.getItem('budget');
+                if (storedBudget) {
+                    this.budget = parseFloat(storedBudget);
+                }
+                
+                const storedExpenses = localStorage.getItem('expenses');
+                if (storedExpenses) {
+                    try {
+                        this.expenses = JSON.parse(storedExpenses);
+                        // Ensure all expenses have IDs
+                        this.expenses = this.expenses.map(exp => ({
+                            ...exp,
+                            id: exp.id || generateId(),
+                            notes: exp.notes || ''
+                        }));
+                    } catch (e) {
+                        console.error('Error parsing stored expenses:', e);
+                        this.expenses = [];
+                    }
+                }
+                
+                this.updateTotalExpenses();
+                this.updateDeductions();
+                this.updateUpcomingDeductions();
+            },
+            
             switchPage(page) {
                 this.currentPage = page;
-                // Create charts when switching to analytics page
                 if (page === 'analytics') {
                     this.$nextTick(() => {
                         this.createCharts();
@@ -706,48 +1044,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.totalExpenses <= 0) return 0;
                 return Math.min((this.totalExpenses / (this.budget + this.totalExpenses)) * 100, 100);
             },
+            budgetUtilization() {
+                if (this.budget <= 0) return 0;
+                return Math.min((this.totalExpenses / this.budget) * 100, 100);
+            },
             filteredExpenses() {
                 let filtered = [...this.expenses];
 
-                // Apply search filter
                 if (this.searchQuery.trim()) {
                     const query = this.searchQuery.toLowerCase();
                     filtered = filtered.filter(expense =>
-                        expense.name.toLowerCase().includes(query)
+                        expense.name.toLowerCase().includes(query) ||
+                        (expense.notes && expense.notes.toLowerCase().includes(query))
                     );
                 }
 
-                // Apply category filter
                 if (this.categoryFilter) {
-                    filtered = filtered.filter(expense =>
-                        expense.category === this.categoryFilter
-                    );
+                    filtered = filtered.filter(expense => expense.category === this.categoryFilter);
                 }
 
-                // Apply frequency filter
                 if (this.frequencyFilter) {
-                    filtered = filtered.filter(expense =>
-                        expense.frequency === this.frequencyFilter
-                    );
+                    filtered = filtered.filter(expense => expense.frequency === this.frequencyFilter);
+                }
+                
+                if (this.dateFilterStart) {
+                    filtered = filtered.filter(expense => expense.startDate >= this.dateFilterStart);
+                }
+                
+                if (this.dateFilterEnd) {
+                    filtered = filtered.filter(expense => expense.startDate <= this.dateFilterEnd);
                 }
 
-                // Apply sorting
                 filtered.sort((a, b) => {
                     switch (this.sortBy) {
-                        case 'date-desc':
-                            return new Date(b.startDate || '1970-01-01') - new Date(a.startDate || '1970-01-01');
-                        case 'date-asc':
-                            return new Date(a.startDate || '1970-01-01') - new Date(b.startDate || '1970-01-01');
-                        case 'amount-desc':
-                            return parseFloat(b.amount) - parseFloat(a.amount);
-                        case 'amount-asc':
-                            return parseFloat(a.amount) - parseFloat(b.amount);
-                        case 'name-asc':
-                            return a.name.localeCompare(b.name);
-                        case 'name-desc':
-                            return b.name.localeCompare(a.name);
-                        default:
-                            return 0;
+                        case 'date-desc': return new Date(b.startDate || '1970-01-01') - new Date(a.startDate || '1970-01-01');
+                        case 'date-asc': return new Date(a.startDate || '1970-01-01') - new Date(b.startDate || '1970-01-01');
+                        case 'amount-desc': return parseFloat(b.amount) - parseFloat(a.amount);
+                        case 'amount-asc': return parseFloat(a.amount) - parseFloat(b.amount);
+                        case 'name-asc': return a.name.localeCompare(b.name);
+                        case 'name-desc': return b.name.localeCompare(a.name);
+                        default: return 0;
                     }
                 });
 
@@ -757,7 +1093,6 @@ document.addEventListener('DOMContentLoaded', function() {
         watch: {
             expenses: {
                 handler() {
-                    // Only create charts if on analytics page
                     if (this.currentPage === 'analytics') {
                         this.createCharts();
                     }
@@ -773,9 +1108,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         mounted() {
+            // Make app accessible globally for undo button
+            window.vueApp = this;
+            
             this.requestNotificationPermission();
-            this.loadFromLocalStorage(); // Load data from Local Storage on mount
-            this.createCharts(); // Create charts on mount
+            this.loadFromLocalStorage();
         }
     });
 });

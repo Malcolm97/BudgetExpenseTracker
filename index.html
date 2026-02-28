@@ -2,25 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Ensure compatibility with IE -->
-    <meta name="theme-color" content="#ff69b4"> <!-- Set theme color for Chrome on Android -->
-    <meta name="application-name" content="Budget App"> <!-- Ensure compatibility with Google Chrome -->
-    <meta name="description" content="A simple budget management app"> <!-- Ensure compatibility with Google Chrome -->
-    <meta name="mobile-web-app-capable" content="yes"> <!-- Enable web app mode on mobile -->
-    <meta name="apple-mobile-web-app-capable" content="yes"> <!-- Enable web app mode on iOS -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> <!-- Set status bar style on iOS -->
-    <meta name="apple-mobile-web-app-title" content="Budget App"> <!-- Set web app title on iOS -->
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png"> <!-- Set app icon for iOS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="theme-color" content="#007bff">
+    <meta name="application-name" content="Budget App">
+    <meta name="description" content="A professional budget and expense management app with analytics">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Budget App">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script> <!-- Add Vue.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Add Chart.js -->
-    <link rel="manifest" href="manifest.json"> <!-- Link to the manifest file -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ics/2.20.0/ics.min.js"></script> <!-- Add ics library -->
-    <title>Budget App</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <title>Budget Expense Tracker</title>
 </head>
 <body>
     <!-- Dark Mode Toggle -->
@@ -65,8 +62,8 @@
                         <div class="input-group">
                             <label for="budget" class="input-label">Monthly Budget Amount</label>
                             <div class="input-wrapper">
-                                <span class="input-prefix">$</span>
-                                <input type="number" id="budget" v-model="budget" placeholder="0.00" step="0.01" required class="form-input">
+                                <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                <input type="number" id="budget" v-model="budget" placeholder="0.00" step="0.01" required class="form-input" inputmode="decimal" autocomplete="off">
                             </div>
                         </div>
                         <button type="submit" class="btn-primary btn-full">
@@ -74,6 +71,20 @@
                             Set Budget
                         </button>
                     </form>
+                    
+                    <!-- Currency Selector -->
+                    <div class="settings-section">
+                        <div class="settings-row">
+                            <span class="settings-label">Currency</span>
+                            <div class="settings-value">
+                                <select v-model="currency" @change="setCurrency" class="form-input">
+                                    <option v-for="curr in availableCurrencies" :value="curr.code" :key="curr.code">
+                                        {{ curr.symbol }} {{ curr.name }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -91,16 +102,20 @@
                         <div class="summary-items">
                             <div class="summary-item">
                                 <span class="summary-label">Budget</span>
-                                <span class="summary-value text-primary">${{ budget }}</span>
+                                <span class="summary-value text-primary">{{ formatCurrency(budget) }}</span>
                             </div>
                             <div class="summary-item">
                                 <span class="summary-label">Total Expenses</span>
-                                <span class="summary-value text-danger">${{ totalExpenses }}</span>
+                                <span class="summary-value text-danger">{{ formatCurrency(totalExpenses) }}</span>
                             </div>
                             <div class="summary-item">
                                 <span class="summary-label">Remaining Balance</span>
                                 <span class="summary-value" :class="remainingBalance >= 0 ? 'text-success' : 'text-danger'">
-                                    ${{ remainingBalance }}
+                                    {{ formatCurrency(remainingBalance) }}
+                                    <span v-if="budget > 0 && budgetUtilization >= 75" class="budget-warning-badge" :class="budgetUtilization >= 90 ? 'danger' : 'warning'">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        {{ Math.round(budgetUtilization) }}%
+                                    </span>
                                 </span>
                             </div>
                         </div>
@@ -108,16 +123,42 @@
                             <h3 class="breakdown-title">Expense Breakdown</h3>
                             <div class="breakdown-items">
                                 <div class="breakdown-item">
-                                    <span>Weekly</span>
-                                    <span>${{ deductions.weekly }}</span>
+                                    <span>Weekly <small class="text-muted">(per week)</small></span>
+                                    <span>{{ formatCurrency(deductions.weekly) }}</span>
                                 </div>
                                 <div class="breakdown-item">
-                                    <span>Fortnightly</span>
-                                    <span>${{ deductions.fortnightly }}</span>
+                                    <span>Fortnightly <small class="text-muted">(per fortnight)</small></span>
+                                    <span>{{ formatCurrency(deductions.fortnightly) }}</span>
                                 </div>
                                 <div class="breakdown-item">
-                                    <span>Monthly</span>
-                                    <span>${{ deductions.monthly }}</span>
+                                    <span>Monthly <small class="text-muted">(per month)</small></span>
+                                    <span>{{ formatCurrency(deductions.monthly) }}</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span>Daily Avg <small class="text-muted">(from monthly)</small></span>
+                                    <span>{{ formatCurrency(deductions.daily) }}</span>
+                                </div>
+                            </div>
+                            <div class="monthly-equivalent-section" v-if="totalExpenses > 0">
+                                <h4 class="equivalent-title">Monthly Equivalent Total</h4>
+                                <p class="equivalent-explanation">All expenses normalized to monthly for budget comparison:</p>
+                                <div class="equivalent-items">
+                                    <div class="equivalent-item" v-if="deductions.weekly > 0">
+                                        <span>Weekly expenses</span>
+                                        <span>{{ formatCurrency(deductions.weekly) }} × 4.35 = {{ formatCurrency(deductions.weekly * 4.34524) }}</span>
+                                    </div>
+                                    <div class="equivalent-item" v-if="deductions.fortnightly > 0">
+                                        <span>Fortnightly expenses</span>
+                                        <span>{{ formatCurrency(deductions.fortnightly) }} × 2.17 = {{ formatCurrency(deductions.fortnightly * 2.17262) }}</span>
+                                    </div>
+                                    <div class="equivalent-item" v-if="deductions.monthly > 0">
+                                        <span>Monthly expenses</span>
+                                        <span>{{ formatCurrency(deductions.monthly) }}</span>
+                                    </div>
+                                </div>
+                                <div class="equivalent-total">
+                                    <span><strong>Total Monthly Equivalent:</strong></span>
+                                    <span class="total-value">{{ formatCurrency(totalExpenses) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -140,7 +181,7 @@
                             </div>
                             <div class="deduction-detail">
                                 <span class="detail-label">Amount</span>
-                                <span class="detail-value text-danger">${{ nextDeduction.amount }}</span>
+                                <span class="detail-value text-danger">{{ formatCurrency(nextDeduction.amount) }}</span>
                             </div>
                             <div class="deduction-detail">
                                 <span class="detail-label">Frequency</span>
@@ -152,7 +193,7 @@
                             </div>
                             <div class="next-due-highlight">
                                 <i class="fas fa-clock"></i>
-                                <span>{{ nextDeduction.nextDueDate }}</span>
+                                <span>{{ nextDeduction.nextDueDate ? formatDate(nextDeduction.nextDueDate) : 'N/A' }}</span>
                             </div>
                         </div>
                         <div v-else class="empty-state">
@@ -181,13 +222,13 @@
                         <div class="form-grid">
                             <div class="input-group">
                                 <label for="expense-name" class="input-label">Expense Name</label>
-                                <input type="text" id="expense-name" v-model="newExpense.name" placeholder="e.g., Groceries, Rent, Utilities" required class="form-input">
+                                <input type="text" id="expense-name" v-model="newExpense.name" placeholder="e.g., Groceries, Rent, Utilities" required class="form-input" autocomplete="off" autocapitalize="words">
                             </div>
                             <div class="input-group">
                                 <label for="expense-amount" class="input-label">Amount</label>
                                 <div class="input-wrapper">
-                                    <span class="input-prefix">$</span>
-                                    <input type="number" id="expense-amount" v-model="newExpense.amount" placeholder="0.00" step="0.01" required class="form-input">
+                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                    <input type="number" id="expense-amount" v-model="newExpense.amount" placeholder="0.00" step="0.01" required class="form-input" inputmode="decimal" autocomplete="off">
                                 </div>
                             </div>
                             <div class="input-group">
@@ -223,9 +264,18 @@
                                 </select>
                             </div>
                         </div>
+                        <!-- Notes Field -->
+                        <div class="input-group">
+                            <label for="expense-notes" class="input-label">Notes (Optional)</label>
+                            <textarea id="expense-notes" v-model="newExpense.notes" placeholder="Add any notes or description..." class="form-input notes-input" rows="2"></textarea>
+                        </div>
                         <button type="submit" class="btn-success btn-full">
                             <i class="fas fa-plus"></i>
                             {{ isEditing ? 'Update Expense' : 'Add Expense' }}
+                        </button>
+                        <button v-if="isEditing" type="button" @click="resetNewExpense" class="btn-secondary btn-full" style="margin-top: 8px;">
+                            <i class="fas fa-times"></i>
+                            Cancel Edit
                         </button>
                     </form>
                 </div>
@@ -277,6 +327,17 @@
                                 </select>
                             </div>
                         </div>
+                        <!-- Date Filter -->
+                        <div class="date-filter-row" style="margin-top: 12px;">
+                            <div class="input-group" style="margin-bottom: 0;">
+                                <label for="date-start" class="input-label">From Date</label>
+                                <input type="date" id="date-start" v-model="dateFilterStart" class="form-input">
+                            </div>
+                            <div class="input-group" style="margin-bottom: 0;">
+                                <label for="date-end" class="input-label">To Date</label>
+                                <input type="date" id="date-end" v-model="dateFilterEnd" class="form-input">
+                            </div>
+                        </div>
                         <div class="filter-footer">
                             <button @click="clearFilters" class="btn-secondary">
                                 <i class="fas fa-times"></i>
@@ -305,7 +366,7 @@
 
                     <!-- Expenses List -->
                     <div v-else class="expenses-list">
-                        <div v-for="(expense, index) in filteredExpenses" :key="expense.name + index" class="expense-card">
+                        <div v-for="(expense, index) in filteredExpenses" :key="expense.id || index" class="expense-card">
                             <div class="expense-header">
                                 <div class="expense-icon" :style="{ backgroundColor: getCategoryById(expense.category).color }">
                                     <i :class="getCategoryById(expense.category).icon"></i>
@@ -327,20 +388,21 @@
                                     </div>
                                 </div>
                                 <div class="expense-amount">
-                                    <span class="amount-value">${{ expense.amount }}</span>
+                                    <span class="amount-value">{{ formatCurrency(expense.amount) }}</span>
                                 </div>
                             </div>
-                            <div v-if="expense.startDate" class="expense-footer">
-                                <span class="start-date">
+                            <div v-if="expense.startDate || expense.notes" class="expense-footer">
+                                <span v-if="expense.startDate" class="start-date">
                                     <i class="fas fa-calendar"></i>
                                     Started {{ formatDate(expense.startDate) }}
                                 </span>
+                                <p v-if="expense.notes" class="expense-notes">{{ expense.notes }}</p>
                             </div>
                             <div class="expense-actions">
-                                <button @click="editExpense(index)" class="btn-icon btn-warning">
+                                <button @click="editExpense(index)" class="btn-icon btn-warning" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button @click="deleteExpense(index)" class="btn-icon btn-danger">
+                                <button @click="deleteExpense(index)" class="btn-icon btn-danger" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -351,21 +413,26 @@
                     <div v-if="expenses.length > 0" class="action-buttons">
                         <button @click="calculateTotalExpenses" class="btn-primary">
                             <i class="fas fa-calculator"></i>
-                            Calculate Totals
+                            Calculate
                         </button>
                         <button @click="exportToCSV" class="btn-success">
                             <i class="fas fa-download"></i>
                             Export CSV
                         </button>
-                        <label for="csv-import" class="btn-secondary">
+                        <label for="csv-import" class="btn-secondary" style="display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-upload"></i>
                             Import CSV
                         </label>
                         <input type="file" id="csv-import" accept=".csv" @change="importFromCSV" style="display: none;">
                         <button @click="backupData" class="btn-info">
                             <i class="fas fa-save"></i>
-                            Backup Data
+                            Backup
                         </button>
+                        <label for="restore-import" class="btn-secondary" style="display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-undo"></i>
+                            Restore
+                        </label>
+                        <input type="file" id="restore-import" accept=".json" @change="restoreData" style="display: none;">
                         <button @click="clearAllExpenses" class="btn-danger">
                             <i class="fas fa-trash-alt"></i>
                             Clear All
@@ -423,17 +490,16 @@
                     <div class="card-content">
                         <div class="budget-progress">
                             <div class="progress-bar">
-                                <div class="progress-fill budget-fill" :style="{ width: budgetPercentage + '%' }"></div>
-                                <div class="progress-fill actual-fill" :style="{ width: actualPercentage + '%' }"></div>
+                                <div class="progress-fill budget-fill" :style="{ width: Math.min(budgetUtilization, 100) + '%' }"></div>
                             </div>
                             <div class="progress-labels">
                                 <span class="progress-label">
                                     <span class="label-dot budget-dot"></span>
-                                    Budget: ${{ budget }}
+                                    Budget: {{ formatCurrency(budget) }}
                                 </span>
                                 <span class="progress-label">
                                     <span class="label-dot actual-dot"></span>
-                                    Spent: ${{ totalExpenses }}
+                                    Spent: {{ formatCurrency(totalExpenses) }}
                                 </span>
                             </div>
                         </div>
@@ -441,12 +507,14 @@
                             <div class="stat-item">
                                 <span class="stat-label">Remaining</span>
                                 <span class="stat-value" :class="remainingBalance >= 0 ? 'text-success' : 'text-danger'">
-                                    ${{ remainingBalance }}
+                                    {{ formatCurrency(remainingBalance) }}
                                 </span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Utilization</span>
-                                <span class="stat-value">{{ Math.round((totalExpenses / budget) * 100) }}%</span>
+                                <span class="stat-value" :class="budgetUtilization >= 90 ? 'text-danger' : budgetUtilization >= 75 ? 'text-secondary' : 'text-success'">
+                                    {{ Math.round(budgetUtilization) }}%
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -469,6 +537,18 @@
             </section>
         </main>
 
+        <!-- Confirmation Modal -->
+        <div v-if="confirmModal.show" class="confirm-modal-overlay show" @click.self="closeConfirmModal">
+            <div class="confirm-modal">
+                <h3>{{ confirmModal.title }}</h3>
+                <p>{{ confirmModal.message }}</p>
+                <div class="confirm-modal-actions">
+                    <button @click="closeConfirmModal" class="btn-secondary">Cancel</button>
+                    <button @click="confirmAction" class="btn-danger">Confirm</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <button @click="switchPage('dashboard')" :class="{ active: currentPage === 'dashboard' }" class="nav-item">
@@ -485,8 +565,7 @@
             </button>
         </nav>
     </div>
-    <div id="error-container"></div> <!-- Container for error notifications -->
-    <script src="https://cdn.jsdelivr.net/npm/@babel/polyfill@7.12.1/dist/polyfill.min.js"></script> <!-- Polyfill for older browsers -->
+    <div id="error-container"></div>
     <script src="script.js"></script>
 </body>
 </html>
