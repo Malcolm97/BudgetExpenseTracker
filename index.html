@@ -20,11 +20,6 @@
     <title>Budget Expense Tracker</title>
 </head>
 <body>
-    <!-- Dark Mode Toggle -->
-    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
-        <i class="fas fa-moon"></i>
-    </button>
-
     <!-- PWA Install Banner -->
     <div id="pwa-install-banner" class="pwa-install-banner" style="display: none;">
         <div class="install-banner-content">
@@ -45,7 +40,58 @@
     <div id="app">
         <header class="app-header">
             <h1>Budget Expense Tracker</h1>
+            <div class="header-controls">
+                <button class="color-picker-btn" id="color-picker-btn" aria-label="Customize theme color">
+                    <i class="fas fa-palette"></i>
+                </button>
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
         </header>
+
+        <!-- Color Picker Panel -->
+        <div class="color-picker-panel" id="color-picker-panel">
+            <div class="color-picker-header">
+                <h3>Theme Color</h3>
+                <button class="color-picker-close" id="color-picker-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="color-presets">
+                <button class="color-preset" data-color="#007bff" title="Blue">
+                    <span class="color-swatch" style="background: #007bff;"></span>
+                </button>
+                <button class="color-preset" data-color="#ff69b4" title="Hot Pink">
+                    <span class="color-swatch" style="background: #ff69b4;"></span>
+                </button>
+                <button class="color-preset" data-color="#ffb6c1" title="Creamy Pink">
+                    <span class="color-swatch" style="background: #ffb6c1;"></span>
+                </button>
+                <button class="color-preset" data-color="#28a745" title="Green">
+                    <span class="color-swatch" style="background: #28a745;"></span>
+                </button>
+                <button class="color-preset" data-color="#6f42c1" title="Purple">
+                    <span class="color-swatch" style="background: #6f42c1;"></span>
+                </button>
+                <button class="color-preset" data-color="#fd7e14" title="Orange">
+                    <span class="color-swatch" style="background: #fd7e14;"></span>
+                </button>
+                <button class="color-preset" data-color="#17a2b8" title="Teal">
+                    <span class="color-swatch" style="background: #17a2b8;"></span>
+                </button>
+                <button class="color-preset" data-color="#e83e8c" title="Pink">
+                    <span class="color-swatch" style="background: #e83e8c;"></span>
+                </button>
+            </div>
+            <div class="custom-color-section">
+                <label for="custom-color-input">Custom Color</label>
+                <div class="custom-color-wrapper">
+                    <input type="color" id="custom-color-input" value="#007bff">
+                    <span class="custom-color-value">#007bff</span>
+                </div>
+            </div>
+        </div>
 
         <!-- Dashboard Page -->
         <main v-show="currentPage === 'dashboard'" class="page-content">
@@ -293,9 +339,12 @@
                             <div class="input-group">
                                 <label for="expense-frequency" class="input-label">Frequency</label>
                                 <select id="expense-frequency" v-model="newExpense.frequency" class="form-input">
+                                    <option value="daily">Daily</option>
                                     <option value="weekly">Weekly</option>
                                     <option value="fortnightly">Fortnightly</option>
                                     <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="yearly">Yearly</option>
                                 </select>
                             </div>
                             <div class="input-group">
@@ -312,7 +361,7 @@
                         <div class="schedule-section">
                             <div class="form-grid">
                                 <!-- Day of Week (for weekly/fortnightly) -->
-                                <div v-if="newExpense.frequency !== 'monthly'" class="input-group">
+                                <div v-if="newExpense.frequency === 'weekly' || newExpense.frequency === 'fortnightly'" class="input-group">
                                     <label for="expense-day" class="input-label">Day of Week</label>
                                     <select id="expense-day" v-model="newExpense.day" class="form-input">
                                         <option value="monday">Monday</option>
@@ -324,8 +373,8 @@
                                         <option value="sunday">Sunday</option>
                                     </select>
                                 </div>
-                                <!-- Day of Month (for monthly) -->
-                                <div v-if="newExpense.frequency === 'monthly'" class="input-group">
+                                <!-- Day of Month (for monthly/quarterly) -->
+                                <div v-if="newExpense.frequency === 'monthly' || newExpense.frequency === 'quarterly'" class="input-group">
                                     <label for="expense-day-of-month" class="input-label">Day of Month</label>
                                     <select id="expense-day-of-month" v-model="newExpense.dayOfMonth" class="form-input">
                                         <option v-for="day in 31" :value="day" :key="day">{{ day }}{{ day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th' }}</option>
@@ -333,7 +382,7 @@
                                 </div>
                                 <!-- Start Date (Optional) -->
                                 <div class="input-group">
-                                    <label for="expense-start-date" class="input-label">Start Date (Optional)</label>
+                                    <label for="expense-start-date" class="input-label">Start Date <span v-if="newExpense.frequency === 'daily' || newExpense.frequency === 'yearly'" class="text-muted">(Required)</span><span v-else class="text-muted">(Optional)</span></label>
                                     <input type="date" id="expense-start-date" v-model="newExpense.startDate" class="form-input" placeholder="When does this expense start?">
                                 </div>
                             </div>
@@ -367,6 +416,16 @@
                 <div class="card-content">
                     <!-- Filter Section -->
                     <div v-if="expenses.length > 0" class="filters-section">
+                        <!-- Search Input -->
+                        <div class="search-section">
+                            <div class="search-input-wrapper">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" v-model="searchQuery" placeholder="Search expenses by name, category, or notes..." class="form-input search-input">
+                                <button v-if="searchQuery" @click="searchQuery = ''" class="search-clear-btn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
                         <div class="filter-grid">
                             <div class="input-group">
                                 <label for="filter-category" class="input-label">Category</label>
@@ -381,9 +440,12 @@
                                 <label for="filter-frequency" class="input-label">Frequency</label>
                                 <select id="filter-frequency" v-model="frequencyFilter" class="form-input">
                                     <option value="">All Frequencies</option>
+                                    <option value="daily">Daily</option>
                                     <option value="weekly">Weekly</option>
                                     <option value="fortnightly">Fortnightly</option>
                                     <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="yearly">Yearly</option>
                                 </select>
                             </div>
                             <div class="input-group">
@@ -643,6 +705,64 @@
                                 <i :class="'fas ' + (getSpendingTrend() === 'increasing' ? 'fa-arrow-up' : getSpendingTrend() === 'decreasing' ? 'fa-arrow-down' : 'fa-minus')"></i>
                                 <span>Your spending is {{ getSpendingTrend() }}</span>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Currency Converter -->
+                <section class="card currency-converter-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <h2 class="card-title">Currency Converter</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="converter-controls">
+                            <div class="input-group">
+                                <label class="input-label">Convert To</label>
+                                <select v-model="currencyConverter.targetCurrency" class="form-input">
+                                    <option v-for="curr in availableCurrencies" :value="curr.code" :key="curr.code">
+                                        {{ curr.symbol }} {{ curr.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <button @click="fetchExchangeRates" class="btn-primary" :disabled="currencyConverter.isLoading">
+                                <i class="fas" :class="currencyConverter.isLoading ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+                                {{ currencyConverter.isLoading ? 'Updating...' : 'Update Rates' }}
+                            </button>
+                        </div>
+                        
+                        <div v-if="currencyConverter.error" class="converter-error">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            {{ currencyConverter.error }}
+                        </div>
+                        
+                        <div v-if="currencyConverter.lastUpdated" class="rates-updated">
+                            <i class="fas fa-clock"></i>
+                            Rates last updated: {{ new Date(currencyConverter.lastUpdated).toLocaleString() }}
+                        </div>
+                        
+                        <div v-if="Object.keys(currencyConverter.exchangeRates).length > 0" class="converter-results">
+                            <div class="converter-result-item">
+                                <span class="result-label">Total Monthly Expenses</span>
+                                <span class="result-value">{{ getConvertedAmount(totalExpenses, currencyConverter.targetCurrency) || 'N/A' }}</span>
+                            </div>
+                            <div v-if="budget > 0" class="converter-result-item">
+                                <span class="result-label">Budget</span>
+                                <span class="result-value">{{ getConvertedAmount(budget, currencyConverter.targetCurrency) || 'N/A' }}</span>
+                            </div>
+                            <div v-if="budget > 0" class="converter-result-item">
+                                <span class="result-label">Remaining</span>
+                                <span class="result-value" :class="remainingBalance >= 0 ? 'text-success' : 'text-danger'">
+                                    {{ getConvertedAmount(remainingBalance, currencyConverter.targetCurrency) || 'N/A' }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="converter-note">
+                            <i class="fas fa-info-circle"></i>
+                            Exchange rates are provided by ExchangeRate-API and cached for 24 hours.
                         </div>
                     </div>
                 </section>

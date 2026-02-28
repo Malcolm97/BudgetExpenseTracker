@@ -1,6 +1,236 @@
 // Budget Expense Tracker - Production Ready Version
 // Optimized and enhanced with modern features
 
+// ===== INDEXEDDB STORAGE SYSTEM =====
+const DB_NAME = 'BudgetExpenseTrackerDB';
+const DB_VERSION = 1;
+const STORES = {
+    EXPENSES: 'expenses',
+    SETTINGS: 'settings',
+    BACKUPS: 'backups',
+    HISTORY: 'spendingHistory'
+};
+
+class IndexedDBStorage {
+    constructor() {
+        this.db = null;
+        this.isReady = false;
+    }
+
+    async init() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onerror = () => {
+                console.error('IndexedDB error:', request.error);
+                reject(request.error);
+            };
+
+            request.onsuccess = () => {
+                this.db = request.result;
+                this.isReady = true;
+                console.log('IndexedDB initialized successfully');
+                resolve(this.db);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+
+                // Expenses store
+                if (!db.objectStoreNames.contains(STORES.EXPENSES)) {
+                    const expenseStore = db.createObjectStore(STORES.EXPENSES, { keyPath: 'id' });
+                    expenseStore.createIndex('category', 'category', { unique: false });
+                    expenseStore.createIndex('frequency', 'frequency', { unique: false });
+                    expenseStore.createIndex('startDate', 'startDate', { unique: false });
+                }
+
+                // Settings store
+                if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
+                    db.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
+                }
+
+                // Backups store
+                if (!db.objectStoreNames.contains(STORES.BACKUPS)) {
+                    const backupStore = db.createObjectStore(STORES.BACKUPS, { keyPath: 'id', autoIncrement: true });
+                    backupStore.createIndex('timestamp', 'timestamp', { unique: false });
+                }
+
+                // Spending history store
+                if (!db.objectStoreNames.contains(STORES.HISTORY)) {
+                    const historyStore = db.createObjectStore(STORES.HISTORY, { keyPath: 'month' });
+                    historyStore.createIndex('month', 'month', { unique: true });
+                }
+            };
+        });
+    }
+
+    async getAll(storeName) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve([]);
+                return;
+            }
+            const transaction = this.db.transaction(storeName, 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.getAll();
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async get(storeName, key) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve(null);
+                return;
+            }
+            const transaction = this.db.transaction(storeName, 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.get(key);
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async put(storeName, data) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve(false);
+                return;
+            }
+            const transaction = this.db.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const request = store.put(data);
+
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async putAll(storeName, items) {
+        return new Promise((resolve, reject) => {
+            if (!this.db || !items.length) {
+                resolve(true);
+                return;
+            }
+            const transaction = this.db.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+
+            items.forEach(item => store.put(item));
+
+            transaction.oncomplete = () => resolve(true);
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    async delete(storeName, key) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve(false);
+                return;
+            }
+            const transaction = this.db.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const request = store.delete(key);
+
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async clear(storeName) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve(false);
+                return;
+            }
+            const transaction = this.db.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const request = store.clear();
+
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // Settings helpers
+    async getSetting(key) {
+        const result = await this.get(STORES.SETTINGS, key);
+        return result ? result.value : null;
+    }
+
+    async setSetting(key, value) {
+        return this.put(STORES.SETTINGS, { key, value, updatedAt: new Date().toISOString() });
+    }
+
+    // Backup management
+    async createBackup(description = 'Auto backup') {
+        const expenses = await this.getAll(STORES.EXPENSES);
+        const settings = await this.getAll(STORES.SETTINGS);
+        const history = await this.getAll(STORES.HISTORY);
+
+        const backup = {
+            timestamp: new Date().toISOString(),
+            description,
+            data: {
+                expenses,
+                settings,
+                history
+            }
+        };
+
+        return this.put(STORES.BACKUPS, backup);
+    }
+
+    async getBackups() {
+        return this.getAll(STORES.BACKUPS);
+    }
+
+    async restoreFromBackup(backupId) {
+        const backup = await this.get(STORES.BACKUPS, backupId);
+        if (!backup || !backup.data) return false;
+
+        await this.clear(STORES.EXPENSES);
+        await this.clear(STORES.SETTINGS);
+        await this.clear(STORES.HISTORY);
+
+        if (backup.data.expenses) {
+            await this.putAll(STORES.EXPENSES, backup.data.expenses);
+        }
+        if (backup.data.settings) {
+            await this.putAll(STORES.SETTINGS, backup.data.settings);
+        }
+        if (backup.data.history) {
+            await this.putAll(STORES.HISTORY, backup.data.history);
+        }
+
+        return true;
+    }
+
+    async deleteBackup(backupId) {
+        return this.delete(STORES.BACKUPS, backupId);
+    }
+
+    // Auto backup - keep last 5 backups
+    async autoBackup() {
+        await this.createBackup('Auto backup');
+
+        // Clean old backups, keep only last 5
+        const backups = await this.getBackups();
+        if (backups.length > 5) {
+            backups.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const toDelete = backups.slice(5);
+            for (const backup of toDelete) {
+                await this.deleteBackup(backup.id);
+            }
+        }
+    }
+}
+
+const dbStorage = new IndexedDBStorage();
+
 // ===== SERVICE WORKER REGISTRATION =====
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -48,6 +278,111 @@ function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+// ===== COLOR THEME SYSTEM =====
+function getDarkerShade(hex, percent) {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.max(0, (num >> 16) - amt);
+    const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+    const B = Math.max(0, (num & 0x0000FF) - amt);
+    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+}
+
+function applyPrimaryColor(color) {
+    if (!color || !/^#[0-9A-Fa-f]{6}$/.test(color)) return;
+    
+    const primaryDark = getDarkerShade(color, 15);
+    document.documentElement.style.setProperty('--primary-color', color);
+    document.documentElement.style.setProperty('--primary-dark', primaryDark);
+    
+    // Update theme-color meta tag
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', color);
+    }
+    
+    // Update active nav item color
+    document.documentElement.style.setProperty('--nav-active-color', color);
+}
+
+function initColorPicker() {
+    const colorPickerBtn = document.getElementById('color-picker-btn');
+    const colorPickerPanel = document.getElementById('color-picker-panel');
+    const colorPickerClose = document.getElementById('color-picker-close');
+    const customColorInput = document.getElementById('custom-color-input');
+    const customColorValue = document.querySelector('.custom-color-value');
+    const colorPresets = document.querySelectorAll('.color-preset');
+    
+    if (!colorPickerBtn || !colorPickerPanel) return;
+    
+    // Load saved color
+    const savedColor = localStorage.getItem('primaryColor');
+    if (savedColor) {
+        applyPrimaryColor(savedColor);
+        if (customColorInput) customColorInput.value = savedColor;
+        if (customColorValue) customColorValue.textContent = savedColor.toUpperCase();
+        
+        // Mark active preset
+        colorPresets.forEach(preset => {
+            if (preset.dataset.color === savedColor) {
+                preset.classList.add('active');
+            } else {
+                preset.classList.remove('active');
+            }
+        });
+    }
+    
+    // Toggle panel
+    colorPickerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        colorPickerPanel.classList.toggle('show');
+    });
+    
+    // Close panel
+    if (colorPickerClose) {
+        colorPickerClose.addEventListener('click', () => {
+            colorPickerPanel.classList.remove('show');
+        });
+    }
+    
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!colorPickerPanel.contains(e.target) && !colorPickerBtn.contains(e.target)) {
+            colorPickerPanel.classList.remove('show');
+        }
+    });
+    
+    // Preset colors
+    colorPresets.forEach(preset => {
+        preset.addEventListener('click', () => {
+            const color = preset.dataset.color;
+            applyPrimaryColor(color);
+            localStorage.setItem('primaryColor', color);
+            
+            if (customColorInput) customColorInput.value = color;
+            if (customColorValue) customColorValue.textContent = color.toUpperCase();
+            
+            // Update active state
+            colorPresets.forEach(p => p.classList.remove('active'));
+            preset.classList.add('active');
+        });
+    });
+    
+    // Custom color input
+    if (customColorInput) {
+        customColorInput.addEventListener('input', (e) => {
+            const color = e.target.value;
+            applyPrimaryColor(color);
+            localStorage.setItem('primaryColor', color);
+            
+            if (customColorValue) customColorValue.textContent = color.toUpperCase();
+            
+            // Remove active from presets
+            colorPresets.forEach(p => p.classList.remove('active'));
+        });
+    }
+}
+
 // ===== MAIN APPLICATION =====
 document.addEventListener('DOMContentLoaded', function() {
     const themeToggle = document.getElementById('theme-toggle');
@@ -69,6 +404,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const icon = themeToggle.querySelector('i');
         if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     }
+    
+    // Initialize color picker
+    initColorPicker();
 
     // ===== OFFLINE INDICATOR =====
     const offlineIndicator = document.createElement('div');
@@ -163,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 sortBy: 'date-desc',
             
             // Currency
-            currency: localStorage.getItem('currency') || 'USD',
+            currency: localStorage.getItem('currency') || 'AUD',
             
             // Budget tracking mode
             budgetEnabled: localStorage.getItem('budgetEnabled') !== 'false',
@@ -213,8 +551,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
                 { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
                 { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
-                { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' }
-            ]
+                { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+                { code: 'PGK', name: 'Papua New Guinean Kina', symbol: 'K' }
+            ],
+            
+            // Currency converter
+            currencyConverter: {
+                targetCurrency: 'USD',
+                exchangeRates: {},
+                lastUpdated: null,
+                isLoading: false,
+                error: null
+            },
+            
+            // Search
+            searchQuery: '',
+            
+            // Frequency options (extended)
+            frequencyOptions: [
+                { value: 'daily', label: 'Daily', multiplier: 30.4375 },
+                { value: 'weekly', label: 'Weekly', multiplier: 4.34524 },
+                { value: 'fortnightly', label: 'Fortnightly', multiplier: 2.17262 },
+                { value: 'monthly', label: 'Monthly', multiplier: 1 },
+                { value: 'quarterly', label: 'Quarterly', multiplier: 1/3 },
+                { value: 'yearly', label: 'Yearly', multiplier: 1/12 }
+            ],
+            
+            // IndexedDB ready state
+            dbReady: false,
+            
+            // Auto backup settings
+            autoBackupEnabled: localStorage.getItem('autoBackupEnabled') !== 'false',
+            lastBackupTime: null
         },
         methods: {
             // ===== CURRENCY =====
@@ -227,11 +595,124 @@ document.addEventListener('DOMContentLoaded', function() {
                     'AUD': { symbol: 'A$', locale: 'en-AU' },
                     'CAD': { symbol: 'C$', locale: 'en-CA' },
                     'INR': { symbol: '₹', locale: 'en-IN' },
-                    'CNY': { symbol: '¥', locale: 'zh-CN' }
+                    'CNY': { symbol: '¥', locale: 'zh-CN' },
+                    'PGK': { symbol: 'K', locale: 'en-PG' }
                 };
                 const curr = currencies[this.currency] || currencies['USD'];
                 const num = parseFloat(amount) || 0;
                 return curr.symbol + num.toLocaleString(curr.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
+            
+            // ===== CURRENCY CONVERTER =====
+            async fetchExchangeRates() {
+                this.currencyConverter.isLoading = true;
+                this.currencyConverter.error = null;
+                
+                try {
+                    // Using exchangerate-api.com free API (no key required for basic usage)
+                    const response = await fetch('https://api.exchangerate-api.com/v4/latest/' + this.currency);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch exchange rates');
+                    }
+                    
+                    const data = await response.json();
+                    this.currencyConverter.exchangeRates = data.rates;
+                    this.currencyConverter.lastUpdated = new Date().toISOString();
+                    this.currencyConverter.isLoading = false;
+                    
+                    // Cache the rates in localStorage
+                    localStorage.setItem('exchangeRates', JSON.stringify({
+                        rates: data.rates,
+                        base: this.currency,
+                        timestamp: this.currencyConverter.lastUpdated
+                    }));
+                    
+                    this.displaySuccess('Exchange rates updated!');
+                } catch (error) {
+                    console.error('Error fetching exchange rates:', error);
+                    this.currencyConverter.isLoading = false;
+                    this.currencyConverter.error = 'Failed to fetch exchange rates. Using cached rates if available.';
+                    
+                    // Try to load cached rates
+                    const cached = localStorage.getItem('exchangeRates');
+                    if (cached) {
+                        const cachedData = JSON.parse(cached);
+                        if (cachedData.base === this.currency) {
+                            this.currencyConverter.exchangeRates = cachedData.rates;
+                            this.currencyConverter.lastUpdated = cachedData.timestamp;
+                        }
+                    }
+                }
+            },
+            
+            convertCurrency(amount, fromCurrency, toCurrency) {
+                if (!this.currencyConverter.exchangeRates || Object.keys(this.currencyConverter.exchangeRates).length === 0) {
+                    return null;
+                }
+                
+                const rates = this.currencyConverter.exchangeRates;
+                
+                // If fromCurrency is the base currency
+                if (fromCurrency === this.currency) {
+                    if (rates[toCurrency]) {
+                        return amount * rates[toCurrency];
+                    }
+                } else {
+                    // Convert from non-base currency
+                    if (rates[fromCurrency] && rates[toCurrency]) {
+                        // Convert to base first, then to target
+                        const inBase = amount / rates[fromCurrency];
+                        return inBase * rates[toCurrency];
+                    } else if (rates[toCurrency]) {
+                        // Assume amount is already in base currency
+                        return amount * rates[toCurrency];
+                    }
+                }
+                
+                return null;
+            },
+            
+            getConvertedAmount(amount, targetCurrency) {
+                const converted = this.convertCurrency(amount, this.currency, targetCurrency);
+                if (converted !== null) {
+                    const targetCurr = this.availableCurrencies.find(c => c.code === targetCurrency);
+                    const symbol = targetCurr ? targetCurr.symbol : targetCurrency;
+                    return symbol + converted.toFixed(2);
+                }
+                return null;
+            },
+            
+            getConvertedMonthlyExpenses(targetCurrency) {
+                const converted = this.convertCurrency(this.totalExpenses, this.currency, targetCurrency);
+                return converted;
+            },
+            
+            isExchangeRatesStale() {
+                if (!this.currencyConverter.lastUpdated) return true;
+                const lastUpdate = new Date(this.currencyConverter.lastUpdated);
+                const now = new Date();
+                const hoursSinceUpdate = (now - lastUpdate) / (1000 * 60 * 60);
+                return hoursSinceUpdate > 24; // Rates are stale after 24 hours
+            },
+            
+            initCurrencyConverter() {
+                // Load cached rates
+                const cached = localStorage.getItem('exchangeRates');
+                if (cached) {
+                    try {
+                        const cachedData = JSON.parse(cached);
+                        this.currencyConverter.exchangeRates = cachedData.rates;
+                        this.currencyConverter.lastUpdated = cachedData.timestamp;
+                    } catch (e) {
+                        console.error('Error loading cached exchange rates:', e);
+                    }
+                }
+                
+                // Fetch fresh rates if stale or not available
+                if (this.isExchangeRatesStale()) {
+                    this.fetchExchangeRates();
+                }
             },
             
             getCurrencySymbol() {
@@ -246,7 +727,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // ===== BUDGET =====
             toggleBudgetEnabled() {
-                this.budgetEnabled = !this.budgetEnabled;
+                // v-model already toggled the value, just save and handle side effects
                 localStorage.setItem('budgetEnabled', this.budgetEnabled.toString());
                 
                 if (!this.budgetEnabled) {
@@ -561,16 +1042,33 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // ===== CALCULATIONS (OPTIMIZED) =====
             getFrequencyMultipliers() {
+                // Use actual days in current month for more accurate calculations
+                const now = new Date();
+                const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                const weeksInCurrentMonth = daysInCurrentMonth / 7;
+                
                 return {
-                    weekly: 4.34524,      // 52 weeks / 12 months
-                    fortnightly: 2.17262, // 26 fortnights / 12 months
-                    monthly: 1
+                    daily: daysInCurrentMonth,           // Actual days in current month
+                    weekly: weeksInCurrentMonth,         // Actual weeks in current month
+                    fortnightly: weeksInCurrentMonth / 2, // Fortnights in current month
+                    monthly: 1,
+                    quarterly: 1/3,                      // 4 quarters / 12 months
+                    yearly: 1/12                         // 1 year / 12 months
                 };
             },
             
             convertToMonthly(amount, frequency) {
                 const multipliers = this.getFrequencyMultipliers();
-                return amount * (multipliers[frequency] || 1);
+                const multiplier = multipliers[frequency];
+                if (multiplier === undefined) return amount;
+                return amount * multiplier;
+            },
+            
+            convertFromMonthly(amount, frequency) {
+                const multipliers = this.getFrequencyMultipliers();
+                const multiplier = multipliers[frequency];
+                if (multiplier === undefined || multiplier === 0) return amount;
+                return amount / multiplier;
             },
             
             updateTotalExpenses() {
@@ -586,16 +1084,15 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             
             updateDeductions() {
-                const rawWeekly = this.calculateDeductions('weekly');
-                const rawFortnightly = this.calculateDeductions('fortnightly');
-                const rawMonthly = this.calculateDeductions('monthly');
+                const multipliers = this.getFrequencyMultipliers();
                 
-                this.deductions.weekly = rawWeekly;
-                this.deductions.fortnightly = rawFortnightly;
-                this.deductions.monthly = rawMonthly;
-                
-                // Daily average: 365.25 days/year / 12 months = 30.4375 days/month
-                this.deductions.daily = parseFloat((this.totalExpenses / 30.4375).toFixed(2));
+                // Calculate raw amounts for each frequency
+                this.deductions.daily = this.calculateDeductions('daily');
+                this.deductions.weekly = this.calculateDeductions('weekly');
+                this.deductions.fortnightly = this.calculateDeductions('fortnightly');
+                this.deductions.monthly = this.calculateDeductions('monthly');
+                this.deductions.quarterly = this.calculateDeductions('quarterly');
+                this.deductions.yearly = this.calculateDeductions('yearly');
                 
                 this.updateUpcomingDeductions();
             },
@@ -607,14 +1104,15 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             
             getMonthlyEquivalentBreakdown() {
-                const rawWeekly = this.calculateDeductions('weekly');
-                const rawFortnightly = this.calculateDeductions('fortnightly');
-                const rawMonthly = this.calculateDeductions('monthly');
+                const multipliers = this.getFrequencyMultipliers();
                 
                 return {
-                    weekly: parseFloat((rawWeekly * this.getFrequencyMultipliers().weekly).toFixed(2)),
-                    fortnightly: parseFloat((rawFortnightly * this.getFrequencyMultipliers().fortnightly).toFixed(2)),
-                    monthly: rawMonthly,
+                    daily: parseFloat((this.calculateDeductions('daily') * multipliers.daily).toFixed(2)),
+                    weekly: parseFloat((this.calculateDeductions('weekly') * multipliers.weekly).toFixed(2)),
+                    fortnightly: parseFloat((this.calculateDeductions('fortnightly') * multipliers.fortnightly).toFixed(2)),
+                    monthly: this.calculateDeductions('monthly'),
+                    quarterly: parseFloat((this.calculateDeductions('quarterly') * multipliers.quarterly).toFixed(2)),
+                    yearly: parseFloat((this.calculateDeductions('yearly') * multipliers.yearly).toFixed(2)),
                     total: this.totalExpenses
                 };
             },
@@ -623,7 +1121,11 @@ document.addEventListener('DOMContentLoaded', function() {
             getNextDueDate(expense, now) {
                 const nextDueDate = new Date(now);
                 
-                if (expense.frequency === 'monthly' && expense.dayOfMonth) {
+                if (expense.frequency === 'daily') {
+                    // Daily expenses - next day
+                    nextDueDate.setDate(now.getDate() + 1);
+                    
+                } else if (expense.frequency === 'monthly' && expense.dayOfMonth) {
                     const targetDay = parseInt(expense.dayOfMonth);
                     const currentDay = now.getDate();
                     const currentMonth = now.getMonth();
@@ -635,6 +1137,48 @@ document.addEventListener('DOMContentLoaded', function() {
                     const lastDayOfTargetMonth = new Date(nextDueDate.getFullYear(), nextDueDate.getMonth() + 1, 0).getDate();
                     const actualDay = Math.min(targetDay, lastDayOfTargetMonth);
                     nextDueDate.setDate(actualDay);
+                    
+                } else if (expense.frequency === 'quarterly' && expense.dayOfMonth) {
+                    // Quarterly - every 3 months on specific day
+                    const targetDay = parseInt(expense.dayOfMonth);
+                    const startDate = expense.startDate ? new Date(expense.startDate) : new Date();
+                    const monthsSinceStart = (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth());
+                    const quartersSinceStart = Math.floor(monthsSinceStart / 3);
+                    
+                    // Calculate next quarter month
+                    let nextQuarterMonth = (quartersSinceStart + 1) * 3 + startDate.getMonth();
+                    let nextQuarterYear = startDate.getFullYear() + Math.floor(nextQuarterMonth / 12);
+                    nextQuarterMonth = nextQuarterMonth % 12;
+                    
+                    // Check if we're past this quarter's date
+                    const currentQuarterMonth = quartersSinceStart * 3 + startDate.getMonth();
+                    const currentQuarterYear = startDate.getFullYear() + Math.floor(currentQuarterMonth / 12);
+                    const currentQuarterDate = new Date(currentQuarterYear, currentQuarterMonth % 12, targetDay);
+                    
+                    if (now <= currentQuarterDate) {
+                        nextDueDate.setTime(currentQuarterDate.getTime());
+                    } else {
+                        nextDueDate.setFullYear(nextQuarterYear);
+                        nextDueDate.setMonth(nextQuarterMonth);
+                        const lastDay = new Date(nextDueDate.getFullYear(), nextDueDate.getMonth() + 1, 0).getDate();
+                        nextDueDate.setDate(Math.min(targetDay, lastDay));
+                    }
+                    
+                } else if (expense.frequency === 'yearly' && expense.startDate) {
+                    // Yearly - same date each year
+                    const startDate = new Date(expense.startDate);
+                    const startDay = startDate.getDate();
+                    const startMonth = startDate.getMonth();
+                    
+                    nextDueDate.setMonth(startMonth);
+                    const lastDay = new Date(nextDueDate.getFullYear(), nextDueDate.getMonth() + 1, 0).getDate();
+                    nextDueDate.setDate(Math.min(startDay, lastDay));
+                    
+                    if (nextDueDate <= now) {
+                        nextDueDate.setFullYear(nextDueDate.getFullYear() + 1);
+                        const lastDayNext = new Date(nextDueDate.getFullYear(), nextDueDate.getMonth() + 1, 0).getDate();
+                        nextDueDate.setDate(Math.min(startDay, lastDayNext));
+                    }
                     
                 } else if (expense.frequency === 'weekly' || expense.frequency === 'fortnightly') {
                     const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -793,8 +1337,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         amount: sortedByAmount[sortedByAmount.length - 1].monthlyAmount
                     } : null,
                     projectedMonthly: this.totalExpenses,
-                    dailyAverage: parseFloat((this.totalExpenses / 30.4375).toFixed(2)),
-                    weeklyAverage: parseFloat((this.totalExpenses / 4.34524).toFixed(2))
+                    dailyAverage: parseFloat((this.totalExpenses / this.getFrequencyMultipliers().daily).toFixed(2)),
+                    weeklyAverage: parseFloat((this.totalExpenses / this.getFrequencyMultipliers().weekly).toFixed(2))
                 };
             },
             
@@ -1050,19 +1594,57 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.frequencyChart.destroy();
                 }
 
-                const rawData = { 'Weekly': 0, 'Fortnightly': 0, 'Monthly': 0 };
-                const monthlyEquivalentData = { 'Weekly': 0, 'Fortnightly': 0, 'Monthly': 0 };
                 const multipliers = this.getFrequencyMultipliers();
+                const frequencyLabels = {
+                    'daily': 'Daily',
+                    'weekly': 'Weekly',
+                    'fortnightly': 'Fortnightly',
+                    'monthly': 'Monthly',
+                    'quarterly': 'Quarterly',
+                    'yearly': 'Yearly'
+                };
+                
+                const frequencyColors = {
+                    'daily': { bg: 'rgba(156, 39, 176, 0.8)', border: 'rgba(156, 39, 176, 1)' },
+                    'weekly': { bg: 'rgba(0, 123, 255, 0.8)', border: 'rgba(0, 123, 255, 1)' },
+                    'fortnightly': { bg: 'rgba(40, 167, 69, 0.8)', border: 'rgba(40, 167, 69, 1)' },
+                    'monthly': { bg: 'rgba(255, 193, 7, 0.8)', border: 'rgba(255, 193, 7, 1)' },
+                    'quarterly': { bg: 'rgba(233, 30, 99, 0.8)', border: 'rgba(233, 30, 99, 1)' },
+                    'yearly': { bg: 'rgba(0, 188, 212, 0.8)', border: 'rgba(0, 188, 212, 1)' }
+                };
+
+                const rawData = {};
+                const monthlyEquivalentData = {};
 
                 this.expenses.forEach(expense => {
                     const amount = parseFloat(expense.amount);
-                    const frequency = expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1);
-                    rawData[frequency] += amount;
-                    monthlyEquivalentData[frequency] += amount * multipliers[expense.frequency];
+                    const frequency = expense.frequency;
+                    const label = frequencyLabels[frequency] || frequency;
+                    
+                    if (!rawData[label]) {
+                        rawData[label] = 0;
+                        monthlyEquivalentData[label] = 0;
+                    }
+                    
+                    rawData[label] += amount;
+                    monthlyEquivalentData[label] += amount * (multipliers[frequency] || 1);
                 });
 
-                const labels = Object.keys(monthlyEquivalentData);
-                const data = Object.values(monthlyEquivalentData);
+                // Filter out frequencies with no data
+                const labels = Object.keys(monthlyEquivalentData).filter(label => monthlyEquivalentData[label] > 0);
+                const data = labels.map(label => monthlyEquivalentData[label]);
+                const backgroundColors = labels.map(label => {
+                    const freq = Object.keys(frequencyLabels).find(k => frequencyLabels[k] === label);
+                    return freq ? frequencyColors[freq].bg : 'rgba(99, 110, 114, 0.8)';
+                });
+                const borderColors = labels.map(label => {
+                    const freq = Object.keys(frequencyLabels).find(k => frequencyLabels[k] === label);
+                    return freq ? frequencyColors[freq].border : 'rgba(99, 110, 114, 1)';
+                });
+
+                if (labels.length === 0) {
+                    return; // No data to display
+                }
 
                 this.frequencyChart = new Chart(ctx, {
                     type: 'bar',
@@ -1071,16 +1653,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         datasets: [{
                             label: 'Monthly Equivalent',
                             data: data,
-                            backgroundColor: [
-                                'rgba(0, 123, 255, 0.8)',
-                                'rgba(40, 167, 69, 0.8)',
-                                'rgba(255, 193, 7, 0.8)'
-                            ],
-                            borderColor: [
-                                'rgba(0, 123, 255, 1)',
-                                'rgba(40, 167, 69, 1)',
-                                'rgba(255, 193, 7, 1)'
-                            ],
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
                             borderWidth: 1
                         }]
                     },
@@ -1103,8 +1677,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                         const label = context.label;
                                         const monthlyEquiv = context.parsed.y;
                                         const rawAmount = rawData[label];
+                                        const freqKey = Object.keys(frequencyLabels).find(k => frequencyLabels[k] === label);
+                                        
                                         if (label === 'Monthly') {
                                             return 'Monthly: ' + this.formatCurrency(rawAmount);
+                                        } else if (label === 'Daily') {
+                                            return [
+                                                'Monthly Equivalent: ' + this.formatCurrency(monthlyEquiv),
+                                                'Raw Daily: ' + this.formatCurrency(rawAmount) + '/day'
+                                            ];
                                         } else if (label === 'Weekly') {
                                             return [
                                                 'Monthly Equivalent: ' + this.formatCurrency(monthlyEquiv),
@@ -1114,6 +1695,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                             return [
                                                 'Monthly Equivalent: ' + this.formatCurrency(monthlyEquiv),
                                                 'Raw Fortnightly: ' + this.formatCurrency(rawAmount) + '/fortnight'
+                                            ];
+                                        } else if (label === 'Quarterly') {
+                                            return [
+                                                'Monthly Equivalent: ' + this.formatCurrency(monthlyEquiv),
+                                                'Raw Quarterly: ' + this.formatCurrency(rawAmount) + '/quarter'
+                                            ];
+                                        } else if (label === 'Yearly') {
+                                            return [
+                                                'Monthly Equivalent: ' + this.formatCurrency(monthlyEquiv),
+                                                'Raw Yearly: ' + this.formatCurrency(rawAmount) + '/year'
                                             ];
                                         }
                                         return this.formatCurrency(monthlyEquiv);
@@ -1392,6 +1983,17 @@ document.addEventListener('DOMContentLoaded', function() {
             filteredExpenses() {
                 let filtered = [...this.expenses];
 
+                // Search filter
+                if (this.searchQuery && this.searchQuery.trim()) {
+                    const query = this.searchQuery.toLowerCase().trim();
+                    filtered = filtered.filter(expense => {
+                        const nameMatch = expense.name.toLowerCase().includes(query);
+                        const notesMatch = expense.notes && expense.notes.toLowerCase().includes(query);
+                        const categoryMatch = this.getCategoryById(expense.category).name.toLowerCase().includes(query);
+                        return nameMatch || notesMatch || categoryMatch;
+                    });
+                }
+
                 if (this.categoryFilter) {
                     filtered = filtered.filter(expense => expense.category === this.categoryFilter);
                 }
@@ -1446,6 +2048,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             this.requestNotificationPermission();
             this.loadFromLocalStorage();
+            this.initCurrencyConverter();
         }
     });
 });
