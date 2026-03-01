@@ -97,6 +97,101 @@
    Media queries scale UP with min-width
    ============================================ */
 
+/* --- UI/UX ENHANCEMENTS FOR MOBILE --- */
+/* Larger touch targets for all buttons and inputs */
+button, .btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-info, .btn-warning, .btn-icon, .nav-item, .form-input, select, input, textarea {
+    min-height: 48px;
+    min-width: 48px;
+    font-size: 1rem;
+}
+
+/* Extra spacing for mobile tap targets */
+@media (max-width: 600px) {
+    .card, .expense-card, .summary-item, .stat-card, .action-buttons button, .form-input, .btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-info, .btn-warning, .btn-icon {
+        margin-bottom: 12px;
+        margin-top: 8px;
+    }
+    .nav-item {
+        padding: 12px 0;
+    }
+}
+
+/* Visual feedback for button actions */
+button:active, .btn-primary:active, .btn-secondary:active, .btn-success:active, .btn-danger:active, .btn-info:active, .btn-warning:active {
+    filter: brightness(0.92);
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.12);
+}
+
+/* Focus ring for accessibility */
+button:focus-visible, .form-input:focus-visible, .nav-item:focus-visible {
+    outline: 3px solid #007bff;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(0,123,255,0.18);
+}
+
+/* Improve skip link visibility on mobile */
+.skip-link:focus {
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    z-index: 9999;
+}
+
+/* Animated feedback for success/error */
+.btn-success:active, .success-notification {
+    animation: pulse 0.4s;
+}
+.btn-danger:active, .error-notification {
+    animation: shake 0.4s;
+}
+@keyframes shake {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+    100% { transform: translateX(0); }
+}
+
+/* Ensure all form controls are full width on mobile */
+@media (max-width: 600px) {
+    .form-input, select, input, textarea {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* Enhance bottom nav for thumb reach */
+@media (max-width: 600px) {
+    .bottom-nav {
+        padding-bottom: 24px;
+        padding-top: 8px;
+    }
+    .nav-item {
+        font-size: 1.1rem;
+    }
+}
+
+/* Improve modal and banner close buttons for touch */
+.modal-close, .color-picker-close, #dismiss-btn {
+    min-width: 48px;
+    min-height: 48px;
+    font-size: 1.2rem;
+}
+
+/* Accessibility: always show focus for keyboard users */
+*:focus-visible {
+    outline: 3px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Accessibility: ARIA live region improvements */
+#sr-announcements, #sr-alerts {
+    font-size: 1rem;
+    min-height: 1.5em;
+}
+
 /* CSS Custom Properties for Theming */
 :root {
     /* Colors */
