@@ -1326,12 +1326,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // ===== CALCULATIONS (OPTIMIZED) =====
             getFrequencyMultipliers() {
-                // Use standard multipliers based on average days per month (365.25 days/year / 12 months)
-                // This ensures consistent calculations regardless of the current month
+                // Use simple multipliers for intuitive budgeting
+                // Based on common expectations: 4 weeks = 1 month, 2 fortnights = 1 month
                 return {
-                    daily: 30.4375,                     // 365.25 days / 12 months
-                    weekly: 4.34821,                    // 365.25 days / 7 days per week / 12 months
-                    fortnightly: 2.17411,               // 365.25 days / 14 days per fortnight / 12 months
+                    daily: 30,                          // 30 days per month
+                    weekly: 4,                          // 4 weeks per month
+                    fortnightly: 2,                     // 2 fortnights per month
                     monthly: 1,                         // 1 month
                     quarterly: 0.33333,                 // 4 quarters / 12 months = 1/3
                     yearly: 0.08333                     // 1 year / 12 months = 1/12
