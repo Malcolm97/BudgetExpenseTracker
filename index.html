@@ -876,41 +876,43 @@
                     <p style="color: var(--text-secondary); margin-bottom: var(--space-lg); font-size: var(--font-size-sm);">Calculate how much you'll save over a year based on your fortnightly and monthly savings.</p>
                     
                     <form @submit.prevent="calculateYearlySavings" class="savings-form">
-                        <div class="form-grid">
+                        <div class="form-grid savings-input-grid">
                             <div class="input-group">
-                                <label for="fortnightly-savings" class="input-label">Fortnightly Savings</label>
+                                <label for="fortnightly-savings" class="input-label">
+                                    Fortnightly
+                                    <span class="label-hint" title="Amount saved every 2 weeks (26 times/year)">ⓘ</span>
+                                </label>
                                 <div class="input-wrapper">
                                     <span class="input-prefix">{{ getCurrencySymbol() }}</span>
                                     <input 
                                         type="number" 
                                         id="fortnightly-savings" 
                                         v-model.number="savingsTracking.fortnightly" 
-                                        placeholder="0.00" 
+                                        placeholder="Each fortnight" 
                                         step="0.01" 
                                         min="0"
                                         class="form-input" 
-                                        inputmode="decimal" 
-                                        aria-describedby="fortnightly-savings-help">
+                                        inputmode="decimal">
                                 </div>
-                                <small id="fortnightly-savings-help">Enter the amount you save every two weeks (26 times per year).</small>
                             </div>
 
                             <div class="input-group">
-                                <label for="monthly-savings" class="input-label">Monthly Savings</label>
+                                <label for="monthly-savings" class="input-label">
+                                    Monthly
+                                    <span class="label-hint" title="Amount saved each month (12 times/year)">ⓘ</span>
+                                </label>
                                 <div class="input-wrapper">
                                     <span class="input-prefix">{{ getCurrencySymbol() }}</span>
                                     <input 
                                         type="number" 
                                         id="monthly-savings" 
                                         v-model.number="savingsTracking.monthly" 
-                                        placeholder="0.00" 
+                                        placeholder="Each month" 
                                         step="0.01" 
                                         min="0"
                                         class="form-input" 
-                                        inputmode="decimal" 
-                                        aria-describedby="monthly-savings-help">
+                                        inputmode="decimal">
                                 </div>
-                                <small id="monthly-savings-help">Enter the amount you save every month (12 times per year).</small>
                             </div>
                         </div>
                         
@@ -971,6 +973,24 @@
                             </div>
 
                             <div class="input-group">
+                                <label for="compounding-frequency" class="input-label">Compounding Frequency</label>
+                                <select 
+                                    id="compounding-frequency" 
+                                    v-model="interestCalculator.compoundingFrequency" 
+                                    class="form-input"
+                                    aria-describedby="compounding-help">
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="semiannual">Semi-Annual</option>
+                                    <option value="annual">Annual</option>
+                                </select>
+                                <small id="compounding-help">How often interest is calculated and added to your account (more frequent = higher returns).</small>
+                            </div>
+                        </div>
+
+                        <!-- Compact Rate and Years Fields -->
+                        <div class="form-grid savings-input-grid" style="margin-top: var(--space-md);">
+                            <div class="input-group">
                                 <label for="interest-rate" class="input-label">Annual Interest Rate (%)</label>
                                 <input 
                                     type="number" 
@@ -984,44 +1004,6 @@
                                     inputmode="decimal" 
                                     aria-describedby="interest-help">
                                 <small id="interest-help">Annual percentage rate (APR) provided by your bank or investment account.</small>
-                            </div>
-
-                            <div class="input-group">
-                                <label for="contribution-amount" class="input-label">Fortnightly</label>
-                                <div class="input-wrapper">
-                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
-                                    <input 
-                                        type="number" 
-                                        id="contribution-amount" 
-                                        v-model.number="interestCalculator.fortnightlyContribution" 
-                                        placeholder="0.00" 
-                                        step="0.01" 
-                                        min="0"
-                                        class="form-input" 
-                                        inputmode="decimal" 
-                                        aria-describedby="fortnightly-contribution-help"
-                                        title="Amount added every 2 weeks (26 times/year)">
-                                </div>
-                                <small id="fortnightly-contribution-help">Every 2 weeks</small>
-                            </div>
-
-                            <div class="input-group">
-                                <label for="contribution-monthly" class="input-label">Monthly</label>
-                                <div class="input-wrapper">
-                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
-                                    <input 
-                                        type="number" 
-                                        id="contribution-monthly" 
-                                        v-model.number="interestCalculator.monthlyContribution" 
-                                        placeholder="0.00" 
-                                        step="0.01" 
-                                        min="0"
-                                        class="form-input" 
-                                        inputmode="decimal" 
-                                        aria-describedby="monthly-contribution-help"
-                                        title="Amount added every month (12 times/year)">
-                                </div>
-                                <small id="monthly-contribution-help">Every month</small>
                             </div>
 
                             <div class="input-group">
@@ -1039,21 +1021,48 @@
                                     aria-describedby="years-help">
                                 <small id="years-help">Number of years to project your savings accumulation (1-100 years).</small>
                             </div>
+                        </div>
+
+                        <!-- Compact Contribution Fields -->
+                        <div class="form-grid savings-input-grid" style="margin-top: var(--space-md);">
+                            <div class="input-group">
+                                <label for="contribution-amount" class="input-label">
+                                    Fortnightly
+                                    <span class="label-hint" title="Amount added every 2 weeks (26 times/year)">ⓘ</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                    <input 
+                                        type="number" 
+                                        id="contribution-amount" 
+                                        v-model.number="interestCalculator.fortnightlyContribution" 
+                                        placeholder="Each fortnight" 
+                                        step="0.01" 
+                                        min="0"
+                                        class="form-input" 
+                                        inputmode="decimal">
+                                </div>
+                            </div>
 
                             <div class="input-group">
-                                <label for="compounding-frequency" class="input-label">Compounding Frequency</label>
-                                <select 
-                                    id="compounding-frequency" 
-                                    v-model="interestCalculator.compoundingFrequency" 
-                                    class="form-input"
-                                    aria-describedby="compounding-help">
-                                    <option value="monthly">Monthly</option>
-                                    <option value="quarterly">Quarterly</option>
-                                    <option value="semiannual">Semi-Annual</option>
-                                    <option value="annual">Annual</option>
-                                </select>
-                                <small id="compounding-help">How often interest is calculated and added to your account (more frequent = higher returns).</small>
+                                <label for="contribution-monthly" class="input-label">
+                                    Monthly
+                                    <span class="label-hint" title="Amount added every month (12 times/year)">ⓘ</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                    <input 
+                                        type="number" 
+                                        id="contribution-monthly" 
+                                        v-model.number="interestCalculator.monthlyContribution" 
+                                        placeholder="Each month" 
+                                        step="0.01" 
+                                        min="0"
+                                        class="form-input" 
+                                        inputmode="decimal">
+                                </div>
                             </div>
+                        </div>
                         
                         <div class="form-actions">
                             <button type="submit" class="btn-primary">

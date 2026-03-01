@@ -3459,6 +3459,30 @@ button:focus {
     gap: var(--space-lg);
 }
 
+/* Compact savings input grid */
+.savings-input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+}
+
+/* Label hint styling */
+.label-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: rgba(0, 123, 255, 0.1);
+    border-radius: 50%;
+    cursor: help;
+    vertical-align: middle;
+}
+
 .form-actions {
     display: flex;
     gap: var(--space-sm);
@@ -3939,8 +3963,6 @@ button:focus {
         grid-template-columns: 1fr 1fr;
         gap: var(--space-md);
     }
-}
-
 }
 
 /* ============================================
