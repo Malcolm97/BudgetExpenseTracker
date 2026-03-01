@@ -1,11 +1,27 @@
 // Budget Expense Tracker - Production Ready Version
 // Optimized and enhanced with modern features
 
+// ===== PRODUCTION-SAFE LOGGER =====
+const ENABLE_DEBUG = false; // Set to true only during development
+const Logger = {
+    log: (message, data) => {
+        if (ENABLE_DEBUG) console.log(message, data || '');
+    },
+    warn: (message, data) => {
+        if (ENABLE_DEBUG) console.warn(message, data || '');
+    },
+    error: (message, error) => {
+        console.error(message, error || ''); // Always log errors
+    },
+    debug: (message, data) => {
+        if (ENABLE_DEBUG) console.debug(message, data || '');
+    }
+};
 
 // Adding reusable function for input validation
 function validateInput(value, fieldName) {
     if (value < 0) {
-        alert(`${fieldName} cannot be negative.`);
+        // alert(`${fieldName} cannot be negative.`);
         return false;
     }
     return true;
@@ -83,6 +99,86 @@ window.addEventListener('load', () => {
 });
 
 
+// ===== STORAGE & DATA MANAGEMENT UTILITIES =====
+const StorageUtils = {
+    MAX_STORAGE_ATTEMPTS: 3,
+    
+    // Check localStorage quota
+    canStore(key, value) {
+        try {
+            const test = '__storage_test__';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch (e) {
+            if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                Logger.error('localStorage quota exceeded');
+                return false;
+            }
+            return true;
+        }
+    },
+    
+    // Safe setItem with error handling
+    setItem(key, value) {
+        try {
+            if (!this.canStore(key, value)) {
+                Logger.warn('Storage quota check failed for:', key);
+                return false;
+            }
+            localStorage.setItem(key, value);
+            return true;
+        } catch (e) {
+            Logger.error('Failed to store data:', { key, error: e.message });
+            return false;
+        }
+    },
+    
+    // Safe getItem
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            Logger.error('Failed to retrieve data:', { key, error: e.message });
+            return null;
+        }
+    }
+};
+
+// ===== INPUT SANITIZATION & VALIDATION =====
+const InputSanitizer = {
+    // Sanitize text input to prevent XSS
+    sanitizeText(text) {
+        if (typeof text !== 'string') return '';
+        return text
+            .trim()
+            .replace(/[<>\"']/g, c => ({
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[c]))
+            .slice(0, 500); // Limit length
+    },
+    
+    // Sanitize number input
+    sanitizeNumber(value) {
+        const num = parseFloat(value);
+        return isNaN(num) ? 0 : Math.max(0, Math.round(num * 100) / 100); // Limit to 2 decimals
+    },
+    
+    // Validate expense object
+    validateExpense(expense) {
+        return {
+            ...expense,
+            name: this.sanitizeText(expense.name || ''),
+            notes: this.sanitizeText(expense.notes || ''),
+            amount: this.sanitizeNumber(expense.amount),
+            category: String(expense.category || 'other').toLowerCase().slice(0, 50)
+        };
+    }
+};
+
 // ===== ACCESSIBILITY UTILITIES =====
 const AccessibilityUtils = {
     // Announce message to screen readers
@@ -101,10 +197,44 @@ const AccessibilityUtils = {
                 announcer.textContent = message;
             }, 100);
         }
+// ===== PERFORMANCE UTILITIES =====
+const PerformanceUtils = {
+    // Debounce function for expensive operations
+    debounce(func, delay = 300) {
+        let timeoutId;
+        return function debounced(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                func.apply(this, args);
+            }, delay);
+        };
     },
     
-    // Focus management
-    focusFirst(element) {
+    // Throttle function for frequent events
+    throttle(func, limit = 300) {
+        let inThrottle;
+        return function throttled(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    },
+    
+    // Request animation frame debounce
+    rafDebounce(func) {
+        let requestId;
+        return function debounced(...args) {
+            cancelAnimationFrame(requestId);
+            requestId = requestAnimationFrame(() => {
+                func.apply(this, args);
+            });
+        };
+    }
+};
+
+// ===== ACCESSIBILITY UTILITIES =====
         if (!element) return;
         const focusable = element.querySelectorAll(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -226,7 +356,7 @@ class IndexedDBStorage {
             request.onsuccess = () => {
                 this.db = request.result;
                 this.isReady = true;
-                console.log('IndexedDB initialized successfully');
+                Logger.log('IndexedDB initialized successfully');
                 resolve(this.db);
             };
 
@@ -432,7 +562,7 @@ const dbStorage = new IndexedDBStorage();
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('./service-worker.js').then(function(registration) {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            Logger.log('ServiceWorker registration successful with scope: ', registration.scope);
             
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
@@ -445,7 +575,7 @@ if ('serviceWorker' in navigator) {
                 }
             });
         }, function(error) {
-            console.log('ServiceWorker registration failed: ', error);
+            Logger.error('ServiceWorker registration failed: ', error);
         });
     });
 }
@@ -505,7 +635,7 @@ function applyPrimaryColor(color) {
 
 // ===== INITIALIZE SETTINGS PAGE APPEARANCE CONTROLS =====
 function initSettingsAppearance() {
-    console.log('Initializing settings appearance controls...');
+    Logger.debug('Initializing settings appearance controls...');
     
     // Dark Mode Toggle
     const settingsThemeToggle = document.getElementById('settings-theme-toggle');
@@ -517,7 +647,7 @@ function initSettingsAppearance() {
             // Set initial state based on current theme
             const currentTheme = html.getAttribute('data-theme') || 'light';
             settingsThemeToggle.checked = currentTheme === 'dark';
-            console.log('Dark mode toggle initialized:', currentTheme);
+            Logger.debug('Dark mode toggle initialized:', currentTheme);
             
             // Add listener
             settingsThemeToggle.addEventListener('change', (e) => {
@@ -527,7 +657,7 @@ function initSettingsAppearance() {
                 htmlElement.setAttribute('data-theme', newTheme);
                 localStorage.setItem('theme', newTheme);
                 
-                console.log('Theme changed to:', newTheme);
+                Logger.debug('Theme changed to:', newTheme);
             });
         } catch (err) {
             console.error('Error initializing dark mode toggle:', err);
@@ -542,7 +672,7 @@ function initSettingsAppearance() {
         const settingsCustomColor = document.getElementById('settings-custom-color');
         const customColorValueInline = document.querySelector('.custom-color-value-inline');
         
-        console.log('Found color presets:', settingsColorPresets.length);
+        Logger.debug('Found color presets:', settingsColorPresets.length);
         
         // Load saved color and apply active state
         const savedColor = localStorage.getItem('primaryColor') || '#007bff';
@@ -567,7 +697,7 @@ function initSettingsAppearance() {
             preset.addEventListener('click', (e) => {
                 e.preventDefault();
                 const color = preset.dataset.color;
-                console.log('Color preset clicked:', color);
+                Logger.debug('Color preset clicked:', color);
                 applyPrimaryColor(color);
                 localStorage.setItem('primaryColor', color);
                 
@@ -874,7 +1004,27 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Auto backup settings
             autoBackupEnabled: localStorage.getItem('autoBackupEnabled') !== 'false',
-            lastBackupTime: null
+            lastBackupTime: null,
+            
+            // Savings tracking
+            savingsTracking: {
+                fortnightly: 0,
+                monthly: 0,
+                yearlySavings: 0
+            },
+            
+            // Interest calculator
+            interestCalculator: {
+                principal: 0,
+                rate: 0,
+                fortnightlyContribution: 0,
+                monthlyContribution: 0,
+                yearsToCalculate: 5,
+                compoundingFrequency: 'monthly',
+                totalSavings: 0,
+                accumulationBreakdown: [],
+                annualTotalSavings: 0
+            }
         },
         methods: {
             // ===== CURRENCY =====
@@ -1207,9 +1357,10 @@ document.addEventListener('DOMContentLoaded', function() {
             addExpense() {
                 try {
                     const { name, amount, frequency, day, dayOfMonth, category, startDate, notes } = this.newExpense;
-                    const parsedAmount = parseFloat(amount);
+                    const sanitizedName = InputSanitizer.sanitizeText(name);
+                    const parsedAmount = InputSanitizer.sanitizeNumber(amount);
                     
-                    if (!name || name.trim().length === 0) {
+                    if (!sanitizedName || sanitizedName.length === 0) {
                         this.displayError('Please enter an expense name.');
                         return;
                     }
@@ -1222,14 +1373,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (this.editingIndex !== null) {
                         const updatedExpense = {
                             id: this.expenses[this.editingIndex].id || generateId(),
-                            name: name.trim(),
+                            name: sanitizedName,
                             amount: parsedAmount,
                             frequency: frequency,
                             day: frequency !== 'monthly' ? day : '',
                             dayOfMonth: frequency === 'monthly' ? parseInt(dayOfMonth) : null,
                             category: category,
                             startDate: startDate || new Date().toISOString().split('T')[0],
-                            notes: notes ? notes.trim() : '',
+                            notes: InputSanitizer.sanitizeText(notes),
                             updatedAt: new Date().toISOString()
                         };
                         this.expenses.splice(this.editingIndex, 1, updatedExpense);
@@ -1239,14 +1390,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         const newExpenseItem = {
                             id: generateId(),
-                            name: name.trim(),
+                            name: sanitizedName,
                             amount: parsedAmount,
                             frequency: frequency,
                             day: frequency !== 'monthly' ? day : '',
                             dayOfMonth: frequency === 'monthly' ? parseInt(dayOfMonth) : null,
                             category: category,
                             startDate: startDate || new Date().toISOString().split('T')[0],
-                            notes: notes ? notes.trim() : '',
+                            notes: InputSanitizer.sanitizeText(notes),
                             createdAt: new Date().toISOString()
                         };
                         this.expenses.push(newExpenseItem);
@@ -1263,7 +1414,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.recordMonthlySpending();
                     
                 } catch (error) {
-                    console.error('Error adding expense:', error);
+                    Logger.error('Error adding expense:', error);
                     this.displayError('Failed to add expense. Please try again.');
                 }
             },
@@ -2526,6 +2677,141 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.createCharts();
                     });
                 }
+            },
+            
+            // ===== SAVINGS TRACKING =====
+            calculateYearlySavings() {
+                const fortnightly = parseFloat(this.savingsTracking.fortnightly) || 0;
+                const monthly = parseFloat(this.savingsTracking.monthly) || 0;
+                
+                // Validation: Check if at least one value is entered
+                if (fortnightly === 0 && monthly === 0) {
+                    this.displayError('Please enter at least one savings amount.');
+                    return;
+                }
+                
+                // Validation: Check if amounts are non-negative
+                if (fortnightly < 0 || monthly < 0) {
+                    this.displayError('Savings amounts cannot be negative.');
+                    return;
+                }
+                
+                const yearlyFortnightly = fortnightly * 26;
+                const yearlyMonthly = monthly * 12;
+                this.savingsTracking.yearlySavings = yearlyFortnightly + yearlyMonthly;
+                
+                // Announce result for accessibility
+                const announcement = `Your yearly savings is ${this.formatCurrency(this.savingsTracking.yearlySavings)}. Fortnightly: ${this.formatCurrency(fortnightly)} × 26 weeks = ${this.formatCurrency(yearlyFortnightly)}, Monthly: ${this.formatCurrency(monthly)} × 12 months = ${this.formatCurrency(yearlyMonthly)}`;
+                document.getElementById('sr-announcements')?.setAttribute('data-timestamp', Date.now().toString());
+                document.getElementById('sr-announcements').textContent = announcement;
+                
+                this.displaySuccess(`Your yearly savings: ${this.formatCurrency(this.savingsTracking.yearlySavings)}`);
+            },
+            
+            calculateInterest() {
+                const principal = parseFloat(this.interestCalculator.principal) || 0;
+                const rate = parseFloat(this.interestCalculator.rate) || 0;
+                const yearsToCalculate = parseInt(this.interestCalculator.yearsToCalculate) || 1;
+                const fortnightlyContribution = parseFloat(this.interestCalculator.fortnightlyContribution) || 0;
+                const monthlyContribution = parseFloat(this.interestCalculator.monthlyContribution) || 0;
+                const compoundingFrequency = this.interestCalculator.compoundingFrequency || 'monthly';
+                
+                // Validation: Check if principal is entered
+                if (principal === 0 && fortnightlyContribution === 0 && monthlyContribution === 0) {
+                    this.displayError('Please enter at least a principal amount or contribution.');
+                    return;
+                }
+                
+                // Validation: Check for valid interest rate
+                if (rate > 100) {
+                    this.displayError('Interest rate cannot exceed 100%.');
+                    return;
+                }
+                
+                // Validation: Check if amounts are non-negative
+                if (principal < 0 || rate < 0 || fortnightlyContribution < 0 || monthlyContribution < 0 || yearsToCalculate < 1) {
+                    this.displayError('All amounts must be positive.');
+                    return;
+                }
+                
+                // Validation: Check years is reasonable
+                if (yearsToCalculate > 100) {
+                    this.displayError('Years to calculate cannot exceed 100.');
+                    return;
+                }
+                
+                // Determine compounding frequency
+                const frequencyMap = {
+                    'monthly': { periods: 12, label: 'monthly' },
+                    'quarterly': { periods: 4, label: 'quarterly' },
+                    'semiannual': { periods: 2, label: 'semi-annually' },
+                    'annual': { periods: 1, label: 'annually' }
+                };
+                
+                const frequency = frequencyMap[compoundingFrequency] || frequencyMap.monthly;
+                const periodsPerYear = frequency.periods;
+                const periodicRate = (rate / 100) / periodsPerYear;
+                
+                // Calculate total periods
+                const totalPeriods = yearsToCalculate * periodsPerYear;
+                
+                // Calculate monthly contribution for period contribution
+                // Contributions are added at each compounding period
+                const fortnightlyForPeriod = fortnightlyContribution * (26 / periodsPerYear);
+                const monthlyForPeriod = monthlyContribution * (12 / periodsPerYear);
+                const contributionPerPeriod = fortnightlyForPeriod + monthlyForPeriod;
+                
+                // Calculate annual contribution for display
+                const yearlyFortnightly = fortnightlyContribution * 26;
+                const yearlyMonthly = monthlyContribution * 12;
+                const annualContribution = yearlyFortnightly + yearlyMonthly;
+                
+                // Build year-by-year accumulation breakdown using period-based calculation
+                this.interestCalculator.accumulationBreakdown = [];
+                let currentBalance = principal;
+                let periodCounter = 0;
+                
+                for (let year = 1; year <= yearsToCalculate; year++) {
+                    const yearStartBalance = currentBalance;
+                    let yearInterest = 0;
+                    let yearContributions = 0;
+                    
+                    // Process each compounding period in this year
+                    for (let period = 0; period < periodsPerYear; period++) {
+                        periodCounter++;
+                        
+                        // Calculate interest on current balance
+                        const interestThisPeriod = currentBalance * periodicRate;
+                        yearInterest += interestThisPeriod;
+                        currentBalance = currentBalance + interestThisPeriod;
+                        
+                        // Add contribution for this period
+                        currentBalance = currentBalance + contributionPerPeriod;
+                        yearContributions += contributionPerPeriod;
+                    }
+                    
+                    // Store year breakdown
+                    this.interestCalculator.accumulationBreakdown.push({
+                        year: year,
+                        openingBalance: yearStartBalance,
+                        interestEarned: yearInterest,
+                        contributions: yearContributions,
+                        closingBalance: currentBalance
+                    });
+                }
+                
+                // Store the final amount after all years
+                this.interestCalculator.totalSavings = currentBalance;
+                this.interestCalculator.annualTotalSavings = annualContribution;
+                
+                // Announce result for accessibility
+                const announcement = `Your savings projection with ${frequency.label} compounding: In ${yearsToCalculate} year${yearsToCalculate > 1 ? 's' : ''}, your ${this.formatCurrency(principal)} initial investment with ${this.formatCurrency(annualContribution)} annual contributions at ${rate}% interest will grow to ${this.formatCurrency(this.interestCalculator.totalSavings)}.`;
+                document.getElementById('sr-announcements')?.setAttribute('data-timestamp', Date.now().toString());
+                if (document.getElementById('sr-announcements')) {
+                    document.getElementById('sr-announcements').textContent = announcement;
+                }
+                
+                this.displaySuccess(`Your savings in ${yearsToCalculate} year${yearsToCalculate > 1 ? 's' : ''} (${frequency.label} compounding): ${this.formatCurrency(this.interestCalculator.totalSavings)}`);
             },
             
             // ===== EXPENSE TEMPLATES =====

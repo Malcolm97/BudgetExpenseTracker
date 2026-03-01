@@ -863,6 +863,307 @@
             </div>
         </div>
 
+        <!-- Savings Page -->
+        <main v-show="currentPage === 'savings'" class="page-content">
+            <section class="card savings-form-card">
+                <div class="card-header">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                    </div>
+                    <h2 class="card-title">Track Your Savings</h2>
+                </div>
+                <div class="card-content">
+                    <p style="color: var(--text-secondary); margin-bottom: var(--space-lg); font-size: var(--font-size-sm);">Calculate how much you'll save over a year based on your fortnightly and monthly savings.</p>
+                    
+                    <form @submit.prevent="calculateYearlySavings" class="savings-form">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="fortnightly-savings" class="input-label">Fortnightly Savings</label>
+                                <div class="input-wrapper">
+                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                    <input 
+                                        type="number" 
+                                        id="fortnightly-savings" 
+                                        v-model.number="savingsTracking.fortnightly" 
+                                        placeholder="0.00" 
+                                        step="0.01" 
+                                        min="0"
+                                        class="form-input" 
+                                        inputmode="decimal" 
+                                        aria-describedby="fortnightly-savings-help">
+                                </div>
+                                <small id="fortnightly-savings-help">Enter the amount you save every two weeks (26 times per year).</small>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="monthly-savings" class="input-label">Monthly Savings</label>
+                                <div class="input-wrapper">
+                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                    <input 
+                                        type="number" 
+                                        id="monthly-savings" 
+                                        v-model.number="savingsTracking.monthly" 
+                                        placeholder="0.00" 
+                                        step="0.01" 
+                                        min="0"
+                                        class="form-input" 
+                                        inputmode="decimal" 
+                                        aria-describedby="monthly-savings-help">
+                                </div>
+                                <small id="monthly-savings-help">Enter the amount you save every month (12 times per year).</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Calculate Savings
+                            </button>
+                            <button type="reset" class="btn-secondary" aria-label="Clear all savings inputs">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+                                Clear
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div v-if="savingsTracking.yearlySavings > 0" class="savings-result" aria-live="polite" aria-atomic="true">
+                        <h3>Annual Savings Total</h3>
+                        <p class="result-amount">{{ formatCurrency(savingsTracking.yearlySavings) }}</p>
+                        <div style="margin-top: var(--space-md); font-size: var(--font-size-sm); color: var(--text-secondary);">
+                            <p style="margin: var(--space-sm) 0;">
+                                <strong>Breakdown:</strong><br>
+                                Fortnightly: {{ formatCurrency(savingsTracking.fortnightly * 26) }}<br>
+                                Monthly: {{ formatCurrency(savingsTracking.monthly * 12) }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card interest-calculator-card">
+                <div class="card-header">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                    </div>
+                    <h2 class="card-title">Interest Calculator</h2>
+                </div>
+                <div class="card-content">
+                    <p style="color: var(--text-secondary); margin-bottom: var(--space-lg); font-size: var(--font-size-sm);">Calculate your total savings including compound interest from your bank or investment account.</p>
+                    
+                    <form @submit.prevent="calculateInterest" class="interest-form">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="principal-amount" class="input-label">Starting Amount (Principal)</label>
+                                <div class="input-wrapper">
+                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                    <input 
+                                        type="number" 
+                                        id="principal-amount" 
+                                        v-model.number="interestCalculator.principal" 
+                                        placeholder="0.00" 
+                                        step="0.01" 
+                                        min="0"
+                                        class="form-input" 
+                                        inputmode="decimal" 
+                                        aria-describedby="principal-help">
+                                </div>
+                                <small id="principal-help">Your current savings balance or initial investment amount.</small>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="interest-rate" class="input-label">Annual Interest Rate (%)</label>
+                                <input 
+                                    type="number" 
+                                    id="interest-rate" 
+                                    v-model.number="interestCalculator.rate" 
+                                    placeholder="0.00" 
+                                    step="0.01" 
+                                    min="0"
+                                    max="100"
+                                    class="form-input" 
+                                    inputmode="decimal" 
+                                    aria-describedby="interest-help">
+                                <small id="interest-help">Annual percentage rate (APR) provided by your bank or investment account.</small>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="contribution-amount" class="input-label">Fortnightly</label>
+                                <div class="input-wrapper">
+                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                    <input 
+                                        type="number" 
+                                        id="contribution-amount" 
+                                        v-model.number="interestCalculator.fortnightlyContribution" 
+                                        placeholder="0.00" 
+                                        step="0.01" 
+                                        min="0"
+                                        class="form-input" 
+                                        inputmode="decimal" 
+                                        aria-describedby="fortnightly-contribution-help"
+                                        title="Amount added every 2 weeks (26 times/year)">
+                                </div>
+                                <small id="fortnightly-contribution-help">Every 2 weeks</small>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="contribution-monthly" class="input-label">Monthly</label>
+                                <div class="input-wrapper">
+                                    <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                    <input 
+                                        type="number" 
+                                        id="contribution-monthly" 
+                                        v-model.number="interestCalculator.monthlyContribution" 
+                                        placeholder="0.00" 
+                                        step="0.01" 
+                                        min="0"
+                                        class="form-input" 
+                                        inputmode="decimal" 
+                                        aria-describedby="monthly-contribution-help"
+                                        title="Amount added every month (12 times/year)">
+                                </div>
+                                <small id="monthly-contribution-help">Every month</small>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="years-calculate" class="input-label">Years to Calculate</label>
+                                <input 
+                                    type="number" 
+                                    id="years-calculate" 
+                                    v-model.number="interestCalculator.yearsToCalculate" 
+                                    placeholder="5" 
+                                    step="1" 
+                                    min="1"
+                                    max="100"
+                                    class="form-input" 
+                                    inputmode="numeric" 
+                                    aria-describedby="years-help">
+                                <small id="years-help">Number of years to project your savings accumulation (1-100 years).</small>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="compounding-frequency" class="input-label">Compounding Frequency</label>
+                                <select 
+                                    id="compounding-frequency" 
+                                    v-model="interestCalculator.compoundingFrequency" 
+                                    class="form-input"
+                                    aria-describedby="compounding-help">
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="semiannual">Semi-Annual</option>
+                                    <option value="annual">Annual</option>
+                                </select>
+                                <small id="compounding-help">How often interest is calculated and added to your account (more frequent = higher returns).</small>
+                            </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Calculate Interest
+                            </button>
+                            <button type="reset" class="btn-secondary" aria-label="Clear all interest calculator inputs">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+                                Clear
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div v-if="interestCalculator.totalSavings > 0" class="interest-result" aria-live="polite" aria-atomic="true">
+                        <h3>Savings Projection Summary</h3>
+                        <div class="interest-summary-grid">
+                            <div class="summary-item">
+                                <span class="summary-label">Final Amount</span>
+                                <p class="result-amount">{{ formatCurrency(interestCalculator.totalSavings) }}</p>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Total Interest Earned</span>
+                                <p class="result-amount" style="color: var(--success-color);">{{ formatCurrency(interestCalculator.accumulationBreakdown.length > 0 ? interestCalculator.accumulationBreakdown[interestCalculator.accumulationBreakdown.length - 1].closingBalance - interestCalculator.principal - (interestCalculator.accumulationBreakdown.length * interestCalculator.annualTotalSavings) : 0) }}</p>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Annual Contribution</span>
+                                <p class="result-amount">{{ formatCurrency(interestCalculator.annualTotalSavings) }}</p>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Years Calculated</span>
+                                <p class="result-amount">{{ interestCalculator.yearsToCalculate }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Year-by-Year Accumulation Table -->
+                        <div class="year-breakdown-container">
+                            <h4 class="breakdown-title">Year-by-Year Breakdown</h4>
+                            
+                            <!-- Desktop/Tablet View -->
+                            <div class="table-wrapper">
+                                <table class="accumulation-table" role="grid" aria-label="Year-by-year savings accumulation">
+                                    <thead>
+                                        <tr>
+                                            <th>Year</th>
+                                            <th>Opening Balance</th>
+                                            <th>Interest Earned</th>
+                                            <th>Contributions</th>
+                                            <th>Closing Balance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(year, index) in interestCalculator.accumulationBreakdown" :key="index" class="accumulation-row">
+                                            <td class="year-cell" data-label="Year"><strong>Year {{ year.year }}</strong></td>
+                                            <td class="amount-cell" data-label="Opening">{{ formatCurrency(year.openingBalance) }}</td>
+                                            <td class="amount-cell" data-label="Interest" style="color: var(--success-color);">+{{ formatCurrency(year.interestEarned) }}</td>
+                                            <td class="amount-cell" data-label="Contrib">+{{ formatCurrency(year.contributions) }}</td>
+                                            <td class="amount-cell" data-label="Closing"><strong style="color: var(--primary-color);">{{ formatCurrency(year.closingBalance) }}</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Mobile Card View -->
+                            <div class="mobile-card-view">
+                                <div v-for="(year, index) in interestCalculator.accumulationBreakdown" :key="'mobile-' + index" class="year-card">
+                                    <div class="year-card-header">
+                                        <span class="year-number">Year {{ year.year }}</span>
+                                        <span class="year-total">{{ formatCurrency(year.closingBalance) }}</span>
+                                    </div>
+                                    <div class="year-card-body">
+                                        <div class="year-card-row">
+                                            <span class="card-label">Opening Balance</span>
+                                            <span class="card-value">{{ formatCurrency(year.openingBalance) }}</span>
+                                        </div>
+                                        <div class="year-card-row highlight-success">
+                                            <span class="card-label">+ Interest Earned</span>
+                                            <span class="card-value">{{ formatCurrency(year.interestEarned) }}</span>
+                                        </div>
+                                        <div class="year-card-row highlight-primary">
+                                            <span class="card-label">+ Contributions</span>
+                                            <span class="card-value">{{ formatCurrency(year.contributions) }}</span>
+                                        </div>
+                                        <div class="year-card-footer">
+                                            <span class="card-label">Closing Balance</span>
+                                            <span class="card-value-final">{{ formatCurrency(year.closingBalance) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Growth Explanation -->
+                        <div style="margin-top: var(--space-lg); padding: var(--space-md); background: var(--card-background); border-left: 4px solid var(--primary-color); border-radius: var(--border-radius-sm);">
+                            <h4 style="margin: 0 0 var(--space-sm) 0; font-size: var(--font-size-base); color: var(--text-primary);">How Your Money Grows</h4>
+                            <p style="margin: var(--space-sm) 0; font-size: var(--font-size-sm); color: var(--text-secondary);">
+                                Your initial investment of <strong>{{ formatCurrency(interestCalculator.principal) }}</strong> earns <strong>{{ interestCalculator.rate }}% annual interest</strong> compounded <strong>{{ interestCalculator.compoundingFrequency === 'monthly' ? 'monthly' : interestCalculator.compoundingFrequency === 'quarterly' ? 'quarterly' : interestCalculator.compoundingFrequency === 'semiannual' ? 'semi-annually' : 'annually' }}</strong>. 
+                                In addition, you contribute <strong>{{ formatCurrency(interestCalculator.annualTotalSavings) }}</strong> per year 
+                                ({{ formatCurrency(interestCalculator.fortnightlyContribution) }} fortnightly + {{ formatCurrency(interestCalculator.monthlyContribution) }} monthly). 
+                                After <strong>{{ interestCalculator.yearsToCalculate }} year{{ interestCalculator.yearsToCalculate !== 1 ? 's' : '' }}</strong>, 
+                                your total balance reaches <strong>{{ formatCurrency(interestCalculator.totalSavings) }}</strong>!
+                            </p>
+                            <p style="margin: var(--space-sm) 0; font-size: 0.85rem; color: var(--text-secondary); font-style: italic;">
+                                <strong>💡 Note:</strong> More frequent compounding (monthly vs annual) results in higher returns because interest is calculated on a larger balance more often. This matches how real bank accounts work!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
         <!-- Settings Page -->
         <main v-show="currentPage === 'settings'" class="page-content">
             <!-- Appearance Settings -->
