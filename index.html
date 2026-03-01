@@ -44,7 +44,7 @@
         </div>
     </div>
 
-    <div id="app">
+    <div id="app" v-cloak>
         <header class="app-header" role="banner">
             <h1>Budget Expense Tracker</h1>
         </header>
@@ -258,7 +258,7 @@
                             <div v-for="(expense, index) in upcomingDeductions.slice(0, 5)" :key="expense.id || index" 
                                  class="upcoming-item" :class="{ 'urgent': expense.daysUntil <= 3 }">
                                 <div class="upcoming-icon" :style="{ backgroundColor: getCategoryById(expense.category).color }">
-                                    <i :class="getCategoryById(expense.category).icon"></i>
+                                    <span v-html="getCategoryIconHtml(expense.category)"></span>
                                 </div>
                                 <div class="upcoming-details">
                                     <h4 class="upcoming-name">{{ expense.name }}</h4>
@@ -465,7 +465,7 @@
                         <div v-for="(expense, index) in filteredExpenses" :key="expense.id || index" class="expense-card">
                             <div class="expense-header">
                                 <div class="expense-icon" :style="{ backgroundColor: getCategoryById(expense.category).color }">
-                                    <i :class="getCategoryById(expense.category).icon"></i>
+                                    <span v-html="getCategoryIconHtml(expense.category)"></span>
                                 </div>
                                 <div class="expense-main">
                                     <h3 class="expense-name">{{ expense.name }}</h3>
@@ -971,7 +971,7 @@
                     <div class="categories-list">
                         <div v-for="category in expenseCategories" :key="category.id" class="category-item">
                             <div class="category-preview" :style="{ backgroundColor: category.color }">
-                                <i :class="category.icon"></i>
+                                <span v-html="getCategoryIconHtml(category.id)"></span>
                             </div>
                             <div class="category-details">
                                 <span class="category-name">{{ category.name }}</span>
@@ -1089,7 +1089,7 @@
                                     :class="{ active: newCategory.icon === icon }"
                                     @click="newCategory.icon = icon"
                                     :aria-label="'Select icon ' + icon">
-                                <i :class="icon"></i>
+                                <span v-html="getIconHtmlByName(icon, 20, 'currentColor')"></span>
                             </button>
                         </div>
                     </div>

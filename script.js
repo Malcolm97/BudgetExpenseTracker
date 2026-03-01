@@ -777,11 +777,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 '#2d3436', '#00cec9', '#ff7675', '#74b9ff', '#55a3ff'
             ],
             categoryIcons: [
-                'fas fa-utensils', 'fas fa-car', 'fas fa-shopping-bag',
-                'fas fa-film', 'fas fa-bolt', 'fas fa-heartbeat',
-                'fas fa-graduation-cap', 'fas fa-plane', 'fas fa-repeat',
-                'fas fa-ellipsis-h', 'fas fa-home', 'fas fa-gift',
-                'fas fa-coffee', 'fas fa-briefcase', 'fas fa-music'
+                'utensils', 'car', 'shopping-bag',
+                'film', 'bolt', 'heartbeat',
+                'graduation-cap', 'plane', 'repeat',
+                'ellipsis-h', 'home', 'gift',
+                'coffee', 'briefcase', 'music'
             ],
             
             // Templates
@@ -1810,6 +1810,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     return this.getSvgIcon(category.icon, size, category.color);
                 }
                 return this.getSvgIcon('ellipsis-h', size);
+            },
+            
+            // Get category icon as inline SVG HTML (for v-html in templates)
+            getCategoryIconHtml(categoryId, size = 16) {
+                const category = this.expenseCategories.find(c => c.id === categoryId);
+                if (category) {
+                    return this.getSvgIcon(category.icon, size, '#ffffff');
+                }
+                return this.getSvgIcon('ellipsis-h', size, '#ffffff');
+            },
+            
+            // Get icon HTML by icon name (for category management)
+            getIconHtmlByName(iconName, size = 16, color = 'currentColor') {
+                return this.getSvgIcon(iconName, size, color);
             },
             
             // ===== NOTIFICATIONS =====

@@ -102,6 +102,11 @@ body {
     flex-direction: column;
 }
 
+/* Hide uncompiled Vue template content */
+[v-cloak] {
+    display: none !important;
+}
+
 /* ============================================
    HEADER CONTROLS
    ============================================ */
