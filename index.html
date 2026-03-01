@@ -211,22 +211,34 @@
                                 <h4 class="equivalent-title">Monthly Equivalent Total</h4>
                                 <p class="equivalent-explanation">All expenses normalized to monthly for budget comparison:</p>
                                 <div class="equivalent-items">
-                                    <div class="equivalent-item" v-if="deductions.weekly > 0">
+                                    <div class="equivalent-item" v-if="monthlyEquivalentBreakdown.daily > 0">
+                                        <span>Daily expenses</span>
+                                        <span>{{ formatCurrencyNoDecimals(monthlyEquivalentBreakdown.daily) }}/month</span>
+                                    </div>
+                                    <div class="equivalent-item" v-if="monthlyEquivalentBreakdown.weekly > 0">
                                         <span>Weekly expenses</span>
-                                        <span>{{ formatCurrency(deductions.weekly) }} × 4.35 = {{ formatCurrency(deductions.weekly * 4.34524) }}</span>
+                                        <span>{{ formatCurrencyNoDecimals(monthlyEquivalentBreakdown.weekly) }}/month</span>
                                     </div>
-                                    <div class="equivalent-item" v-if="deductions.fortnightly > 0">
+                                    <div class="equivalent-item" v-if="monthlyEquivalentBreakdown.fortnightly > 0">
                                         <span>Fortnightly expenses</span>
-                                        <span>{{ formatCurrency(deductions.fortnightly) }} × 2.17 = {{ formatCurrency(deductions.fortnightly * 2.17262) }}</span>
+                                        <span>{{ formatCurrencyNoDecimals(monthlyEquivalentBreakdown.fortnightly) }}/month</span>
                                     </div>
-                                    <div class="equivalent-item" v-if="deductions.monthly > 0">
+                                    <div class="equivalent-item" v-if="monthlyEquivalentBreakdown.monthly > 0">
                                         <span>Monthly expenses</span>
-                                        <span>{{ formatCurrency(deductions.monthly) }}</span>
+                                        <span>{{ formatCurrencyNoDecimals(monthlyEquivalentBreakdown.monthly) }}/month</span>
+                                    </div>
+                                    <div class="equivalent-item" v-if="monthlyEquivalentBreakdown.quarterly > 0">
+                                        <span>Quarterly expenses</span>
+                                        <span>{{ formatCurrencyNoDecimals(monthlyEquivalentBreakdown.quarterly) }}/month</span>
+                                    </div>
+                                    <div class="equivalent-item" v-if="monthlyEquivalentBreakdown.yearly > 0">
+                                        <span>Yearly expenses</span>
+                                        <span>{{ formatCurrencyNoDecimals(monthlyEquivalentBreakdown.yearly) }}/month</span>
                                     </div>
                                 </div>
                                 <div class="equivalent-total">
                                     <span><strong>Total Monthly Equivalent:</strong></span>
-                                    <span class="total-value">{{ formatCurrency(totalExpenses) }}</span>
+                                    <span class="total-value">{{ formatCurrencyNoDecimals(monthlyEquivalentBreakdown.total) }}</span>
                                 </div>
                             </div>
                         </div>

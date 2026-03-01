@@ -813,6 +813,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 return curr.symbol + num.toLocaleString(curr.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             },
             
+            formatCurrencyNoDecimals(amount) {
+                const currencies = {
+                    'USD': { symbol: '$', locale: 'en-US' },
+                    'EUR': { symbol: '€', locale: 'de-DE' },
+                    'GBP': { symbol: '£', locale: 'en-GB' },
+                    'JPY': { symbol: '¥', locale: 'ja-JP' },
+                    'AUD': { symbol: 'A$', locale: 'en-AU' },
+                    'CAD': { symbol: 'C$', locale: 'en-CA' },
+                    'INR': { symbol: '₹', locale: 'en-IN' },
+                    'CNY': { symbol: '¥', locale: 'zh-CN' },
+                    'PGK': { symbol: 'K', locale: 'en-PG' }
+                };
+                const curr = currencies[this.currency] || currencies['USD'];
+                const num = Math.round(parseFloat(amount) || 0);
+                return curr.symbol + num.toLocaleString(curr.locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            },
+            
             // ===== CURRENCY CONVERTER =====
             async fetchExchangeRates() {
                 this.currencyConverter.isLoading = true;
@@ -1379,13 +1396,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const multipliers = this.getFrequencyMultipliers();
                 
                 return {
-                    daily: Math.round((this.calculateDeductions('daily') * multipliers.daily) * 100) / 100,
-                    weekly: Math.round((this.calculateDeductions('weekly') * multipliers.weekly) * 100) / 100,
-                    fortnightly: Math.round((this.calculateDeductions('fortnightly') * multipliers.fortnightly) * 100) / 100,
-                    monthly: this.calculateDeductions('monthly'),
-                    quarterly: Math.round((this.calculateDeductions('quarterly') * multipliers.quarterly) * 100) / 100,
-                    yearly: Math.round((this.calculateDeductions('yearly') * multipliers.yearly) * 100) / 100,
-                    total: this.totalExpenses
+                    daily: Math.round(this.calculateDeductions('daily') * multipliers.daily),
+                    weekly: Math.round(this.calculateDeductions('weekly') * multipliers.weekly),
+                    fortnightly: Math.round(this.calculateDeductions('fortnightly') * multipliers.fortnightly),
+                    monthly: Math.round(this.calculateDeductions('monthly')),
+                    quarterly: Math.round(this.calculateDeductions('quarterly') * multipliers.quarterly),
+                    yearly: Math.round(this.calculateDeductions('yearly') * multipliers.yearly),
+                    total: Math.round(this.totalExpenses)
                 };
             },
             
@@ -1532,15 +1549,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const categoryBreakdown = {};
                 this.expenseCategories.forEach(cat => {
-                    categoryBreakdown[cat.id] = this.getCategorySpending(cat.id);
+                    categoryBreakdown[cat.id] = Math.round(this.getCategorySpending(cat.id) * 100) / 100;
                 });
                 
                 const existingIndex = this.spendingHistory.findIndex(h => h.month === monthKey);
                 const record = {
                     month: monthKey,
-                    total: this.totalExpenses,
+                    total: Math.round(this.totalExpenses * 100) / 100,
                     categories: categoryBreakdown,
-                    budget: this.budget,
+                    budget: Math.round(this.budget * 100) / 100,
                     updatedAt: new Date().toISOString()
                 };
                 
@@ -1982,7 +1999,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Filter out frequencies with no data
                 const labels = Object.keys(monthlyEquivalentData).filter(label => monthlyEquivalentData[label] > 0);
-                const data = labels.map(label => monthlyEquivalentData[label]);
+                const data = labels.map(label => Math.round(monthlyEquivalentData[label] * 100) / 100);
                 const backgroundColors = labels.map(label => {
                     const freq = Object.keys(frequencyLabels).find(k => frequencyLabels[k] === label);
                     return freq ? frequencyColors[freq].bg : 'rgba(99, 110, 114, 0.8)';
@@ -2244,7 +2261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Create CSV rows
                     const rows = this.expenses.map(expense => {
                         const category = this.getCategoryById(expense.category);
-                        const monthlyAmount = this.convertToMonthly(parseFloat(expense.amount), expense.frequency);
+                        const monthlyAmount = Math.round(this.convertToMonthly(parseFloat(expense.amount), expense.frequency) * 100) / 100;
                         const dayInfo = expense.frequency === 'monthly' 
                             ? (expense.dayOfMonth || 1) 
                             : (expense.day || '');
