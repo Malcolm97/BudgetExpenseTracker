@@ -20,6 +20,11 @@
     <title>Budget Expense Tracker</title>
 </head>
 <body>
+        <!-- SheetJS (XLSX) for Excel export -->
+        <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+        <!-- jsPDF and autoTable for PDF export -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
     <!-- Skip Link for Accessibility -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
     
@@ -298,28 +303,20 @@
                 </div>
                 <div class="card-content">
                     <form @submit.prevent="addExpense" class="expense-form">
-                        <div class="form-grid">
-                            <div class="input-group">
-                                <label for="expense-name" class="input-label">Expense Name</label>
-                                <input type="text" id="expense-name" v-model="newExpense.name" placeholder="e.g., Groceries, Rent, Utilities" required class="form-input" autocomplete="off" autocapitalize="words">
-                            </div>
+                        <!-- Row 1: Expense Name (Full Width) -->
+                        <div class="input-group">
+                            <label for="expense-name" class="input-label">Expense Name</label>
+                            <input type="text" id="expense-name" v-model="newExpense.name" placeholder="e.g., Groceries, Rent, Utilities" required class="form-input" autocomplete="off" autocapitalize="words">
+                        </div>
+                        
+                        <!-- Row 2: Amount + Category -->
+                        <div class="form-grid grid-2">
                             <div class="input-group">
                                 <label for="expense-amount" class="input-label">Amount</label>
                                 <div class="input-wrapper">
                                     <span class="input-prefix">{{ getCurrencySymbol() }}</span>
                                     <input type="number" id="expense-amount" v-model="newExpense.amount" placeholder="0.00" step="0.01" required class="form-input" inputmode="decimal" autocomplete="off">
                                 </div>
-                            </div>
-                            <div class="input-group">
-                                <label for="expense-frequency" class="input-label">Frequency</label>
-                                <select id="expense-frequency" v-model="newExpense.frequency" class="form-input">
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="fortnightly">Fortnightly</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="quarterly">Quarterly</option>
-                                    <option value="yearly">Yearly</option>
-                                </select>
                             </div>
                             <div class="input-group">
                                 <label for="expense-category" class="input-label">Category</label>
@@ -331,42 +328,60 @@
                             </div>
                         </div>
                         
-                        <!-- Schedule Options -->
-                        <div class="schedule-section">
-                            <div class="form-grid">
-                                <!-- Day of Week (for weekly/fortnightly) -->
-                                <div v-if="newExpense.frequency === 'weekly' || newExpense.frequency === 'fortnightly'" class="input-group">
-                                    <label for="expense-day" class="input-label">Day of Week</label>
-                                    <select id="expense-day" v-model="newExpense.day" class="form-input">
-                                        <option value="monday">Monday</option>
-                                        <option value="tuesday">Tuesday</option>
-                                        <option value="wednesday">Wednesday</option>
-                                        <option value="thursday">Thursday</option>
-                                        <option value="friday">Friday</option>
-                                        <option value="saturday">Saturday</option>
-                                        <option value="sunday">Sunday</option>
-                                    </select>
-                                </div>
-                                <!-- Day of Month (for monthly/quarterly) -->
-                                <div v-if="newExpense.frequency === 'monthly' || newExpense.frequency === 'quarterly'" class="input-group">
-                                    <label for="expense-day-of-month" class="input-label">Day of Month</label>
-                                    <select id="expense-day-of-month" v-model="newExpense.dayOfMonth" class="form-input">
-                                        <option v-for="day in 31" :value="day" :key="day">{{ day }}{{ day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th' }}</option>
-                                    </select>
-                                </div>
-                                <!-- Start Date (Optional) -->
-                                <div class="input-group">
-                                    <label for="expense-start-date" class="input-label">Start Date <span v-if="newExpense.frequency === 'daily' || newExpense.frequency === 'yearly'" class="text-muted">(Required)</span><span v-else class="text-muted">(Optional)</span></label>
-                                    <input type="date" id="expense-start-date" v-model="newExpense.startDate" class="form-input" placeholder="When does this expense start?">
-                                </div>
+                        <!-- Row 3: Frequency + Day Selection (Same Line) -->
+                        <div class="form-grid grid-2">
+                            <div class="input-group">
+                                <label for="expense-frequency" class="input-label">Frequency</label>
+                                <select id="expense-frequency" v-model="newExpense.frequency" class="form-input">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="fortnightly">Fortnightly</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="yearly">Yearly</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Day of Week (for weekly/fortnightly) -->
+                            <div v-if="newExpense.frequency === 'weekly' || newExpense.frequency === 'fortnightly'" class="input-group">
+                                <label for="expense-day" class="input-label">Day</label>
+                                <select id="expense-day" v-model="newExpense.day" class="form-input">
+                                    <option value="monday">Monday</option>
+                                    <option value="tuesday">Tuesday</option>
+                                    <option value="wednesday">Wednesday</option>
+                                    <option value="thursday">Thursday</option>
+                                    <option value="friday">Friday</option>
+                                    <option value="saturday">Saturday</option>
+                                    <option value="sunday">Sunday</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Day of Month (for monthly/quarterly) -->
+                            <div v-else-if="newExpense.frequency === 'monthly' || newExpense.frequency === 'quarterly'" class="input-group">
+                                <label for="expense-day-of-month" class="input-label">Day of Month</label>
+                                <select id="expense-day-of-month" v-model="newExpense.dayOfMonth" class="form-input">
+                                    <option v-for="day in 31" :value="day" :key="day">{{ day }}{{ day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th' }}</option>
+                                </select>
                             </div>
                         </div>
                         
-                        <!-- Notes Field -->
+                        <!-- Row 4: Start Date (Full Width) -->
+                        <div class="input-group">
+                            <label for="expense-start-date" class="input-label">
+                                Start Date 
+                                <span v-if="newExpense.frequency === 'daily' || newExpense.frequency === 'yearly'" class="text-muted">(Required)</span>
+                                <span v-else class="text-muted">(Optional)</span>
+                            </label>
+                            <input type="date" id="expense-start-date" v-model="newExpense.startDate" class="form-input" placeholder="When does this expense start?">
+                        </div>
+                        
+                        <!-- Row 5: Notes (Full Width) -->
                         <div class="input-group">
                             <label for="expense-notes" class="input-label">Notes (Optional)</label>
                             <textarea id="expense-notes" v-model="newExpense.notes" placeholder="Add any notes or description..." class="form-input notes-input" rows="2"></textarea>
                         </div>
+                        
+                        <!-- Action Buttons -->
                         <button type="submit" class="btn-success btn-full">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                             {{ isEditing ? 'Update Expense' : 'Add Expense' }}
@@ -434,6 +449,39 @@
                                 </select>
                             </div>
                         </div>
+                        <!-- Advanced Filters -->
+                        <div class="advanced-filters" v-if="showAdvancedFilters">
+                            <div class="filter-grid">
+                                <!-- Date Range -->
+                                <div class="input-group">
+                                    <label for="filter-date-from" class="input-label">From Date</label>
+                                    <input type="date" id="filter-date-from" v-model="dateFilterFrom" class="form-input">
+                                </div>
+                                <div class="input-group">
+                                    <label for="filter-date-to" class="input-label">To Date</label>
+                                    <input type="date" id="filter-date-to" v-model="dateFilterTo" class="form-input">
+                                </div>
+                                <!-- Amount Range -->
+                                <div class="input-group">
+                                    <label for="filter-amount-min" class="input-label">Min Amount</label>
+                                    <div class="input-wrapper">
+                                        <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                        <input type="number" id="filter-amount-min" v-model="amountFilterMin" placeholder="0.00" step="0.01" class="form-input" inputmode="decimal">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="filter-amount-max" class="input-label">Max Amount</label>
+                                    <div class="input-wrapper">
+                                        <span class="input-prefix">{{ getCurrencySymbol() }}</span>
+                                        <input type="number" id="filter-amount-max" v-model="amountFilterMax" placeholder="0.00" step="0.01" class="form-input" inputmode="decimal">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button @click="toggleAdvancedFilters" class="btn-link filter-toggle" aria-expanded="showAdvancedFilters">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
+                            {{ showAdvancedFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters' }}
+                        </button>
                         <div class="filter-footer">
                             <button @click="clearFilters" class="btn-secondary">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -462,7 +510,38 @@
 
                     <!-- Expenses List -->
                     <div v-else class="expenses-list">
+                                            <!-- Batch Operations Toolbar -->
+                                            <div v-if="batchMode" class="batch-toolbar">
+                                                <button @click="toggleBatchMode" class="btn-secondary">Exit Batch Mode</button>
+                                                <button @click="selectAllFiltered" class="btn-info">Select All</button>
+                                                <button @click="deselectAll" class="btn-secondary">Deselect All</button>
+                                                <select v-model="batchAction" class="form-input batch-action-select">
+                                                    <option value="">Batch Action</option>
+                                                    <option value="delete">Delete Selected</option>
+                                                    <option value="category">Change Category</option>
+                                                    <option value="export-json">Export as JSON</option>
+                                                    <option value="export-excel">Export as Excel</option>
+                                                    <option value="export-pdf">Export as PDF</option>
+                                                </select>
+                                                <select v-if="batchAction === 'category'" v-model="batchCategoryTarget" class="form-input batch-category-select">
+                                                    <option value="">Select Category</option>
+                                                    <option v-for="cat in expenseCategories" :value="cat.id" :key="cat.id">{{ cat.name }}</option>
+                                                </select>
+                                                <button @click="executeBatchAction" class="btn-success" :disabled="!batchAction || (batchAction === 'category' && !batchCategoryTarget)">Apply</button>
+                                                                    <!-- Main Export Buttons -->
+                                                                    <div class="export-toolbar">
+                                                                        <button @click="exportToCSV" class="btn-secondary">Export All CSV</button>
+                                                                        <button @click="exportAllToExcel" class="btn-secondary">Export All Excel</button>
+                                                                        <button @click="exportAllToPDF" class="btn-secondary">Export All PDF</button>
+                                                                    </div>
+                                                <span class="batch-count">Selected: {{ selectedExpenseIds.size }}</span>
+                                            </div>
+                                            <button v-if="!batchMode && filteredExpenses.length > 0" @click="toggleBatchMode" class="btn-secondary batch-toggle-btn">Batch Mode</button>
                         <div v-for="(expense, index) in filteredExpenses" :key="expense.id || index" class="expense-card">
+                                                        <div v-if="batchMode" class="batch-checkbox">
+                                                            <input type="checkbox" :id="'batch-' + expense.id" :checked="isExpenseSelected(expense.id)" @change="toggleSelectExpense(expense.id)">
+                                                            <label :for="'batch-' + expense.id" class="sr-only">Select expense</label>
+                                                        </div>
                             <div class="expense-header">
                                 <div class="expense-icon" :style="{ backgroundColor: getCategoryById(expense.category).color }">
                                     <span v-html="getCategoryIconHtml(expense.category)"></span>
@@ -695,6 +774,92 @@
                     </div>
                 </section>
 
+                <!-- Monthly Trends Analysis -->
+                <section v-if="monthlyTrends" class="card trends-analysis-card">
+                    <div class="card-header">
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4-2h2v20h-2zm4 4h2v16h-2zm4-4h2v20h-2z"/></svg>
+                        </div>
+                        <h2 class="card-title">Monthly Trends (Last 6 Months)</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="trends-summary-grid">
+                            <div class="trend-stat-box">
+                                <span class="trend-stat-label">Average Monthly</span>
+                                <span class="trend-stat-value">{{ formatCurrency(monthlyTrends.average) }}</span>
+                            </div>
+                            <div class="trend-stat-box">
+                                <span class="trend-stat-label">Highest Month</span>
+                                <span class="trend-stat-value">{{ formatCurrency(monthlyTrends.highest) }}</span>
+                            </div>
+                            <div class="trend-stat-box">
+                                <span class="trend-stat-label">Lowest Month</span>
+                                <span class="trend-stat-value">{{ formatCurrency(monthlyTrends.lowest) }}</span>
+                            </div>
+                            <div class="trend-stat-box">
+                                <span class="trend-stat-label">Variation (High-Low)</span>
+                                <span class="trend-stat-value">{{ formatCurrency(monthlyTrends.variance) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="trend-direction">
+                            <div class="trend-badge" :class="'trend-' + monthlyTrends.trend">
+                                <svg v-if="monthlyTrends.trend === 'increasing'" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+                                <svg v-else-if="monthlyTrends.trend === 'decreasing'" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13H5v-2h14v2z"/></svg>
+                                <span>Spending {{ monthlyTrends.trend | capitalize }}</span>
+                            </div>
+                        </div>
+
+                        <div class="trend-forecast">
+                            <p class="forecast-label">📊 Predicted Next Month:</p>
+                            <p class="forecast-value">{{ formatCurrency(monthlyTrends.predictedNext) }}</p>
+                        </div>
+
+                        <div v-if="monthlyTrends.history && monthlyTrends.history.length > 0" class="monthly-history">
+                            <h4>Monthly Breakdown:</h4>
+                            <div class="history-list">
+                                <div v-for="(month, idx) in monthlyTrends.history" :key="idx" class="history-item">
+                                    <div class="month-info">
+                                        <span class="month-name">{{ month.month }}</span>
+                                        <span v-if="month.change !== 0" class="month-change" :class="month.change > 0 ? 'increase' : 'decrease'">
+                                            {{ month.change > 0 ? '+' : '' }}{{ formatCurrency(month.change) }}
+                                        </span>
+                                    </div>
+                                    <span class="month-amount">{{ formatCurrency(month.amount) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Category Trends -->
+                <section v-if="categoryTrends && categoryTrends.length > 0" class="card category-trends-card">
+                    <div class="card-header">
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+                        </div>
+                        <h2 class="card-title">Spending by Category (Trend)</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="category-trends-list">
+                            <div v-for="cat in categoryTrends" :key="cat.category" class="category-trend-item">
+                                <div class="cat-trend-header">
+                                    <span class="cat-trend-name">{{ cat.categoryName }}</span>
+                                    <span class="cat-trend-total">{{ formatCurrency(cat.total) }}/month</span>
+                                </div>
+                                <div class="cat-trend-details">
+                                    <span class="cat-trend-count">{{ cat.count }} expense{{ cat.count !== 1 ? 's' : '' }}</span>
+                                    <span class="cat-trend-avg">Avg: {{ formatCurrency(cat.average) }}</span>
+                                </div>
+                                <div class="cat-trend-bar">
+                                    <div class="trend-bar-fill" :style="{ width: (cat.total / monthlyTrends.average) * 100 + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Currency Converter -->
                 <section class="card currency-converter-card">
                     <div class="card-header">
@@ -764,33 +929,53 @@
                     </div>
                     <div class="card-content">
                         <div class="budget-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill budget-fill" :style="{ width: Math.min(budgetUtilization, 100) + '%' }"></div>
+                            <div class="progress-header">
+                                <h3 class="progress-title">Spending Overview</h3>
+                                <div class="utilization-badge" :style="{ backgroundColor: getUtilizationColor(budgetUtilization), color: budgetUtilization <= 25 || budgetUtilization >= 85 ? 'white' : '#333' }">
+                                    {{ Math.round(budgetUtilization) }}%
+                                </div>
                             </div>
-                            <div class="progress-labels">
-                                <span class="progress-label">
-                                    <span class="label-dot budget-dot"></span>
-                                    Budget: {{ formatCurrency(budget) }}
-                                </span>
-                                <span class="progress-label">
-                                    <span class="label-dot actual-dot"></span>
-                                    Spent: {{ formatCurrency(totalExpenses) }}
-                                </span>
+                            <div class="progress-bar-enhanced">
+                                <div class="progress-fill-enhanced" :style="{ width: Math.min(budgetUtilization, 100) + '%', backgroundColor: getUtilizationColor(budgetUtilization) }"></div>
+                            </div>
+                            <div class="progress-labels-enhanced">
+                                <div class="progress-amount">
+                                    <span class="amount-label">Spent</span>
+                                    <span class="amount-value">{{ formatCurrency(totalExpenses) }}</span>
+                                </div>
+                                <div class="progress-divider">/</div>
+                                <div class="progress-amount">
+                                    <span class="amount-label">Budget</span>
+                                    <span class="amount-value">{{ formatCurrency(budget) }}</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="budget-stats">
-                            <div class="stat-item">
-                                <span class="stat-label">Remaining</span>
-                                <span class="stat-value" :class="remainingBalance >= 0 ? 'text-success' : 'text-danger'">
+                        <div class="budget-stats-enhanced">
+                            <div class="stat-card">
+                                <div class="stat-card-header">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20M2 12h20"></path></svg>
+                                    <span class="stat-title">Remaining</span>
+                                </div>
+                                <span class="stat-amount" :class="remainingBalance >= 0 ? 'remaining-positive' : 'remaining-negative'">
                                     {{ formatCurrency(remainingBalance) }}
                                 </span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Utilization</span>
-                                <span class="stat-value" :class="budgetUtilization >= 90 ? 'text-danger' : budgetUtilization >= 75 ? 'text-secondary' : 'text-success'">
-                                    {{ Math.round(budgetUtilization) }}%
+                                <span class="stat-percent" :class="remainingBalance >= 0 ? 'positive' : 'negative'">
+                                    {{ Math.round(((budget - totalExpenses) / budget * 100)) }}% left
                                 </span>
                             </div>
+                            <div class="stat-card">
+                                <div class="stat-card-header">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="12 1 12 23M1 4h22M1 20h22"></polyline></svg>
+                                    <span class="stat-title">Status</span>
+                                </div>
+                                <span class="stat-status" :style="{ color: getUtilizationColor(budgetUtilization) }">
+                                    {{ budgetUtilization >= 100 ? 'Over Budget' : budgetUtilization >= 90 ? 'Critical' : budgetUtilization >= 75 ? 'Caution' : budgetUtilization >= 50 ? 'Moderate' : 'Healthy' }}
+                                </span>
+                                <div class="status-indicator" :style="{ backgroundColor: getUtilizationColor(budgetUtilization) }"></div>
+                            </div>
+                        </div>
+                        <div class="budget-info">
+                            <p class="info-text">You have <strong>{{ formatCurrency(remainingBalance) }}</strong> remaining this month</p>
                         </div>
                     </div>
                 </section>

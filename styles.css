@@ -1,3 +1,96 @@
+/* Export Toolbar */
+.export-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+}
+.export-toolbar .btn-secondary {
+    background: var(--color-secondary, #e0e0e0);
+    color: #333;
+    border: none;
+    padding: 0.4rem 1.1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+/* Batch Operations Toolbar */
+.batch-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--color-bg-secondary, #f5f5f5);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.batch-toolbar .form-input,
+.batch-toolbar select {
+    min-width: 120px;
+    padding: 0.3rem 0.6rem;
+    font-size: 1rem;
+}
+.batch-toolbar .btn-success {
+    background: var(--color-success, #28a745);
+    color: #fff;
+    border: none;
+    padding: 0.4rem 1.1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.batch-toolbar .btn-success:disabled {
+    background: #b2dfb2;
+    cursor: not-allowed;
+}
+.batch-toolbar .btn-secondary {
+    background: var(--color-secondary, #e0e0e0);
+    color: #333;
+    border: none;
+    padding: 0.4rem 1.1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.batch-toolbar .btn-info {
+    background: var(--color-info, #17a2b8);
+    color: #fff;
+    border: none;
+    padding: 0.4rem 1.1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.batch-toolbar .batch-count {
+    margin-left: auto;
+    font-size: 0.98rem;
+    color: #555;
+}
+.batch-toggle-btn {
+    margin-bottom: 0.5rem;
+}
+.batch-checkbox {
+    display: inline-block;
+    margin-right: 0.7rem;
+    vertical-align: middle;
+}
+.batch-checkbox input[type="checkbox"] {
+    width: 1.1em;
+    height: 1.1em;
+    accent-color: var(--color-primary, #007bff);
+    cursor: pointer;
+}
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
 /* ============================================
    MOBILE-FIRST PROFESSIONAL STYLES
    Base styles = Mobile (320px+)
@@ -433,6 +526,31 @@ body {
     margin-bottom: var(--space-lg);
 }
 
+/* Expense form - optimized layout */
+.expense-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* First input (name) - full width with visual distinction */
+.expense-form > .input-group:first-child {
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-sm);
+    border-bottom: 2px solid var(--border-color);
+}
+
+/* Grid sections - no indentation, clean inline layout */
+.expense-form > .form-grid.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent;
+    border: none;
+}
+
 .input-label {
     display: block;
     font-size: var(--font-size-sm);
@@ -461,7 +579,7 @@ body {
     padding: var(--space-md);
     padding-left: var(--space-lg);
     font-family: inherit;
-    font-size: var(--font-size-base);
+    font-size: max(var(--font-size-base), 16px);
     color: var(--text-color);
     background: var(--card-bg);
     border: 2px solid var(--border-color);
@@ -1350,6 +1468,19 @@ button {
     gap: var(--space-md);
 }
 
+/* Grid variations */
+.form-grid.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+}
+
+.empty-placeholder {
+    /* Empty space to maintain layout alignment */
+    height: 0;
+    visibility: hidden;
+}
+
 /* ============================================
    BUDGET MODE TOGGLE
    ============================================ */
@@ -1619,6 +1750,54 @@ button {
     color: var(--text-secondary);
 }
 
+/* Advanced Filters */
+.advanced-filters {
+    margin-top: var(--space-lg);
+    padding: var(--space-lg);
+    background: var(--bg-color);
+    border-radius: var(--radius);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) 0;
+    margin-top: var(--space-md);
+    margin-bottom: var(--space-md);
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.filter-toggle:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+.filter-toggle svg {
+    transition: transform 0.3s ease;
+}
+
+.filter-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
 /* ============================================
    EXPENSES LIST
    ============================================ */
@@ -1832,75 +2011,280 @@ button {
     margin-bottom: var(--space-lg);
 }
 
-.progress-bar {
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.progress-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.utilization-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.utilization-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.progress-bar-enhanced {
     width: 100%;
-    height: 24px;
+    height: 28px;
     background: var(--border-color);
     border-radius: var(--radius);
     overflow: hidden;
     margin-bottom: var(--space-md);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(90deg, #f0f0f0, #e0e0e0);
 }
 
-.progress-fill {
+[data-theme="dark"] .progress-bar-enhanced {
+    background: linear-gradient(90deg, #333, #2a2a2a);
+}
+
+.progress-fill-enhanced {
     height: 100%;
-    transition: width 0.5s ease;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    position: relative;
 }
 
-.budget-fill {
-    background: linear-gradient(90deg, var(--success-color), #28a745);
+.progress-fill-enhanced::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
 }
 
-.progress-labels {
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-labels-enhanced {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.05), rgba(40, 167, 69, 0.05));
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(0, 123, 255, 0.1);
+}
+
+.progress-amount {
     display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
-}
-
-.progress-label {
-    display: flex;
     align-items: center;
-    gap: var(--space-xs);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-}
-
-.label-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: var(--radius-full);
-}
-
-.budget-dot {
-    background: var(--success-color);
-}
-
-.actual-dot {
-    background: var(--danger-color);
-}
-
-.budget-stats {
-    display: flex;
-    gap: var(--space-md);
-}
-
-.stat-item {
     flex: 1;
-    text-align: center;
-    padding: var(--space-md);
-    background: rgba(0, 123, 255, 0.04);
-    border-radius: var(--radius-sm);
 }
 
-.stat-label {
-    display: block;
+.amount-label {
     font-size: var(--font-size-xs);
     color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
     margin-bottom: var(--space-xs);
 }
 
-.stat-value {
+.amount-value {
     font-size: var(--font-size-lg);
     font-weight: 700;
+    color: var(--text-color);
+}
+
+.progress-divider {
+    color: var(--text-secondary);
+    font-weight: 300;
+    opacity: 0.5;
+}
+
+.budget-stats-enhanced {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--card-bg), rgba(255, 255, 255, 0.5));
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: var(--space-lg);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stat-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.stat-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.stat-card-header svg {
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.stat-title {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-amount {
+    display: block;
+    font-size: 1.6em;
+    font-weight: 700;
+    margin-bottom: var(--space-xs);
+    line-height: 1.2;
+}
+
+.remaining-positive {
+    color: #28a745;
+}
+
+.remaining-negative {
+    color: #dc3545;
+}
+
+.stat-percent {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.stat-percent.positive {
+    color: #28a745;
+}
+
+.stat-percent.negative {
+    color: #dc3545;
+}
+
+.stat-status {
+    display: block;
+    font-size: 1.3em;
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+    transition: all 0.3s ease;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 10px currentColor;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% { 
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+.budget-info {
+    margin-top: var(--space-lg);
+    padding: var(--space-md) var(--space-lg);
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(0, 123, 255, 0.1));
+    border-left: 4px solid var(--success-color);
+    border-radius: var(--radius-sm);
+}
+
+.info-text {
+    margin: 0;
+    color: var(--text-color);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+}
+
+.info-text strong {
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+@media (max-width: 600px) {
+    .progress-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+    }
+    
+    .progress-labels-enhanced {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+    
+    .progress-amount {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .budget-stats-enhanced {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: var(--space-md);
+    }
+    
+    .stat-amount {
+        font-size: 1.3em;
+    }
 }
 
 /* ============================================
@@ -2248,6 +2632,73 @@ button {
 .info-notification {
     background: linear-gradient(135deg, var(--info-color), #117a8b);
     color: white;
+}
+
+.warning-notification {
+    background: linear-gradient(135deg, var(--warning-color), #ff9800);
+    color: #333;
+}
+
+.notification .flex {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    width: 100%;
+}
+
+.notification svg {
+    flex-shrink: 0;
+    min-width: 18px;
+    min-height: 18px;
+}
+
+.notification span {
+    flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.undo-btn {
+    background: rgba(0, 0, 0, 0.1);
+    color: inherit;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.undo-btn:hover {
+    background: rgba(0, 0, 0, 0.15);
+    border-color: rgba(0, 0, 0, 0.3);
+}
+
+.undo-btn:active {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile optimization for notification */
+@media (max-width: 480px) {
+    .notification {
+        left: var(--space-sm);
+        right: var(--space-sm);
+        max-width: calc(100% - var(--space-sm) * 2);
+    }
+    
+    .notification .flex {
+        gap: var(--space-sm);
+    }
+    
+    .undo-btn {
+        padding: var(--space-sm) 8px;
+        font-size: 0.8rem;
+    }
 }
 
 /* ============================================
@@ -2828,26 +3279,11 @@ button.loading::before {
         flex-wrap: wrap;
     }
     
+    .form-grid.grid-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+    
     .form-grid .input-group {
-        flex: 1 1 calc(50% - var(--space-md));
-        min-width: 200px;
-    }
-    
-    .filter-grid {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-    
-    .filter-grid .input-group {
-        flex: 1 1 calc(50% - var(--space-md));
-        min-width: 150px;
-    }
-    
-    .date-filter-row {
-        flex-direction: row;
-    }
-    
-    .date-filter-row .input-group {
         flex: 1;
     }
     
@@ -3936,6 +4372,21 @@ button:focus {
 
 /* Mobile optimizations */
 @media (max-width: 600px) {
+    /* Prevent auto-zoom on input focus */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="date"],
+    input[type="time"],
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+    
+    .form-input {
+        font-size: 16px !important;
+    }
+    
     .form-actions {
         flex-direction: column;
     }
@@ -3944,6 +4395,13 @@ button:focus {
         width: 100%;
         min-width: unset;
         padding: var(--space-md) var(--space-lg);
+    }
+    
+    /* Stack grid-2 to single column on mobile */
+    .form-grid.grid-2,
+    .expense-form > .form-grid.grid-2 {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
     }
 }
 

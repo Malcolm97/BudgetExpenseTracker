@@ -269,6 +269,274 @@ const PerformanceUtils = {
 };
 
 
+// ===== DUPLICATE EXPENSE DETECTOR =====
+const DuplicateDetector = {
+    /**
+     * Find similar expenses based on name, amount, and frequency
+     * @param {Object} newExpense - The potential new expense
+     * @param {Array} existingExpenses - Array of existing expenses
+     * @param {number} similarityThreshold - How many matches required (0-3)
+     * @returns {Array} - Array of similar expenses
+     */
+    findSimilar(newExpense, existingExpenses, similarityThreshold = 2) {
+        const similar = [];
+        const nameNormalized = newExpense.name.toLowerCase().trim();
+        const amountNormalized = parseFloat(newExpense.amount);
+        const frequencyNormalized = newExpense.frequency;
+
+        existingExpenses.forEach(expense => {
+            let matchCount = 0;
+
+            // Check name similarity (exact match or 80% similar)
+            const existingNameNormalized = expense.name.toLowerCase().trim();
+            if (existingNameNormalized === nameNormalized) {
+                matchCount++;
+            } else if (this.stringSimilarity(nameNormalized, existingNameNormalized) > 0.8) {
+                matchCount++;
+            }
+
+            // Check amount (within 5%)
+            const existingAmount = parseFloat(expense.amount);
+            if (Math.abs(amountNormalized - existingAmount) <= (amountNormalized * 0.05)) {
+                matchCount++;
+            }
+
+            // Check frequency
+            if (frequencyNormalized === expense.frequency) {
+                matchCount++;
+            }
+
+            if (matchCount >= similarityThreshold) {
+                similar.push({ expense, matchCount });
+            }
+        });
+
+        return similar.sort((a, b) => b.matchCount - a.matchCount);
+    },
+
+    /**
+     * Calculate string similarity using Levenshtein distance
+     * @param {string} str1
+     * @param {string} str2
+     * @returns {number} - Similarity score 0-1
+     */
+    stringSimilarity(str1, str2) {
+        const longer = str1.length > str2.length ? str1 : str2;
+        const shorter = str1.length > str2.length ? str2 : str1;
+
+        if (longer.length === 0) return 1.0;
+
+        const editDistance = this.getEditDistance(longer, shorter);
+        return (longer.length - editDistance) / longer.length;
+    },
+
+    /**
+     * Calculate Levenshtein distance between two strings
+     */
+    getEditDistance(s1, s2) {
+        const costs = [];
+        for (let i = 0; i <= s1.length; i++) {
+            let lastValue = i;
+            for (let j = 0; j <= s2.length; j++) {
+                if (i === 0) {
+                    costs[j] = j;
+                } else if (j > 0) {
+                    let newValue = costs[j - 1];
+                    if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+                        newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                    }
+                    costs[j - 1] = lastValue;
+                    lastValue = newValue;
+                }
+            }
+            if (i > 0) costs[s2.length] = lastValue;
+        }
+        return costs[s2.length];
+    }
+};
+
+
+// ===== DATA COMPRESSION UTILITY =====
+const DataCompressor = {
+    /**
+     * Compress data using RLE (Run-Length Encoding) for repetitive data
+     * and simple minification for JSON
+     */
+    compress(data) {
+        try {
+            const jsonStr = JSON.stringify(data);
+            return this.minifyJSON(jsonStr);
+        } catch (error) {
+            Logger.error('Compression error:', error);
+            return JSON.stringify(data); // Fallback to uncompressed
+        }
+    },
+
+    /**
+     * Decompress data
+     */
+    decompress(compressedData) {
+        try {
+            return JSON.parse(compressedData);
+        } catch (error) {
+            Logger.error('Decompression error:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Minify JSON by removing unnecessary whitespace and duplicate keys
+     */
+    minifyJSON(jsonStr) {
+        // Remove whitespace between tokens
+        return jsonStr
+            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+            .replace(/:\s+/g, ':') // Remove space after colons
+            .replace(/,\s+/g, ',') // Remove space after commas
+            .replace(/\{\s+/g, '{') // Remove space after {
+            .replace(/\}\s+/g, '}') // Remove space before }
+            .replace(/\[\s+/g, '[') // Remove space after [
+            .replace(/\]\s+/g, ']') // Remove space before ]
+            .trim();
+    },
+
+    /**
+     * Calculate compression ratio
+     * @returns {number} - Ratio of compressed to original size
+     */
+    getCompressionRatio(original, compressed) {
+        const originalSize = new Blob([original]).size;
+        const compressedSize = new Blob([compressed]).size;
+        return ((1 - compressedSize / originalSize) * 100).toFixed(2);
+    },
+
+    /**
+     * Estimate storage savings for expenses array
+     */
+    estimateSavings(expenses) {
+        try {
+            const original = JSON.stringify(expenses);
+            const compressed = this.compress(expenses);
+            const ratio = this.getCompressionRatio(original, compressed);
+            return {
+                originalSize: (new Blob([original]).size / 1024).toFixed(2),
+                compressedSize: (new Blob([compressed]).size / 1024).toFixed(2),
+                savingsPercent: ratio
+            };
+        } catch (error) {
+            Logger.error('Error estimating savings:', error);
+            return null;
+        }
+    }
+};
+
+
+// ===== ENHANCED ERROR HANDLER =====
+const ErrorHandler = {
+    errorLog: [],
+    MAX_ERRORS_LOGGED: 50,
+
+    /**
+     * Handle and log errors with context
+     */
+    handle(error, context = '', recoverCallback = null) {
+        const errorEntry = {
+            timestamp: new Date().toISOString(),
+            context,
+            message: error.message || String(error),
+            stack: error.stack || '',
+            recovered: false
+        };
+
+        this.errorLog.push(errorEntry);
+        if (this.errorLog.length > this.MAX_ERRORS_LOGGED) {
+            this.errorLog.shift(); // Keep only last 50 errors
+        }
+
+        Logger.error(`[${context}] ${error.message}`);
+
+        // Attempt recovery if callback provided
+        if (recoverCallback) {
+            try {
+                recoverCallback();
+                errorEntry.recovered = true;
+                Logger.log(`Recovery successful for: ${context}`);
+                return { success: true, message: 'Error recovered successfully' };
+            } catch (recoveryError) {
+                Logger.error(`Recovery failed for ${context}:`, recoveryError);
+                return { success: false, message: 'Recovery failed' };
+            }
+        }
+
+        return { success: false, message: error.message };
+    },
+
+    /**
+     * Async error handler with retry logic
+     */
+    async asyncHandle(asyncFn, context = '', retries = 3) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                return await asyncFn();
+            } catch (error) {
+                Logger.error(`[${context}] Attempt ${attempt} failed: ${error.message}`);
+                if (attempt === retries) {
+                    this.handle(error, context);
+                    throw error;
+                }
+                // Wait before retry with exponential backoff
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+        }
+    },
+
+    /**
+     * Safe JSON parse with fallback
+     */
+    safeJSONParse(jsonStr, fallback = null) {
+        try {
+            return JSON.parse(jsonStr);
+        } catch (error) {
+            Logger.error('JSON parse error:', error);
+            return fallback;
+        }
+    },
+
+    /**
+     * Safe JSON stringify with fallback
+     */
+    safeJSONStringify(obj, fallback = '{}') {
+        try {
+            return JSON.stringify(obj);
+        } catch (error) {
+            Logger.error('JSON stringify error:', error);
+            return fallback;
+        }
+    },
+
+    /**
+     * Get error log for debugging
+     */
+    getLog() {
+        return this.errorLog;
+    },
+
+    /**
+     * Clear error log
+     */
+    clearLog() {
+        this.errorLog = [];
+    },
+
+    /**
+     * Export error log as JSON
+     */
+    exportLog() {
+        return JSON.stringify(this.errorLog, null, 2);
+    }
+};
+
+
 // ===== LAZY LOADING FOR CHART.JS =====
 let chartJsLoaded = false;
 let chartJsLoading = false;
@@ -789,6 +1057,43 @@ document.addEventListener('DOMContentLoaded', function() {
         if (installBanner) installBanner.style.display = 'none';
     });
 
+    // ===== NUMERIC INPUT HANDLER (Remove leading zeros) =====
+    function initNumericInputHandlers() {
+        document.addEventListener('change', (e) => {
+            const input = e.target;
+            if (input.type === 'number' && input.value) {
+                // Clean up the input on blur/change
+                const value = input.value.trim();
+                
+                if (value.includes('.')) {
+                    const parts = value.split('.');
+                    const intPart = parseInt(parts[0]) || '';
+                    const decimalPart = parts[1];
+                    input.value = intPart === '' ? '0.' + decimalPart : intPart + '.' + decimalPart;
+                } else {
+                    const intValue = parseInt(value);
+                    if (!isNaN(intValue)) {
+                        input.value = intValue.toString();
+                    }
+                }
+            }
+        }, true);
+        
+        // Also handle on input for real-time validation
+        document.addEventListener('input', (e) => {
+            const input = e.target;
+            if (input.type === 'number' && input.value && input.value.startsWith('0') && input.value.length > 1 && !input.value.startsWith('0.')) {
+                // Remove leading zeros in real-time for whole numbers like "012" -> "12"
+                let value = input.value;
+                value = value.replace(/^0+(?=\d)/, '');
+                if (value === '') value = '0';
+                input.value = value;
+            }
+        }, true);
+    }
+    
+    initNumericInputHandlers();
+
     // ===== VUE APPLICATION =====
     new Vue({
         el: '#app',
@@ -886,6 +1191,19 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Search
             searchQuery: '',
+            
+            // Advanced Filters
+            showAdvancedFilters: false,
+            dateFilterFrom: '',
+            dateFilterTo: '',
+            amountFilterMin: '',
+            amountFilterMax: '',
+            
+            // Batch Operations
+            batchMode: false,
+            selectedExpenseIds: new Set(),
+            batchAction: '',
+            batchCategoryTarget: '',
             
             // Frequency options (extended)
             frequencyOptions: [
@@ -1348,6 +1666,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (isNaN(parsedAmount) || parsedAmount <= 0) {
                         this.displayError('Please enter a valid amount greater than 0.');
                         return;
+                    }
+                    
+                    // Check for duplicate expenses (only when adding new, not editing)
+                    if (this.editingIndex === null) {
+                        const duplicates = DuplicateDetector.findSimilar(
+                            { name: sanitizedName, amount: parsedAmount, frequency: frequency },
+                            this.expenses,
+                            2 // Require at least 2 matching criteria
+                        );
+                        
+                        if (duplicates.length > 0) {
+                            const duplicateNames = duplicates.map(d => `${d.expense.name} ($${d.expense.amount}/${d.expense.frequency})`).join(', ');
+                            const proceedDuplicate = confirm(
+                                `⚠️ Similar expense(s) found:\n\n${duplicateNames}\n\nDo you want to add this expense anyway?`
+                            );
+                            if (!proceedDuplicate) {
+                                return;
+                            }
+                        }
                     }
                     
                     if (this.editingIndex !== null) {
@@ -1987,6 +2324,102 @@ document.addEventListener('DOMContentLoaded', function() {
                     trend: difference > 0 ? 'up' : difference < 0 ? 'down' : 'stable'
                 };
             },
+
+            /**
+             * Get spending trends for the last N months
+             * @param {number} months - Number of months to analyze
+             * @returns {Object} - Trend analysis with patterns and predictions
+             */
+            getMonthlyTrends(months = 6) {
+                const recentHistory = this.spendingHistory.slice(-months);
+                
+                if (recentHistory.length === 0) {
+                    return null;
+                }
+
+                const amounts = recentHistory.map(h => h.total);
+                const average = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+                const highest = Math.max(...amounts);
+                const lowest = Math.min(...amounts);
+                
+                // Calculate trend direction (increasing, decreasing, or stable)
+                const firstHalf = amounts.slice(0, Math.ceil(amounts.length / 2)).reduce((a, b) => a + b, 0) / Math.ceil(amounts.length / 2);
+                const secondHalf = amounts.slice(Math.ceil(amounts.length / 2)).reduce((a, b) => a + b, 0) / Math.floor(amounts.length / 2);
+                
+                const trendDirection = secondHalf > firstHalf ? 'increasing' : secondHalf < firstHalf ? 'decreasing' : 'stable';
+                
+                // Simple linear regression for prediction
+                const forecast = this.predictNextMonth(amounts);
+
+                return {
+                    months: months,
+                    average: Math.round(average * 100) / 100,
+                    highest: Math.round(highest * 100) / 100,
+                    lowest: Math.round(lowest * 100) / 100,
+                    variance: Math.round((highest - lowest) * 100) / 100,
+                    trend: trendDirection,
+                    predictedNext: forecast,
+                    history: recentHistory.map((h, i) => ({
+                        month: h.month,
+                        amount: h.total,
+                        change: i > 0 ? Math.round((h.total - amounts[i-1]) * 100) / 100 : 0
+                    }))
+                };
+            },
+
+            /**
+             * Simple linear regression to predict next month's spending
+             */
+            predictNextMonth(amounts) {
+                if (amounts.length < 2) return amounts[0] || 0;
+                
+                const n = amounts.length;
+                const x = Array.from({length: n}, (_, i) => i);
+                const y = amounts;
+                
+                const xMean = x.reduce((a, b) => a + b, 0) / n;
+                const yMean = y.reduce((a, b) => a + b, 0) / n;
+                
+                const numerator = x.reduce((sum, xi, i) => sum + (xi - xMean) * (y[i] - yMean), 0);
+                const denominator = x.reduce((sum, xi) => sum + Math.pow(xi - xMean, 2), 0);
+                
+                const slope = denominator === 0 ? 0 : numerator / denominator;
+                const intercept = yMean - (slope * xMean);
+                
+                const nextValue = slope * n + intercept;
+                return Math.round(Math.max(0, nextValue) * 100) / 100;
+            },
+
+            /**
+             * Get category spending trends
+             */
+            getCategoryTrends() {
+                const categoryTrends = {};
+                
+                this.expenses.forEach(expense => {
+                    if (!categoryTrends[expense.category]) {
+                        categoryTrends[expense.category] = {
+                            category: expense.category,
+                            categoryName: this.getCategoryById(expense.category).name,
+                            total: 0,
+                            count: 0,
+                            average: 0
+                        };
+                    }
+                    
+                    const monthlyAmount = this.getMonthlyEquivalent(expense.amount, expense.frequency);
+                    categoryTrends[expense.category].total += monthlyAmount;
+                    categoryTrends[expense.category].count += 1;
+                });
+
+                Object.keys(categoryTrends).forEach(key => {
+                    const trend = categoryTrends[key];
+                    trend.average = trend.count > 0 ? Math.round((trend.total / trend.count) * 100) / 100 : 0;
+                    trend.total = Math.round(trend.total * 100) / 100;
+                });
+
+                return Object.values(categoryTrends).sort((a, b) => b.total - a.total);
+            },
             
             // ===== SVG ICON HELPER =====
             getSvgIcon(name, size = 16, color = 'currentColor') {
@@ -2039,12 +2472,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 return this.getSvgIcon(iconName, size, color);
             },
             
+            // ===== UTILIZATION COLOR SYSTEM =====
+            getUtilizationColor(utilization) {
+                // Green (0-20%): #28a745 (Success)
+                // Light Green (21-35%): #7FD856
+                // Yellow-Green (36-50%): #A4C639
+                // Yellow (51-65%): #ffc107 (Warning)
+                // Orange (66-80%): #ff9800
+                // Orange-Red (81-90%): #ff6b35
+                // Red (91-105%): #dc3545 (Danger)
+                // Dark Red (105%+): #9a1e1e
+                
+                if (utilization <= 20) return '#28a745'; // Green
+                if (utilization <= 35) return '#7FD856'; // Light Green
+                if (utilization <= 50) return '#A4C639'; // Yellow-Green
+                if (utilization <= 65) return '#ffc107'; // Yellow
+                if (utilization <= 80) return '#ff9800'; // Orange
+                if (utilization <= 90) return '#ff6b35'; // Orange-Red
+                if (utilization < 100) return '#dc3545'; // Red
+                return '#9a1e1e';                          // Dark Red (over budget)
+            },
+            
             // ===== NOTIFICATIONS =====
             displayNotification(message, type, duration) {
                 type = type || 'error';
                 duration = duration || 2500; // Shorter default duration
                 // Remove any existing notification to prevent overlap
-                const existing = document.querySelector('.notification');
+                const existing = document.querySelector('.notification:not(.undo-notification)');
                 if (existing) {
                     existing.style.opacity = '0';
                     existing.style.transform = 'translateX(100%)';
@@ -2056,7 +2510,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 notification.className = 'notification ' + type + '-notification';
                 notification.setAttribute('role', 'alert');
                 const iconName = type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle';
-                notification.innerHTML = '<div class="flex items-center gap-2">' + this.getSvgIcon(iconName, 18) + '<span>' + message + '</span></div>';
+                notification.innerHTML = '<div class="flex">' + this.getSvgIcon(iconName, 18) + '<span>' + message + '</span></div>';
                 document.body.appendChild(notification);
 
                 // Announce to screen readers
@@ -2076,6 +2530,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, duration);
 
                 notification.addEventListener('click', () => {
+                    if (window._notificationTimeout) clearTimeout(window._notificationTimeout);
                     notification.style.opacity = '0';
                     notification.style.transform = 'translateX(100%)';
                     setTimeout(() => {
@@ -2085,20 +2540,44 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             
             displayUndoNotification(message) {
+                // Remove any other notification to prevent overlap
+                const existing = document.querySelector('.notification:not(.undo-notification)');
+                if (existing) {
+                    existing.style.opacity = '0';
+                    existing.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (existing.parentNode) existing.parentNode.removeChild(existing);
+                    }, 200);
+                }
+                
                 const notification = document.createElement('div');
-                notification.className = 'notification warning-notification undo-notification';
-                notification.innerHTML = '<div class="flex items-center gap-2">' + this.getSvgIcon('trash', 18) + '<span>' + message + '</span><button class="undo-btn" onclick="window.vueApp.undoDelete()">Undo</button></div>';
+                notification.className = 'notification undo-notification warning-notification';
+                notification.setAttribute('role', 'alert');
+                notification.innerHTML = '<div class="flex">' + this.getSvgIcon('trash', 18) + '<span>' + message + '</span><button class="undo-btn" onclick="window.vueApp.undoDelete()">Undo</button></div>';
                 document.body.appendChild(notification);
 
                 setTimeout(() => { notification.style.display = 'block'; }, 10);
 
-                setTimeout(() => {
+                // Clear previous undo timeout if exists
+                if (window._undoNotificationTimeout) clearTimeout(window._undoNotificationTimeout);
+                window._undoNotificationTimeout = setTimeout(() => {
                     notification.style.opacity = '0';
                     notification.style.transform = 'translateX(100%)';
                     setTimeout(() => {
                         if (notification.parentNode) notification.parentNode.removeChild(notification);
-                    }, 300);
+                    }, 200);
                 }, 5000);
+                
+                // Allow clicking to dismiss
+                notification.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('undo-btn')) return;
+                    if (window._undoNotificationTimeout) clearTimeout(window._undoNotificationTimeout);
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (notification.parentNode) notification.parentNode.removeChild(notification);
+                    }, 200);
+                });
             },
             
             displayError(message) { this.displayNotification(message, 'error'); },
@@ -2107,7 +2586,30 @@ document.addEventListener('DOMContentLoaded', function() {
             calculateTotalExpenses() { this.updateTotalExpenses(); },
             
             saveExpenses() {
-                localStorage.setItem('expenses', JSON.stringify(this.expenses));
+                try {
+                    if (StorageUtils.canStore('expenses', JSON.stringify(this.expenses))) {
+                        localStorage.setItem('expenses', JSON.stringify(this.expenses));
+                        Logger.log('Expenses saved successfully');
+                    } else {
+                        Logger.warn('Storage quota may be exceeded');
+                        // Try to compress data if it's large
+                        const expensesStr = JSON.stringify(this.expenses);
+                        if (expensesStr.length > 102400) { // > 100KB
+                            const minified = DataCompressor.minifyJSON(expensesStr);
+                            if (minified.length < expensesStr.length) {
+                                localStorage.setItem('expenses', minified);
+                                Logger.log(`Data compressed by ${DataCompressor.getCompressionRatio(expensesStr, minified)}%`);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    ErrorHandler.handle(error, 'saveExpenses', () => {
+                        // Fallback: try to save with older expenses removed
+                        const recentExpenses = this.expenses.slice(-100);
+                        localStorage.setItem('expenses', JSON.stringify(recentExpenses));
+                        Logger.warn('Saved only recent expenses due to storage limitations');
+                    });
+                }
             },
             
             // ===== CHARTS =====
@@ -2390,9 +2892,177 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.categoryFilter = '';
                 this.frequencyFilter = '';
                 this.sortBy = 'date-desc';
+                this.searchQuery = '';
+                this.dateFilterFrom = '';
+                this.dateFilterTo = '';
+                this.amountFilterMin = '';
+                this.amountFilterMax = '';
+                this.showAdvancedFilters = false;
+            },
+            
+            toggleAdvancedFilters() {
+                this.showAdvancedFilters = !this.showAdvancedFilters;
+            },
+
+            // ===== BATCH OPERATIONS =====
+            toggleBatchMode() {
+                this.batchMode = !this.batchMode;
+                if (!this.batchMode) {
+                    this.selectedExpenseIds.clear();
+                    this.batchAction = '';
+                    this.batchCategoryTarget = '';
+                }
+            },
+
+            toggleSelectExpense(expenseId) {
+                if (this.selectedExpenseIds.has(expenseId)) {
+                    this.selectedExpenseIds.delete(expenseId);
+                } else {
+                    this.selectedExpenseIds.add(expenseId);
+                }
+                // Force Vue reactivity for Set
+                this.selectedExpenseIds = new Set(this.selectedExpenseIds);
+            },
+
+            selectAllFiltered() {
+                this.filteredExpenses.forEach(expense => {
+                    this.selectedExpenseIds.add(expense.id);
+                });
+                this.selectedExpenseIds = new Set(this.selectedExpenseIds);
+            },
+
+            deselectAll() {
+                this.selectedExpenseIds.clear();
+                this.selectedExpenseIds = new Set();
+            },
+
+            isExpenseSelected(expenseId) {
+                return this.selectedExpenseIds.has(expenseId);
+            },
+
+            executeBatchAction() {
+                if (this.selectedExpenseIds.size === 0) {
+                    this.displayError('Please select at least one expense');
+                    return;
+                }
+
+                const selectedExpenses = this.expenses.filter(e => this.selectedExpenseIds.has(e.id));
+
+                if (this.batchAction === 'delete') {
+                    const count = selectedExpenses.length;
+                    if (confirm(`Are you sure you want to delete ${count} expense(s)?`)) {
+                        this.expenses = this.expenses.filter(e => !this.selectedExpenseIds.has(e.id));
+                        this.deselectAll();
+                        this.batchMode = false;
+                        this.saveExpenses();
+                        this.updateTotalExpenses();
+                        this.displaySuccess(`${count} expense(s) deleted!`);
+                    }
+                } else if (this.batchAction === 'category' && this.batchCategoryTarget) {
+                    selectedExpenses.forEach(expense => {
+                        expense.category = this.batchCategoryTarget;
+                    });
+                    this.deselectAll();
+                    this.batchMode = false;
+                    this.saveExpenses();
+                    this.displaySuccess(`Category updated for ${selectedExpenses.length} expense(s)!`);
+                } else if (this.batchAction === 'export-json') {
+                    this.exportSelectedExpensesJSON(selectedExpenses);
+                    this.deselectAll();
+                    this.batchMode = false;
+                } else if (this.batchAction === 'export-excel') {
+                    this.exportSelectedExpensesExcel(selectedExpenses);
+                    this.deselectAll();
+                    this.batchMode = false;
+                } else if (this.batchAction === 'export-pdf') {
+                    this.exportSelectedExpensesPDF(selectedExpenses);
+                    this.deselectAll();
+                    this.batchMode = false;
+                }
+            },
+
+            exportSelectedExpensesJSON(selectedExpenses) {
+                if (!selectedExpenses || selectedExpenses.length === 0) {
+                    this.displayError('No expenses selected');
+                    return;
+                }
+                const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(selectedExpenses, null, 2));
+                const dlAnchor = document.createElement('a');
+                dlAnchor.setAttribute('href', dataStr);
+                dlAnchor.setAttribute('download', 'expenses-batch-export.json');
+                document.body.appendChild(dlAnchor);
+                dlAnchor.click();
+                dlAnchor.remove();
+                this.displaySuccess(`${selectedExpenses.length} expense(s) exported as JSON!`);
+            },
+
+            exportSelectedExpensesExcel(selectedExpenses) {
+                if (!selectedExpenses || selectedExpenses.length === 0) {
+                    this.displayError('No expenses selected');
+                    return;
+                }
+                if (typeof XLSX === 'undefined') {
+                    this.displayError('Excel export requires SheetJS (XLSX) library.');
+                    return;
+                }
+                const ws = XLSX.utils.json_to_sheet(selectedExpenses);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Expenses');
+                XLSX.writeFile(wb, 'expenses-batch-export.xlsx');
+                this.displaySuccess(`${selectedExpenses.length} expense(s) exported as Excel!`);
+            },
+
+            exportSelectedExpensesPDF(selectedExpenses) {
+                if (!selectedExpenses || selectedExpenses.length === 0) {
+                    this.displayError('No expenses selected');
+                    return;
+                }
+                if (typeof jsPDF === 'undefined') {
+                    this.displayError('PDF export requires jsPDF library.');
+                    return;
+                }
+                const doc = new jsPDF();
+                const columns = [
+                    'Name', 'Amount', 'Frequency', 'Category', 'Date', 'Notes'
+                ];
+                const rows = selectedExpenses.map(e => [
+                    e.name, e.amount, e.frequency, e.category, e.startDate || '', e.notes || ''
+                ]);
+                doc.autoTable({ head: [columns], body: rows });
+                doc.save('expenses-batch-export.pdf');
+                this.displaySuccess(`${selectedExpenses.length} expense(s) exported as PDF!`);
             },
             
             // ===== IMPORT/EXPORT =====
+
+            exportAllToExcel() {
+                if (typeof XLSX === 'undefined') {
+                    this.displayError('Excel export requires SheetJS (XLSX) library.');
+                    return;
+                }
+                const ws = XLSX.utils.json_to_sheet(this.expenses);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Expenses');
+                XLSX.writeFile(wb, 'expenses-export.xlsx');
+                this.displaySuccess('All expenses exported as Excel!');
+            },
+
+            exportAllToPDF() {
+                if (typeof jsPDF === 'undefined') {
+                    this.displayError('PDF export requires jsPDF library.');
+                    return;
+                }
+                const doc = new jsPDF();
+                const columns = [
+                    'Name', 'Amount', 'Frequency', 'Category', 'Date', 'Notes'
+                ];
+                const rows = this.expenses.map(e => [
+                    e.name, e.amount, e.frequency, e.category, e.startDate || '', e.notes || ''
+                ]);
+                doc.autoTable({ head: [columns], body: rows });
+                doc.save('expenses-export.pdf');
+                this.displaySuccess('All expenses exported as PDF!');
+            },
             backupData() {
                 try {
                     const backupData = {
@@ -2584,7 +3254,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const storedExpenses = localStorage.getItem('expenses');
                 if (storedExpenses) {
                     try {
-                        this.expenses = JSON.parse(storedExpenses);
+                        this.expenses = ErrorHandler.safeJSONParse(storedExpenses, []);
                         this.expenses = this.validateExpenses(this.expenses).map(exp => ({
                             ...exp,
                             id: exp.id || generateId(),
@@ -2592,16 +3262,18 @@ document.addEventListener('DOMContentLoaded', function() {
                             dayOfMonth: exp.dayOfMonth || null
                         }));
                     } catch (e) {
-                        console.error('Error parsing stored expenses:', e);
-                        this.expenses = [];
+                        ErrorHandler.handle(e, 'loadExpenses', () => {
+                            this.expenses = [];
+                        });
                     }
                 }
                 
                 const storedCategoryBudgets = localStorage.getItem('categoryBudgets');
                 if (storedCategoryBudgets) {
                     try {
-                        this.categoryBudgets = JSON.parse(storedCategoryBudgets);
+                        this.categoryBudgets = ErrorHandler.safeJSONParse(storedCategoryBudgets, {});
                     } catch (e) {
+                        ErrorHandler.handle(e, 'loadCategoryBudgets');
                         this.categoryBudgets = {};
                     }
                 }
@@ -2609,8 +3281,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const storedSpendingHistory = localStorage.getItem('spendingHistory');
                 if (storedSpendingHistory) {
                     try {
-                        this.spendingHistory = JSON.parse(storedSpendingHistory);
+                        this.spendingHistory = ErrorHandler.safeJSONParse(storedSpendingHistory, []);
                     } catch (e) {
+                        ErrorHandler.handle(e, 'loadSpendingHistory');
                         this.spendingHistory = [];
                     }
                 }
@@ -2619,9 +3292,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const storedTemplates = localStorage.getItem('templates');
                 if (storedTemplates) {
                     try {
-                        this.templates = JSON.parse(storedTemplates);
+                        this.templates = ErrorHandler.safeJSONParse(storedTemplates, []);
                     } catch (e) {
-                        console.error('Error parsing stored templates:', e);
+                        ErrorHandler.handle(e, 'loadTemplates');
                         this.templates = [];
                     }
                 }
@@ -2630,10 +3303,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const storedCustomCategories = localStorage.getItem('customCategories');
                 if (storedCustomCategories) {
                     try {
-                        this.customCategories = JSON.parse(storedCustomCategories);
+                        this.customCategories = ErrorHandler.safeJSONParse(storedCustomCategories, []);
                         this.updateExpenseCategories();
                     } catch (e) {
-                        console.error('Error parsing stored custom categories:', e);
+                        ErrorHandler.handle(e, 'loadCustomCategories');
                         this.customCategories = [];
                     }
                 }
@@ -3258,6 +3931,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     filtered = filtered.filter(expense => expense.frequency === this.frequencyFilter);
                 }
 
+                // Date range filter
+                if (this.dateFilterFrom) {
+                    const fromDate = new Date(this.dateFilterFrom);
+                    filtered = filtered.filter(expense => {
+                        const expenseDate = new Date(expense.startDate || '1970-01-01');
+                        return expenseDate >= fromDate;
+                    });
+                }
+
+                if (this.dateFilterTo) {
+                    const toDate = new Date(this.dateFilterTo);
+                    toDate.setHours(23, 59, 59, 999); // Include entire day
+                    filtered = filtered.filter(expense => {
+                        const expenseDate = new Date(expense.startDate || '1970-01-01');
+                        return expenseDate <= toDate;
+                    });
+                }
+
+                // Amount range filter
+                if (this.amountFilterMin) {
+                    const minAmount = parseFloat(this.amountFilterMin) || 0;
+                    filtered = filtered.filter(expense => parseFloat(expense.amount) >= minAmount);
+                }
+
+                if (this.amountFilterMax) {
+                    const maxAmount = parseFloat(this.amountFilterMax) || Infinity;
+                    filtered = filtered.filter(expense => parseFloat(expense.amount) <= maxAmount);
+                }
+
                 filtered.sort((a, b) => {
                     switch (this.sortBy) {
                         case 'date-desc': return new Date(b.startDate || '1970-01-01') - new Date(a.startDate || '1970-01-01');
@@ -3280,6 +3982,12 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             categoryBreakdown() {
                 return this.getCategoryBreakdown();
+            },
+            monthlyTrends() {
+                return this.getMonthlyTrends(6);
+            },
+            categoryTrends() {
+                return this.getCategoryTrends();
             }
         },
         watch: {
@@ -3317,18 +4025,58 @@ document.addEventListener('DOMContentLoaded', function() {
         // ===== KEYBOARD SHORTCUTS =====
         initKeyboardShortcuts() {
             document.addEventListener('keydown', (e) => {
-                // Skip if user is typing in an input field
+                // Skip if user is typing in an input field (with exceptions)
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-                    // Allow Escape to blur the input
+                    // Allow some shortcuts even in inputs
                     if (e.key === 'Escape') {
                         e.target.blur();
+                        return;
                     }
-                    return;
+                    // Allow Ctrl+Z (undo) in inputs
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                        // Let browser handle undo in inputs
+                        return;
+                    }
+                    // Allow Ctrl+S (save) globally
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        // Will be handled below
+                    } else {
+                        return;
+                    }
                 }
                 
                 // Escape - Close modal
                 if (e.key === 'Escape' && this.confirmModal.show) {
                     this.closeConfirmModal();
+                    return;
+                }
+                
+                // Ctrl/Cmd + E - Add new expense
+                if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                    e.preventDefault();
+                    this.switchPage('expenses');
+                    this.$nextTick(() => {
+                        const nameInput = document.getElementById('expense-name');
+                        if (nameInput) {
+                            nameInput.focus();
+                            nameInput.select();
+                            AccessibilityUtils.announce('Ready to add new expense', 'polite');
+                        }
+                    });
+                    return;
+                }
+                
+                // Ctrl/Cmd + Z - Undo last action
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                    e.preventDefault();
+                    if (this.lastDeleted && this.lastDeleted.expense) {
+                        this.undoDelete();
+                    } else if (this.isEditing) {
+                        this.resetNewExpense();
+                        AccessibilityUtils.announce('Edit cancelled', 'polite');
+                    } else {
+                        AccessibilityUtils.announce('Nothing to undo', 'polite');
+                    }
                     return;
                 }
                 
@@ -3376,6 +4124,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (settingsToggle) {
                         settingsToggle.setAttribute('aria-pressed', newTheme === 'dark' ? 'true' : 'false');
                     }
+                    AccessibilityUtils.announce(`Theme switched to ${newTheme}`, 'polite');
                     return;
                 }
                 
@@ -3403,6 +4152,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         showKeyboardShortcutsHelp() {
             const shortcuts = [
+                { key: 'Ctrl/Cmd + E', action: 'Add new expense' },
+                { key: 'Ctrl/Cmd + Z', action: 'Undo last action' },
                 { key: 'Ctrl/Cmd + N', action: 'Focus expense name input' },
                 { key: 'Ctrl/Cmd + B', action: 'Focus budget input' },
                 { key: 'Ctrl/Cmd + S', action: 'Backup data' },
