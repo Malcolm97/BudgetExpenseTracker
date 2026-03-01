@@ -76,29 +76,6 @@ window.addEventListener('load', () => {
 
 
 
-// Adding event listener for interest calculation
-window.addEventListener('load', () => {
-    const interestButton = document.getElementById('calculate-interest');
-
-    if (interestButton) {
-        interestButton.addEventListener('click', () => {
-            const principal = parseFloat(document.getElementById('principal-amount').value) || 0;
-            const annualRate = parseFloat(document.getElementById('interest-rate').value) || 0;
-            const fortnightlyContribution = parseFloat(document.getElementById('contribution-amount').value) || 0;
-            const monthlyContribution = parseFloat(document.getElementById('contribution-monthly').value) || 0;
-
-            const yearlyFortnightly = fortnightlyContribution * 26;
-            const yearlyMonthly = monthlyContribution * 12;
-            const totalContributions = yearlyFortnightly + yearlyMonthly;
-
-            const totalSavings = principal + totalContributions + (principal + totalContributions) * (annualRate / 100);
-
-            document.getElementById('total-savings').textContent = `$${totalSavings.toFixed(2)}`;
-        });
-    }
-});
-
-
 // ===== STORAGE & DATA MANAGEMENT UTILITIES =====
 const StorageUtils = {
     MAX_STORAGE_ATTEMPTS: 3,
@@ -197,44 +174,9 @@ const AccessibilityUtils = {
                 announcer.textContent = message;
             }, 100);
         }
-// ===== PERFORMANCE UTILITIES =====
-const PerformanceUtils = {
-    // Debounce function for expensive operations
-    debounce(func, delay = 300) {
-        let timeoutId;
-        return function debounced(...args) {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(this, args);
-            }, delay);
-        };
     },
     
-    // Throttle function for frequent events
-    throttle(func, limit = 300) {
-        let inThrottle;
-        return function throttled(...args) {
-            if (!inThrottle) {
-                func.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
-    },
-    
-    // Request animation frame debounce
-    rafDebounce(func) {
-        let requestId;
-        return function debounced(...args) {
-            cancelAnimationFrame(requestId);
-            requestId = requestAnimationFrame(() => {
-                func.apply(this, args);
-            });
-        };
-    }
-};
-
-// ===== ACCESSIBILITY UTILITIES =====
+    focusFirst(element) {
         if (!element) return;
         const focusable = element.querySelectorAll(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -288,6 +230,44 @@ const PerformanceUtils = {
         });
     }
 };
+
+// ===== PERFORMANCE UTILITIES =====
+const PerformanceUtils = {
+    // Debounce function for expensive operations
+    debounce(func, delay = 300) {
+        let timeoutId;
+        return function debounced(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                func.apply(this, args);
+            }, delay);
+        };
+    },
+    
+    // Throttle function for frequent events
+    throttle(func, limit = 300) {
+        let inThrottle;
+        return function throttled(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    },
+    
+    // Request animation frame debounce
+    rafDebounce(func) {
+        let requestId;
+        return function debounced(...args) {
+            cancelAnimationFrame(requestId);
+            requestId = requestAnimationFrame(() => {
+                func.apply(this, args);
+            });
+        };
+    }
+};
+
 
 // ===== LAZY LOADING FOR CHART.JS =====
 let chartJsLoaded = false;
@@ -2062,7 +2042,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // ===== NOTIFICATIONS =====
             displayNotification(message, type, duration) {
                 type = type || 'error';
-                duration = duration || 4000;
+                duration = duration || 2500; // Shorter default duration
+                // Remove any existing notification to prevent overlap
+                const existing = document.querySelector('.notification');
+                if (existing) {
+                    existing.style.opacity = '0';
+                    existing.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (existing.parentNode) existing.parentNode.removeChild(existing);
+                    }, 200);
+                }
                 const notification = document.createElement('div');
                 notification.className = 'notification ' + type + '-notification';
                 notification.setAttribute('role', 'alert');
@@ -2076,12 +2065,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 setTimeout(() => { notification.style.display = 'block'; }, 10);
 
-                setTimeout(() => {
+                // Always clear any previous timeout
+                if (window._notificationTimeout) clearTimeout(window._notificationTimeout);
+                window._notificationTimeout = setTimeout(() => {
                     notification.style.opacity = '0';
                     notification.style.transform = 'translateX(100%)';
                     setTimeout(() => {
                         if (notification.parentNode) notification.parentNode.removeChild(notification);
-                    }, 300);
+                    }, 200);
                 }, duration);
 
                 notification.addEventListener('click', () => {
@@ -2089,7 +2080,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     notification.style.transform = 'translateX(100%)';
                     setTimeout(() => {
                         if (notification.parentNode) notification.parentNode.removeChild(notification);
-                    }, 300);
+                    }, 200);
                 });
             },
             
