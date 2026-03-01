@@ -1,6 +1,88 @@
 // Budget Expense Tracker - Production Ready Version
 // Optimized and enhanced with modern features
 
+
+// Adding reusable function for input validation
+function validateInput(value, fieldName) {
+    if (value < 0) {
+        alert(`${fieldName} cannot be negative.`);
+        return false;
+    }
+    return true;
+}
+
+// Adding event listener for interest calculation
+window.addEventListener('load', () => {
+    const interestButton = document.getElementById('calculate-interest');
+
+    if (interestButton) {
+        interestButton.addEventListener('click', () => {
+            const principal = parseFloat(document.getElementById('principal-amount').value) || 0;
+            const annualRate = parseFloat(document.getElementById('interest-rate').value) || 0;
+            const fortnightlyContribution = parseFloat(document.getElementById('contribution-amount').value) || 0;
+            const monthlyContribution = parseFloat(document.getElementById('contribution-monthly').value) || 0;
+
+            if (!validateInput(principal, 'Principal Amount') ||
+                !validateInput(annualRate, 'Annual Interest Rate') ||
+                !validateInput(fortnightlyContribution, 'Fortnightly Contribution') ||
+                !validateInput(monthlyContribution, 'Monthly Contribution')) {
+                return;
+            }
+
+            const yearlyFortnightly = fortnightlyContribution * 26;
+            const yearlyMonthly = monthlyContribution * 12;
+            const totalContributions = yearlyFortnightly + yearlyMonthly;
+
+            const totalSavings = principal + totalContributions + (principal + totalContributions) * (annualRate / 100);
+
+            document.getElementById('total-savings').textContent = `$${totalSavings.toFixed(2)}`;
+        });
+    }
+
+    const savingsButton = document.getElementById('calculate-savings');
+
+    if (savingsButton) {
+        savingsButton.addEventListener('click', () => {
+            const fortnightlySavings = parseFloat(document.getElementById('fortnightly-savings').value) || 0;
+            const monthlySavings = parseFloat(document.getElementById('monthly-savings').value) || 0;
+
+            if (!validateInput(fortnightlySavings, 'Fortnightly Savings') ||
+                !validateInput(monthlySavings, 'Monthly Savings')) {
+                return;
+            }
+
+            const yearlySavings = (fortnightlySavings * 26) + (monthlySavings * 12);
+
+            document.getElementById('yearly-savings').textContent = `$${yearlySavings.toFixed(2)}`;
+        });
+    }
+});
+
+
+
+// Adding event listener for interest calculation
+window.addEventListener('load', () => {
+    const interestButton = document.getElementById('calculate-interest');
+
+    if (interestButton) {
+        interestButton.addEventListener('click', () => {
+            const principal = parseFloat(document.getElementById('principal-amount').value) || 0;
+            const annualRate = parseFloat(document.getElementById('interest-rate').value) || 0;
+            const fortnightlyContribution = parseFloat(document.getElementById('contribution-amount').value) || 0;
+            const monthlyContribution = parseFloat(document.getElementById('contribution-monthly').value) || 0;
+
+            const yearlyFortnightly = fortnightlyContribution * 26;
+            const yearlyMonthly = monthlyContribution * 12;
+            const totalContributions = yearlyFortnightly + yearlyMonthly;
+
+            const totalSavings = principal + totalContributions + (principal + totalContributions) * (annualRate / 100);
+
+            document.getElementById('total-savings').textContent = `$${totalSavings.toFixed(2)}`;
+        });
+    }
+});
+
+
 // ===== ACCESSIBILITY UTILITIES =====
 const AccessibilityUtils = {
     // Announce message to screen readers

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savings Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Savings Tracker</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="savings.html" class="active">Savings</a></li>
+                <li><a href="settings.html">Settings</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section>
+            <h2>Track Your Savings</h2>
+            <form id="savings-form">
+                <label for="fortnightly-savings">Fortnightly Savings:</label>
+                <input type="number" id="fortnightly-savings" name="fortnightly-savings" placeholder="Enter amount" required aria-describedby="fortnightly-help">
+                <small id="fortnightly-help">Enter the amount you save every two weeks.</small>
+
+                <label for="monthly-savings">Monthly Savings:</label>
+                <input type="number" id="monthly-savings" name="monthly-savings" placeholder="Enter amount" required aria-describedby="monthly-help">
+                <small id="monthly-help">Enter the amount you save every month.</small>
+
+                <button type="button" id="calculate-savings">Calculate Yearly Savings</button>
+                <button type="reset">Reset</button>
+            </form>
+            <div id="savings-result" aria-live="polite">
+                <h3>Yearly Savings:</h3>
+                <p id="yearly-savings">$0</p>
+            </div>
+        </section>
+        <section>
+            <h2>Annual Interest Calculator</h2>
+            <form id="interest-calculator-form">
+                <label for="principal-amount">Principal Amount:</label>
+                <input type="number" id="principal-amount" name="principal-amount" placeholder="Enter initial amount" required aria-describedby="principal-help">
+                <small id="principal-help">Enter the starting amount in your savings.</small>
+
+                <label for="interest-rate">Annual Interest Rate (%):</label>
+                <input type="number" id="interest-rate" name="interest-rate" placeholder="Enter interest rate" required aria-describedby="interest-help">
+                <small id="interest-help">Enter the yearly interest rate provided by your bank.</small>
+
+                <label for="contribution-amount">Fortnightly Contribution:</label>
+                <input type="number" id="contribution-amount" name="contribution-amount" placeholder="Enter fortnightly contribution" required aria-describedby="fortnightly-contribution-help">
+                <small id="fortnightly-contribution-help">Enter the amount you contribute every two weeks.</small>
+
+                <label for="contribution-monthly">Monthly Contribution:</label>
+                <input type="number" id="contribution-monthly" name="contribution-monthly" placeholder="Enter monthly contribution" required aria-describedby="monthly-contribution-help">
+                <small id="monthly-contribution-help">Enter the amount you contribute every month.</small>
+
+                <button type="button" id="calculate-interest">Calculate Interest</button>
+                <button type="reset">Reset</button>
+            </form>
+            <div id="interest-result" aria-live="polite">
+                <h3>Accumulated Savings with Interest:</h3>
+                <p id="total-savings">$0</p>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2026 Budget Expense Tracker</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
