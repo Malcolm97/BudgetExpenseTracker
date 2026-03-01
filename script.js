@@ -421,112 +421,119 @@ function applyPrimaryColor(color) {
     document.documentElement.style.setProperty('--nav-active-color', color);
 }
 
-function initColorPicker() {
-    const colorPickerBtn = document.getElementById('color-picker-btn');
-    const colorPickerPanel = document.getElementById('color-picker-panel');
-    const colorPickerClose = document.getElementById('color-picker-close');
-    const customColorInput = document.getElementById('custom-color-input');
-    const customColorValue = document.querySelector('.custom-color-value');
-    const colorPresets = document.querySelectorAll('.color-preset');
+// ===== INITIALIZE SETTINGS PAGE APPEARANCE CONTROLS =====
+function initSettingsAppearance() {
+    console.log('Initializing settings appearance controls...');
     
-    if (!colorPickerBtn || !colorPickerPanel) return;
+    // Dark Mode Toggle
+    const settingsThemeToggle = document.getElementById('settings-theme-toggle');
     
-    // Load saved color
-    const savedColor = localStorage.getItem('primaryColor');
-    if (savedColor) {
-        applyPrimaryColor(savedColor);
-        if (customColorInput) customColorInput.value = savedColor;
-        if (customColorValue) customColorValue.textContent = savedColor.toUpperCase();
-        
-        // Mark active preset
-        colorPresets.forEach(preset => {
-            if (preset.dataset.color === savedColor) {
-                preset.classList.add('active');
-            } else {
-                preset.classList.remove('active');
-            }
-        });
-    }
-    
-    // Toggle panel
-    colorPickerBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        colorPickerPanel.classList.toggle('show');
-    });
-    
-    // Close panel
-    if (colorPickerClose) {
-        colorPickerClose.addEventListener('click', () => {
-            colorPickerPanel.classList.remove('show');
-        });
-    }
-    
-    // Close on outside click
-    document.addEventListener('click', (e) => {
-        if (!colorPickerPanel.contains(e.target) && !colorPickerBtn.contains(e.target)) {
-            colorPickerPanel.classList.remove('show');
+    if (settingsThemeToggle) {
+        try {
+            const html = document.documentElement;
+            
+            // Set initial state based on current theme
+            const currentTheme = html.getAttribute('data-theme') || 'light';
+            settingsThemeToggle.checked = currentTheme === 'dark';
+            console.log('Dark mode toggle initialized:', currentTheme);
+            
+            // Add listener
+            settingsThemeToggle.addEventListener('change', (e) => {
+                const htmlElement = document.documentElement;
+                const newTheme = e.target.checked ? 'dark' : 'light';
+                
+                htmlElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                
+                console.log('Theme changed to:', newTheme);
+            });
+        } catch (err) {
+            console.error('Error initializing dark mode toggle:', err);
         }
-    });
+    } else {
+        console.warn('Settings theme toggle element not found');
+    }
     
-    // Preset colors
-    colorPresets.forEach(preset => {
-        preset.addEventListener('click', () => {
-            const color = preset.dataset.color;
-            applyPrimaryColor(color);
-            localStorage.setItem('primaryColor', color);
+    // Color Presets in Settings
+    try {
+        const settingsColorPresets = document.querySelectorAll('.color-preset-inline');
+        const settingsCustomColor = document.getElementById('settings-custom-color');
+        const customColorValueInline = document.querySelector('.custom-color-value-inline');
+        
+        console.log('Found color presets:', settingsColorPresets.length);
+        
+        // Load saved color and apply active state
+        const savedColor = localStorage.getItem('primaryColor') || '#007bff';
+        if (settingsCustomColor) {
+            settingsCustomColor.value = savedColor;
+            if (customColorValueInline) {
+                customColorValueInline.textContent = savedColor.toUpperCase();
+            }
             
-            if (customColorInput) customColorInput.value = color;
-            if (customColorValue) customColorValue.textContent = color.toUpperCase();
-            
-            // Update active state
-            colorPresets.forEach(p => p.classList.remove('active'));
-            preset.classList.add('active');
+            // Mark active preset
+            settingsColorPresets.forEach(preset => {
+                if (preset.dataset.color === savedColor) {
+                    preset.classList.add('active');
+                } else {
+                    preset.classList.remove('active');
+                }
+            });
+        }
+        
+        // Preset colors
+        settingsColorPresets.forEach(preset => {
+            preset.addEventListener('click', (e) => {
+                e.preventDefault();
+                const color = preset.dataset.color;
+                console.log('Color preset clicked:', color);
+                applyPrimaryColor(color);
+                localStorage.setItem('primaryColor', color);
+                
+                if (settingsCustomColor) settingsCustomColor.value = color;
+                if (customColorValueInline) customColorValueInline.textContent = color.toUpperCase();
+                
+                // Update active state
+                settingsColorPresets.forEach(p => p.classList.remove('active'));
+                preset.classList.add('active');
+            });
         });
-    });
-    
-    // Custom color input
-    if (customColorInput) {
-        customColorInput.addEventListener('input', (e) => {
-            const color = e.target.value;
-            applyPrimaryColor(color);
-            localStorage.setItem('primaryColor', color);
-            
-            if (customColorValue) customColorValue.textContent = color.toUpperCase();
-            
-            // Remove active from presets
-            colorPresets.forEach(p => p.classList.remove('active'));
-        });
+        
+        // Custom color input
+        if (settingsCustomColor) {
+            settingsCustomColor.addEventListener('input', (e) => {
+                const color = e.target.value;
+                console.log('Custom color selected:', color);
+                applyPrimaryColor(color);
+                localStorage.setItem('primaryColor', color);
+                
+                if (customColorValueInline) customColorValueInline.textContent = color.toUpperCase();
+                
+                // Remove active from presets
+                settingsColorPresets.forEach(p => p.classList.remove('active'));
+            });
+        }
+    } catch (err) {
+        console.error('Error initializing color picker:', err);
     }
 }
 
 // ===== MAIN APPLICATION =====
 document.addEventListener('DOMContentLoaded', function() {
-    const themeToggle = document.getElementById('theme-toggle');
     const html = document.documentElement;
 
+    // Load saved theme from localStorage
     const savedTheme = localStorage.getItem('theme') || 'light';
     html.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
-
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = html.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcon(newTheme);
-    });
-
-    function updateThemeIcon(theme) {
-        const iconContainer = themeToggle.querySelector('.theme-icon');
-        if (iconContainer) {
-            const sunIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
-            const moonIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
-            iconContainer.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
-        }
-    }
     
-    // Initialize color picker
-    initColorPicker();
+    // Load saved primary color from localStorage
+    const savedColor = localStorage.getItem('primaryColor') || '#007bff';
+    applyPrimaryColor(savedColor);
+    
+    // Defer initialization until after Vue is mounted
+    // This ensures the DOM elements are properly set up by Vue
+    setTimeout(() => {
+        initSettingsAppearance();
+    }, 500);
 
     // ===== OFFLINE INDICATOR =====
     const offlineIndicator = document.createElement('div');
@@ -993,18 +1000,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.budget <= 0) return;
                 const percentage = (this.totalExpenses / this.budget) * 100;
                 
-                if (percentage >= 100 && !this.budgetAlerts[100]) {
-                    this.budgetAlerts[100] = true;
-                    this.displayNotification('Budget Exceeded!', 'warning');
-                } else if (percentage >= 90 && !this.budgetAlerts[90]) {
-                    this.budgetAlerts[90] = true;
-                    this.displayNotification('You have used 90% of your budget!', 'warning');
-                } else if (percentage >= 75 && !this.budgetAlerts[75]) {
-                    this.budgetAlerts[75] = true;
-                    this.displayNotification('You have used 75% of your budget.', 'info');
-                } else if (percentage >= 50 && !this.budgetAlerts[50]) {
-                    this.budgetAlerts[50] = true;
-                    this.displayNotification('You have used 50% of your budget.', 'info');
+                // Reset alerts if we're below 50% (cleanup)
+                if (percentage < 50) {
+                    this.budgetAlerts = { 50: false, 75: false, 90: false, 100: false };
+                    return;
+                }
+                
+                // Show alerts based on current percentage
+                // Only show one alert at the highest threshold reached
+                if (percentage >= 100) {
+                    if (!this.budgetAlerts[100]) {
+                        this.budgetAlerts[100] = true;
+                        const exceeded = Math.round((this.totalExpenses - this.budget) * 100) / 100;
+                        this.displayNotification(
+                            `⚠️ Budget Exceeded by ${this.getCurrencySymbol()}${exceeded.toFixed(2)}!`,
+                            'warning',
+                            5000
+                        );
+                    }
+                    // Reset lower thresholds
+                    this.budgetAlerts[90] = false;
+                    this.budgetAlerts[75] = false;
+                    this.budgetAlerts[50] = false;
+                } else if (percentage >= 90) {
+                    if (!this.budgetAlerts[90]) {
+                        this.budgetAlerts[90] = true;
+                        const remaining = Math.round((this.budget - this.totalExpenses) * 100) / 100;
+                        this.displayNotification(
+                            `⚠️ You have used 90% of your budget. Only ${this.getCurrencySymbol()}${remaining.toFixed(2)} remaining!`,
+                            'warning',
+                            4000
+                        );
+                    }
+                    // Reset lower thresholds
+                    this.budgetAlerts[75] = false;
+                    this.budgetAlerts[50] = false;
+                    this.budgetAlerts[100] = false;
+                } else if (percentage >= 75) {
+                    if (!this.budgetAlerts[75]) {
+                        this.budgetAlerts[75] = true;
+                        this.displayNotification(
+                            '📊 You have used 75% of your budget.',
+                            'info',
+                            3000
+                        );
+                    }
+                    // Reset other thresholds
+                    this.budgetAlerts[50] = false;
+                } else if (percentage >= 50) {
+                    if (!this.budgetAlerts[50]) {
+                        this.budgetAlerts[50] = true;
+                        this.displayNotification(
+                            '💰 You have used 50% of your budget.',
+                            'info',
+                            3000
+                        );
+                    }
                 }
             },
             
@@ -1258,18 +1309,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // ===== CALCULATIONS (OPTIMIZED) =====
             getFrequencyMultipliers() {
-                // Use actual days in current month for more accurate calculations
-                const now = new Date();
-                const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-                const weeksInCurrentMonth = daysInCurrentMonth / 7;
-                
+                // Use standard multipliers based on average days per month (365.25 days/year / 12 months)
+                // This ensures consistent calculations regardless of the current month
                 return {
-                    daily: daysInCurrentMonth,           // Actual days in current month
-                    weekly: weeksInCurrentMonth,         // Actual weeks in current month
-                    fortnightly: weeksInCurrentMonth / 2, // Fortnights in current month
-                    monthly: 1,
-                    quarterly: 1/3,                      // 4 quarters / 12 months
-                    yearly: 1/12                         // 1 year / 12 months
+                    daily: 30.4375,                     // 365.25 days / 12 months
+                    weekly: 4.34821,                    // 365.25 days / 7 days per week / 12 months
+                    fortnightly: 2.17411,               // 365.25 days / 14 days per fortnight / 12 months
+                    monthly: 1,                         // 1 month
+                    quarterly: 0.33333,                 // 4 quarters / 12 months = 1/3
+                    yearly: 0.08333                     // 1 year / 12 months = 1/12
                 };
             },
             
@@ -1277,14 +1325,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const multipliers = this.getFrequencyMultipliers();
                 const multiplier = multipliers[frequency];
                 if (multiplier === undefined) return amount;
-                return amount * multiplier;
+                // Use proper rounding to avoid floating-point precision issues
+                return Math.round(amount * multiplier * 100) / 100;
             },
             
             convertFromMonthly(amount, frequency) {
                 const multipliers = this.getFrequencyMultipliers();
                 const multiplier = multipliers[frequency];
                 if (multiplier === undefined || multiplier === 0) return amount;
-                return amount / multiplier;
+                // Use proper rounding to avoid floating-point precision issues
+                return Math.round((amount / multiplier) * 100) / 100;
             },
             
             updateTotalExpenses() {
@@ -1292,11 +1342,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 this.expenses.forEach(expense => {
                     const amount = parseFloat(expense.amount) || 0;
-                    monthlyEquivalent += this.convertToMonthly(amount, expense.frequency);
+                    if (amount > 0) {
+                        monthlyEquivalent += this.convertToMonthly(amount, expense.frequency);
+                    }
                 });
 
-                this.totalExpenses = parseFloat(monthlyEquivalent.toFixed(2));
-                this.remainingBalance = parseFloat((parseFloat(this.budget) - this.totalExpenses).toFixed(2));
+                // Round to 2 decimal places to avoid floating-point precision issues
+                this.totalExpenses = Math.round(monthlyEquivalent * 100) / 100;
+                
+                // Calculate remaining balance
+                const budgetAmount = parseFloat(this.budget) || 0;
+                this.remainingBalance = Math.round((budgetAmount - this.totalExpenses) * 100) / 100;
             },
             
             updateDeductions() {
@@ -1323,12 +1379,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const multipliers = this.getFrequencyMultipliers();
                 
                 return {
-                    daily: parseFloat((this.calculateDeductions('daily') * multipliers.daily).toFixed(2)),
-                    weekly: parseFloat((this.calculateDeductions('weekly') * multipliers.weekly).toFixed(2)),
-                    fortnightly: parseFloat((this.calculateDeductions('fortnightly') * multipliers.fortnightly).toFixed(2)),
+                    daily: Math.round((this.calculateDeductions('daily') * multipliers.daily) * 100) / 100,
+                    weekly: Math.round((this.calculateDeductions('weekly') * multipliers.weekly) * 100) / 100,
+                    fortnightly: Math.round((this.calculateDeductions('fortnightly') * multipliers.fortnightly) * 100) / 100,
                     monthly: this.calculateDeductions('monthly'),
-                    quarterly: parseFloat((this.calculateDeductions('quarterly') * multipliers.quarterly).toFixed(2)),
-                    yearly: parseFloat((this.calculateDeductions('yearly') * multipliers.yearly).toFixed(2)),
+                    quarterly: Math.round((this.calculateDeductions('quarterly') * multipliers.quarterly) * 100) / 100,
+                    yearly: Math.round((this.calculateDeductions('yearly') * multipliers.yearly) * 100) / 100,
                     total: this.totalExpenses
                 };
             },
@@ -1542,7 +1598,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return {
                     totalExpenses: this.totalExpenses,
                     expenseCount: this.expenses.length,
-                    averageExpense: parseFloat((this.totalExpenses / this.expenses.length).toFixed(2)),
+                    averageExpense: Math.round((this.totalExpenses / this.expenses.length) * 100) / 100,
                     highestExpense: sortedByAmount[0] ? {
                         name: sortedByAmount[0].expense.name,
                         amount: sortedByAmount[0].monthlyAmount,
@@ -1553,8 +1609,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         amount: sortedByAmount[sortedByAmount.length - 1].monthlyAmount
                     } : null,
                     projectedMonthly: this.totalExpenses,
-                    dailyAverage: parseFloat((this.totalExpenses / this.getFrequencyMultipliers().daily).toFixed(2)),
-                    weeklyAverage: parseFloat((this.totalExpenses / this.getFrequencyMultipliers().weekly).toFixed(2))
+                    dailyAverage: Math.round((this.totalExpenses / this.getFrequencyMultipliers().daily) * 100) / 100,
+                    weeklyAverage: Math.round((this.totalExpenses / this.getFrequencyMultipliers().weekly) * 100) / 100
                 };
             },
             
@@ -1670,6 +1726,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 return breakdown.sort((a, b) => b.amount - a.amount);
             },
             
+            getMonthlyComparison() {
+                if (this.spendingHistory.length < 2) {
+                    return null;
+                }
+                
+                // Get last two months
+                const lastMonth = this.spendingHistory[this.spendingHistory.length - 1];
+                const previousMonth = this.spendingHistory[this.spendingHistory.length - 2];
+                
+                const lastMonthAmount = lastMonth ? lastMonth.total : 0;
+                const previousMonthAmount = previousMonth ? previousMonth.total : 0;
+                
+                let difference = lastMonthAmount - previousMonthAmount;
+                let percentageChange = previousMonthAmount > 0 
+                    ? ((difference / previousMonthAmount) * 100) 
+                    : (lastMonthAmount > 0 ? 100 : 0);
+                
+                return {
+                    lastMonth: {
+                        amount: lastMonthAmount,
+                        date: lastMonth ? lastMonth.month : new Date().toISOString().substring(0, 7)
+                    },
+                    previousMonth: {
+                        amount: previousMonthAmount,
+                        date: previousMonth ? previousMonth.month : null
+                    },
+                    difference: Math.round(difference * 100) / 100,
+                    percentageChange: Math.round(percentageChange * 100) / 100,
+                    trend: difference > 0 ? 'up' : difference < 0 ? 'down' : 'stable'
+                };
+            },
+            
             // ===== SVG ICON HELPER =====
             getSvgIcon(name, size = 16, color = 'currentColor') {
                 const icons = {
@@ -1708,8 +1796,9 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             
             // ===== NOTIFICATIONS =====
-            displayNotification(message, type) {
+            displayNotification(message, type, duration) {
                 type = type || 'error';
+                duration = duration || 4000;
                 const notification = document.createElement('div');
                 notification.className = 'notification ' + type + '-notification';
                 notification.setAttribute('role', 'alert');
@@ -1729,7 +1818,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     setTimeout(() => {
                         if (notification.parentNode) notification.parentNode.removeChild(notification);
                     }, 300);
-                }, 4000);
+                }, duration);
 
                 notification.addEventListener('click', () => {
                     notification.style.opacity = '0';
@@ -2142,6 +2231,69 @@ document.addEventListener('DOMContentLoaded', function() {
                 event.target.value = '';
             },
             
+            exportToCSV() {
+                try {
+                    if (this.expenses.length === 0) {
+                        this.displayError('No expenses to export.');
+                        return;
+                    }
+                    
+                    // Create CSV header
+                    const headers = ['Name', 'Amount', 'Frequency', 'Monthly Equivalent', 'Category', 'Day/Date', 'Start Date', 'Notes'];
+                    
+                    // Create CSV rows
+                    const rows = this.expenses.map(expense => {
+                        const category = this.getCategoryById(expense.category);
+                        const monthlyAmount = this.convertToMonthly(parseFloat(expense.amount), expense.frequency);
+                        const dayInfo = expense.frequency === 'monthly' 
+                            ? (expense.dayOfMonth || 1) 
+                            : (expense.day || '');
+                        
+                        return [
+                            `"${expense.name.replace(/"/g, '""')}"`,  // Escape quotes
+                            expense.amount.toFixed(2),
+                            expense.frequency,
+                            monthlyAmount.toFixed(2),
+                            `"${category.name.replace(/"/g, '""')}"`,
+                            dayInfo,
+                            expense.startDate || '',
+                            `"${(expense.notes || '').replace(/"/g, '""')}"`
+                        ];
+                    });
+                    
+                    // Create CSV content
+                    const csvContent = [
+                        headers.join(','),
+                        ...rows.map(row => row.join(','))
+                    ].join('\n');
+                    
+                    // Add summary section
+                    const summaryContent = `\n\nSummary\nTotal Monthly Expenses,${this.totalExpenses.toFixed(2)}\nBudget,${this.budget.toFixed(2)}\nRemaining Balance,${this.remainingBalance.toFixed(2)}\nBudget Utilization,${this.budgetUtilization.toFixed(1)}%\nExport Date,${new Date().tolocaleString()}`;
+                    
+                    const fullContent = csvContent + summaryContent;
+                    
+                    // Create blob and download
+                    const blob = new Blob([fullContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    
+                    if (link.download !== undefined) {
+                        const url = URL.createObjectURL(blob);
+                        link.setAttribute('href', url);
+                        link.setAttribute('download', 'expenses_' + new Date().toISOString().split('T')[0] + '.csv');
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        this.displaySuccess('Expenses exported to CSV successfully!');
+                    } else {
+                        this.displayError('CSV export not supported in this browser.');
+                    }
+                } catch (error) {
+                    console.error('CSV export error:', error);
+                    this.displayError('Error exporting to CSV. Please try again.');
+                }
+            },
+            
             // ===== UTILITIES =====
             getCategoryById(categoryId) {
                 return this.expenseCategories.find(cat => cat.id === categoryId) || this.expenseCategories.find(cat => cat.id === 'other');
@@ -2178,7 +2330,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (storedExpenses) {
                     try {
                         this.expenses = JSON.parse(storedExpenses);
-                        this.expenses = this.expenses.map(exp => ({
+                        this.expenses = this.validateExpenses(this.expenses).map(exp => ({
                             ...exp,
                             id: exp.id || generateId(),
                             notes: exp.notes || '',
@@ -2234,6 +2386,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.updateTotalExpenses();
                 this.updateDeductions();
                 this.updateUpcomingDeductions();
+            },
+            
+            validateExpenses(expenses) {
+                if (!Array.isArray(expenses)) return [];
+                
+                return expenses.filter(exp => {
+                    // Validate required fields
+                    if (!exp.name || typeof exp.name !== 'string') return false;
+                    if (typeof exp.amount !== 'number' || exp.amount <= 0) return false;
+                    if (!['daily', 'weekly', 'fortnightly', 'monthly', 'quarterly', 'yearly'].includes(exp.frequency)) return false;
+                    
+                    // Validate optional fields
+                    if (exp.dayOfMonth && (typeof exp.dayOfMonth !== 'number' || exp.dayOfMonth < 1 || exp.dayOfMonth > 31)) {
+                        exp.dayOfMonth = 1;
+                    }
+                    
+                    return true;
+                });
             },
             
             switchPage(page) {
@@ -2746,6 +2916,12 @@ document.addEventListener('DOMContentLoaded', function() {
             this.loadFromLocalStorage();
             this.initCurrencyConverter();
             this.initKeyboardShortcuts();
+            
+            // Reinitialize settings controls after Vue is fully mounted
+            this.$nextTick(() => {
+                console.log('Vue fully mounted, finalizing settings controls...');
+                initSettingsAppearance();
+            });
         },
         
         // ===== KEYBOARD SHORTCUTS =====
@@ -2799,7 +2975,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Ctrl/Cmd + / - Toggle theme
                 if ((e.ctrlKey || e.metaKey) && e.key === '/') {
                     e.preventDefault();
-                    document.getElementById('theme-toggle').click();
+                    const html = document.documentElement;
+                    const currentTheme = html.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    html.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    
+                    // Update settings toggle if it exists
+                    const settingsToggle = document.getElementById('settings-theme-toggle');
+                    if (settingsToggle) {
+                        settingsToggle.setAttribute('aria-pressed', newTheme === 'dark' ? 'true' : 'false');
+                    }
                     return;
                 }
                 

@@ -47,59 +47,7 @@
     <div id="app">
         <header class="app-header" role="banner">
             <h1>Budget Expense Tracker</h1>
-            <div class="header-controls">
-                <button class="color-picker-btn" id="color-picker-btn" aria-label="Customize theme color" aria-haspopup="true" aria-expanded="false">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-                </button>
-                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
-                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
-                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
-                </button>
-            </div>
         </header>
-
-        <!-- Color Picker Panel -->
-        <div class="color-picker-panel" id="color-picker-panel" role="dialog" aria-labelledby="color-picker-title" aria-hidden="true">
-            <div class="color-picker-header">
-                <h3 id="color-picker-title">Theme Color</h3>
-                <button class="color-picker-close" id="color-picker-close" aria-label="Close color picker">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                </button>
-            </div>
-            <div class="color-presets">
-                <button class="color-preset" data-color="#007bff" title="Blue">
-                    <span class="color-swatch" style="background: #007bff;"></span>
-                </button>
-                <button class="color-preset" data-color="#ff69b4" title="Hot Pink">
-                    <span class="color-swatch" style="background: #ff69b4;"></span>
-                </button>
-                <button class="color-preset" data-color="#ffb6c1" title="Creamy Pink">
-                    <span class="color-swatch" style="background: #ffb6c1;"></span>
-                </button>
-                <button class="color-preset" data-color="#28a745" title="Green">
-                    <span class="color-swatch" style="background: #28a745;"></span>
-                </button>
-                <button class="color-preset" data-color="#6f42c1" title="Purple">
-                    <span class="color-swatch" style="background: #6f42c1;"></span>
-                </button>
-                <button class="color-preset" data-color="#fd7e14" title="Orange">
-                    <span class="color-swatch" style="background: #fd7e14;"></span>
-                </button>
-                <button class="color-preset" data-color="#17a2b8" title="Teal">
-                    <span class="color-swatch" style="background: #17a2b8;"></span>
-                </button>
-                <button class="color-preset" data-color="#e83e8c" title="Pink">
-                    <span class="color-swatch" style="background: #e83e8c;"></span>
-                </button>
-            </div>
-            <div class="custom-color-section">
-                <label for="custom-color-input">Custom Color</label>
-                <div class="custom-color-wrapper">
-                    <input type="color" id="custom-color-input" value="#007bff">
-                    <span class="custom-color-value">#007bff</span>
-                </div>
-            </div>
-        </div>
 
         <!-- Dashboard Page -->
         <main v-show="currentPage === 'dashboard'" class="page-content">
@@ -551,6 +499,10 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
                             Backup
                         </button>
+                        <button @click="exportToCSV" class="btn-info">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                            Export CSV
+                        </button>
                         <label for="restore-import" class="btn-secondary" style="display: flex; align-items: center; justify-content: center;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
                             Restore
@@ -901,6 +853,55 @@
 
         <!-- Settings Page -->
         <main v-show="currentPage === 'settings'" class="page-content">
+            <!-- Appearance Settings -->
+            <section class="card appearance-card">
+                <div class="card-header">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+                    </div>
+                    <h2 class="card-title">Appearance</h2>
+                </div>
+                <div class="card-content">
+                    <div class="settings-list">
+                        <!-- Dark Mode Toggle -->
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-label">Dark Mode</span>
+                                <span class="settings-item-desc">Enable dark theme for easier viewing</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="settings-theme-toggle" aria-label="Toggle dark mode">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <!-- Theme Color Picker -->
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-label">Theme Color</span>
+                                <span class="settings-item-desc">Customize the primary theme color</span>
+                            </div>
+                            <div class="color-picker-wrapper">
+                                <div class="color-presets-inline">
+                                    <button class="color-preset-inline" data-color="#007bff" style="background: #007bff;" title="Blue" aria-label="Select blue color"></button>
+                                    <button class="color-preset-inline" data-color="#ff69b4" style="background: #ff69b4;" title="Hot Pink" aria-label="Select hot pink color"></button>
+                                    <button class="color-preset-inline" data-color="#ffb6c1" style="background: #ffb6c1;" title="Creamy Pink" aria-label="Select creamy pink color"></button>
+                                    <button class="color-preset-inline" data-color="#28a745" style="background: #28a745;" title="Green" aria-label="Select green color"></button>
+                                    <button class="color-preset-inline" data-color="#6f42c1" style="background: #6f42c1;" title="Purple" aria-label="Select purple color"></button>
+                                    <button class="color-preset-inline" data-color="#fd7e14" style="background: #fd7e14;" title="Orange" aria-label="Select orange color"></button>
+                                    <button class="color-preset-inline" data-color="#17a2b8" style="background: #17a2b8;" title="Teal" aria-label="Select teal color"></button>
+                                    <button class="color-preset-inline" data-color="#e83e8c" style="background: #e83e8c;" title="Pink" aria-label="Select pink color"></button>
+                                </div>
+                                <div class="custom-color-inline">
+                                    <input type="color" id="settings-custom-color" value="#007bff" aria-label="Custom color picker">
+                                    <span class="custom-color-value-inline">#007bff</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Data Management -->
             <section class="card settings-card">
                 <div class="card-header">

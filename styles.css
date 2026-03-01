@@ -573,6 +573,71 @@ button {
     font-size: 16px;
 }
 
+/* Settings page toggle switch already using standard .toggle-switch/.toggle-slider styles below */
+
+/* ============================================
+   INLINE COLOR PICKER
+   ============================================ */
+
+.color-picker-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    align-items: flex-start;
+}
+
+.color-presets-inline {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.color-preset-inline {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+
+.color-preset-inline:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow);
+}
+
+.color-preset-inline.active {
+    border-color: var(--text-color);
+    transform: scale(1.15);
+}
+
+.custom-color-inline {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+#settings-custom-color {
+    width: 50px;
+    height: 40px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color var(--transition);
+}
+
+#settings-custom-color:hover {
+    border-color: var(--primary-color);
+}
+
+.custom-color-value-inline {
+    font-family: monospace;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    min-width: 70px;
+}
+
 /* ============================================
    SUMMARY GRID
    ============================================ */
