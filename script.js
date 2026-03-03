@@ -2,7 +2,7 @@
 // Optimized and enhanced with modern features
 
 // ===== PRODUCTION-SAFE LOGGER =====
-const ENABLE_DEBUG = false; // Set to true only during development
+const ENABLE_DEBUG = true; // Set to true only during development
 const Logger = {
     log: (message, data) => {
         if (ENABLE_DEBUG) console.log(message, data || '');
@@ -160,8 +160,8 @@ const InputSanitizer = {
 const AccessibilityUtils = {
     // Announce message to screen readers
     announce(message, priority = 'polite') {
-        const announcer = document.getElementById('sr-announcer');
-        const announcerAssertive = document.getElementById('sr-announcer-assertive');
+        const announcer = document.getElementById('sr-announcements');
+        const announcerAssertive = document.getElementById('sr-alerts');
         
         if (priority === 'assertive' && announcerAssertive) {
             announcerAssertive.textContent = '';
@@ -1275,12 +1275,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Category modal
             showAddCategoryModal: false,
-            editingCategory: null,
-            newCategory: {
-                name: '',
-                color: '#636e72',
-                icon: 'ellipsis-h'
-            },
             categoryColors: [
                 '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7',
                 '#fd79a8', '#00b894', '#a29bfe', '#e17055', '#636e72',
@@ -2407,7 +2401,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         };
                     }
                     
-                    const monthlyAmount = this.getMonthlyEquivalent(expense.amount, expense.frequency);
+                    const monthlyAmount = this.convertToMonthly(parseFloat(expense.amount), expense.frequency);
                     categoryTrends[expense.category].total += monthlyAmount;
                     categoryTrends[expense.category].count += 1;
                 });
@@ -2587,28 +2581,39 @@ document.addEventListener('DOMContentLoaded', function() {
             
             saveExpenses() {
                 try {
-                    if (StorageUtils.canStore('expenses', JSON.stringify(this.expenses))) {
-                        localStorage.setItem('expenses', JSON.stringify(this.expenses));
-                        Logger.log('Expenses saved successfully');
-                    } else {
-                        Logger.warn('Storage quota may be exceeded');
-                        // Try to compress data if it's large
-                        const expensesStr = JSON.stringify(this.expenses);
-                        if (expensesStr.length > 102400) { // > 100KB
-                            const minified = DataCompressor.minifyJSON(expensesStr);
-                            if (minified.length < expensesStr.length) {
-                                localStorage.setItem('expenses', minified);
-                                Logger.log(`Data compressed by ${DataCompressor.getCompressionRatio(expensesStr, minified)}%`);
-                            }
-                        }
-                    }
+                    const expensesStr = JSON.stringify(this.expenses);
+                    
+                    // Always try to save directly first
+                    localStorage.setItem('expenses', expensesStr);
+                    Logger.log('Expenses saved successfully. Count:', this.expenses.length);
+                    
                 } catch (error) {
-                    ErrorHandler.handle(error, 'saveExpenses', () => {
-                        // Fallback: try to save with older expenses removed
-                        const recentExpenses = this.expenses.slice(-100);
-                        localStorage.setItem('expenses', JSON.stringify(recentExpenses));
-                        Logger.warn('Saved only recent expenses due to storage limitations');
-                    });
+                    Logger.error('Save error:', error);
+                    
+                    // If quota exceeded, try compression
+                    if (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                        try {
+                            const expensesStr = JSON.stringify(this.expenses);
+                            const minified = DataCompressor.minifyJSON(expensesStr);
+                            localStorage.setItem('expenses', minified);
+                            Logger.log('Data compressed and saved');
+                            return;
+                        } catch (compressError) {
+                            Logger.error('Compression save failed:', compressError);
+                        }
+                        
+                        // Last resort: save only recent expenses
+                        try {
+                            const recentExpenses = this.expenses.slice(-50);
+                            localStorage.setItem('expenses', JSON.stringify(recentExpenses));
+                            Logger.warn('Saved only recent 50 expenses due to storage limitations');
+                        } catch (finalError) {
+                            Logger.error('Failed to save expenses:', finalError);
+                            this.displayError('Storage full! Please export and clear some data.');
+                        }
+                    } else {
+                        ErrorHandler.handle(error, 'saveExpenses');
+                    }
                 }
             },
             
@@ -3322,7 +3327,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return expenses.filter(exp => {
                     // Validate required fields
                     if (!exp.name || typeof exp.name !== 'string') return false;
-                    if (typeof exp.amount !== 'number' || exp.amount <= 0) return false;
+                    
+                    // Handle amount that might be string or number
+                    const amount = parseFloat(exp.amount);
+                    if (isNaN(amount) || amount <= 0) return false;
+                    
+                    // Normalize amount to number
+                    exp.amount = amount;
+                    
                     if (!['daily', 'weekly', 'fortnightly', 'monthly', 'quarterly', 'yearly'].includes(exp.frequency)) return false;
                     
                     // Validate optional fields
