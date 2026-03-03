@@ -14,72 +14,355 @@
     cursor: pointer;
     transition: background 0.2s;
 }
-/* Batch Operations Toolbar */
-.batch-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: var(--color-bg-secondary, #f5f5f5);
-    border-radius: 6px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-.batch-toolbar .form-input,
-.batch-toolbar select {
-    min-width: 120px;
-    padding: 0.3rem 0.6rem;
-    font-size: 1rem;
-}
-.batch-toolbar .btn-success {
-    background: var(--color-success, #28a745);
-    color: #fff;
-    border: none;
-    padding: 0.4rem 1.1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.batch-toolbar .btn-success:disabled {
-    background: #b2dfb2;
-    cursor: not-allowed;
-}
-.batch-toolbar .btn-secondary {
-    background: var(--color-secondary, #e0e0e0);
-    color: #333;
-    border: none;
-    padding: 0.4rem 1.1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.batch-toolbar .btn-info {
-    background: var(--color-info, #17a2b8);
-    color: #fff;
-    border: none;
-    padding: 0.4rem 1.1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.batch-toolbar .batch-count {
-    margin-left: auto;
-    font-size: 0.98rem;
-    color: #555;
-}
+
+/* ============================================
+   BATCH OPERATIONS - MOBILE FIRST
+   ============================================ */
+
+/* Batch Toggle Button */
 .batch-toggle-btn {
     margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    transition: all 0.2s ease;
 }
+
+.batch-toggle-btn:active {
+    transform: scale(0.98);
+}
+
+/* Batch Checkbox - Larger touch target */
 .batch-checkbox {
-    display: inline-block;
-    margin-right: 0.7rem;
-    vertical-align: middle;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin-right: 0;
 }
+
 .batch-checkbox input[type="checkbox"] {
-    width: 1.1em;
-    height: 1.1em;
-    accent-color: var(--color-primary, #007bff);
+    width: 24px;
+    height: 24px;
+    accent-color: var(--primary-color);
     cursor: pointer;
+    border-radius: 4px;
+}
+
+/* Selected expense card highlight */
+.expense-card.selected {
+    border: 2px solid var(--primary-color);
+    background: rgba(0, 123, 255, 0.05);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+[data-theme="dark"] .expense-card.selected {
+    background: rgba(0, 123, 255, 0.1);
+}
+
+/* Batch Toolbar - Mobile First */
+.batch-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+/* Batch Header with count */
+.batch-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: var(--space-md);
+}
+
+.batch-title {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.batch-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 var(--space-sm);
+    background: var(--primary-color);
+    color: white;
+    border-radius: 14px;
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+}
+
+/* Batch Actions Row */
+.batch-actions-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* Batch Action Select */
+.batch-action-select {
+    width: 100%;
+    min-height: 48px;
+    padding: var(--space-md);
+    font-size: 16px;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Batch Category Select */
+.batch-category-select {
+    width: 100%;
+    min-height: 48px;
+    padding: var(--space-md);
+    font-size: 16px;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--primary-color);
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Batch Buttons Row */
+.batch-buttons-row {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.batch-buttons-row button {
+    flex: 1;
+    min-width: 100px;
+    min-height: 48px;
+    padding: var(--space-md) var(--space-lg);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+}
+
+/* Quick Actions Row */
+.batch-quick-actions {
+    display: flex;
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-color);
+    margin-top: var(--space-md);
+}
+
+.batch-quick-actions button {
+    flex: 1;
+    min-height: 44px;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-sm);
+}
+
+/* Export Section */
+.batch-export-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-color);
+    margin-top: var(--space-md);
+}
+
+.batch-export-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.batch-export-buttons {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.batch-export-buttons button {
+    flex: 1;
+    min-width: 80px;
+    min-height: 44px;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-sm);
+}
+
+/* Desktop batch toolbar */
+@media (min-width: 768px) {
+    .batch-toolbar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: var(--space-md) var(--space-lg);
+    }
+    
+    .batch-header {
+        width: 100%;
+        flex: 0 0 100%;
+        padding-bottom: var(--space-sm);
+        margin-bottom: var(--space-sm);
+    }
+    
+    .batch-actions-row {
+        flex-direction: row;
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .batch-action-select,
+    .batch-category-select {
+        width: auto;
+        min-width: 150px;
+    }
+    
+    .batch-buttons-row {
+        flex-wrap: nowrap;
+    }
+    
+    .batch-buttons-row button {
+        min-width: auto;
+        flex: 0 0 auto;
+    }
+    
+    .batch-quick-actions {
+        width: auto;
+        padding-top: 0;
+        border-top: none;
+        margin-top: 0;
+        margin-left: auto;
+    }
+    
+    .batch-quick-actions button {
+        flex: 0 0 auto;
+        min-width: auto;
+    }
+    
+    .batch-export-section {
+        width: 100%;
+        flex: 0 0 100%;
+        flex-direction: row;
+        align-items: center;
+        padding-top: var(--space-sm);
+        margin-top: var(--space-sm);
+    }
+    
+    .batch-export-label {
+        margin-bottom: 0;
+    }
+    
+    .batch-export-buttons {
+        margin-left: auto;
+    }
+    
+    .batch-export-buttons button {
+        flex: 0 0 auto;
+        min-width: 100px;
+    }
+}
+
+/* Floating batch bar for mobile */
+@media (max-width: 767px) {
+    .batch-toolbar {
+        position: fixed;
+        bottom: 70px;
+        left: 0;
+        right: 0;
+        margin: 0;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+        z-index: 99;
+        max-height: 60vh;
+        overflow-y: auto;
+        animation: slideUpBatch 0.3s ease-out;
+    }
+    
+    @keyframes slideUpBatch {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    /* Add padding to expenses list when batch mode is active */
+    .expenses-list {
+        padding-bottom: 200px;
+    }
+    
+    .batch-checkbox input[type="checkbox"] {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+/* Batch mode exit button */
+.batch-exit-btn {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-color);
+    border: none;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.batch-exit-btn:hover {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .batch-exit-btn {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .batch-exit-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Select All / Deselect All buttons */
+.batch-select-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.batch-select-actions button {
+    min-height: 36px;
+    padding: var(--space-xs) var(--space-md);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-sm);
 }
 .sr-only {
     position: absolute;
@@ -296,180 +579,404 @@ body {
 }
 
 /* ============================================
-   HEADER CONTROLS
+   BATCH MODE STYLES - OPTIMIZED
    ============================================ */
 
-.header-controls {
-    position: absolute;
-    top: calc(var(--space-lg) + env(safe-area-inset-top, 0px));
-    right: var(--space-lg);
+.batch-toggle-btn {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    z-index: 160;
-}
-
-/* ============================================
-   THEME TOGGLE (in header)
-   ============================================ */
-
-.theme-toggle {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-full);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: none;
-    transition: var(--transition);
-    padding: 0;
-    flex-shrink: 0;
-}
-
-.theme-toggle:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.05);
-}
-
-.theme-toggle:active {
-    transform: scale(0.95);
-}
-
-.theme-toggle i {
-    font-size: 18px;
-}
-
-/* ============================================
-   COLOR PICKER BUTTON
-   ============================================ */
-
-.color-picker-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-full);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: none;
-    transition: var(--transition);
-    padding: 0;
-    flex-shrink: 0;
-}
-
-.color-picker-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.05);
-}
-
-.color-picker-btn:active {
-    transform: scale(0.95);
-}
-
-.color-picker-btn i {
-    font-size: 18px;
-}
-
-/* ============================================
-   COLOR PICKER PANEL
-   ============================================ */
-
-.color-picker-panel {
-    position: fixed;
-    top: 70px;
-    right: var(--space-lg);
+    padding: var(--space-sm) var(--space-md);
     background: var(--card-bg);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-lg);
-    padding: var(--space-lg);
-    z-index: 200;
-    min-width: 240px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: var(--transition);
     border: 1px solid var(--border-color);
-    pointer-events: none;
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    margin-bottom: var(--space-md);
 }
 
-.color-picker-panel.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    pointer-events: auto;
+.batch-toggle-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
-.color-picker-header {
+/* Compact Batch Toolbar */
+.batch-toolbar-compact {
+    background: var(--card-bg);
+    border: 2px solid var(--primary-color);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-lg);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+.batch-header-compact {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-lg);
-    padding-bottom: var(--space-md);
-    border-bottom: 1px solid var(--border-color);
+    padding: var(--space-sm) var(--space-md);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #0056b3 100%);
 }
 
-.color-picker-header h3 {
-    margin: 0;
-    font-size: var(--font-size-base);
-    font-weight: 600;
-    color: var(--text-color);
+.batch-selection-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
 }
 
-.color-picker-close {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-full);
-    border: none;
-    background: rgba(0, 0, 0, 0.05);
-    color: var(--text-secondary);
-    cursor: pointer;
+.batch-count-badge {
+    background: white;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    font-weight: 700;
+    min-width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: var(--transition);
-    padding: 0;
+    border-radius: 50%;
 }
 
-[data-theme="dark"] .color-picker-close {
-    background: rgba(255, 255, 255, 0.1);
+.batch-selected-text {
+    color: white;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
 }
 
-.color-picker-close:hover {
-    background: rgba(0, 0, 0, 0.1);
-    color: var(--text-color);
+.batch-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
 }
 
-[data-theme="dark"] .color-picker-close:hover {
+.batch-action-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: rgba(255, 255, 255, 0.2);
-}
-
-.color-presets {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-sm);
-    margin-bottom: var(--space-lg);
-}
-
-.color-preset {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: var(--radius-sm);
-    border: 2px solid transparent;
+    border: none;
+    border-radius: var(--radius);
+    color: white;
     cursor: pointer;
-    padding: 3px;
-    background: transparent;
-    transition: var(--transition);
+    transition: background var(--transition);
 }
 
-.color-preset:hover {
-    transform: scale(1.1);
+.batch-action-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.batch-done-btn {
+    background: white;
+    color: var(--primary-color);
+    border: none;
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    margin-left: var(--space-sm);
+}
+
+.batch-done-btn:hover {
+    background: #f0f0f0;
+    transform: scale(1.02);
+}
+
+/* Action Buttons Row */
+.batch-actions-compact {
+    display: flex;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+}
+
+.batch-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    border: none;
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    min-height: 44px;
+}
+
+.batch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.batch-btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.batch-btn-danger:hover:not(:disabled) {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+.batch-btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.batch-btn-primary:hover:not(:disabled) {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.batch-btn-secondary {
+    background: var(--text-secondary);
+    color: white;
+}
+
+.batch-btn-secondary:hover:not(:disabled) {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+/* Export Dropdown */
+.batch-export-dropdown {
+    position: relative;
+    flex: 1;
+}
+
+.batch-export-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: var(--space-xs);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    min-width: 120px;
+    overflow: hidden;
+}
+
+.export-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: background var(--transition);
+    text-align: left;
+}
+
+.export-menu-item:hover {
+    background: var(--bg-secondary);
+}
+
+/* Batch Category Modal */
+.batch-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--space-md);
+}
+
+.batch-modal {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.batch-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.batch-modal-header h4 {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    color: var(--text-primary);
+}
+
+.batch-modal-close {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+}
+
+.batch-modal-close:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.batch-modal-body {
+    padding: var(--space-md);
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.batch-modal-info {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0 0 var(--space-md) 0;
+}
+
+.batch-category-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+}
+
+.batch-category-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+    text-align: left;
+}
+
+.batch-category-option:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.category-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Batch Checkbox on Expense Cards */
+.batch-checkbox {
+    position: absolute;
+    top: var(--space-sm);
+    left: var(--space-sm);
+    z-index: 10;
+}
+
+.batch-checkbox input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.expense-card.selected {
+    background: rgba(0, 123, 255, 0.08);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.expense-card.selected::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+/* Mobile Optimizations for Batch Mode */
+@media (max-width: 600px) {
+    .batch-actions-compact {
+        flex-wrap: wrap;
+    }
+    
+    .batch-btn {
+        min-width: calc(50% - var(--space-sm));
+        flex: 0 0 calc(50% - var(--space-sm));
+    }
+    
+    .batch-btn span {
+        display: none;
+    }
+    
+    .batch-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .batch-export-dropdown {
+        flex: 0 0 calc(50% - var(--space-sm));
+        min-width: calc(50% - var(--space-sm));
+    }
+    
+    .batch-category-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .batch-header-compact {
+        padding: var(--space-xs) var(--space-sm);
+    }
+    
+    .batch-selected-text {
+        font-size: 0.75rem;
+    }
+    
+    .batch-count-badge {
+        font-size: 1rem;
+        min-width: 24px;
+        height: 24px;
+    }
+}
+
+/* Tablet and Desktop */
+@media (min-width: 601px) {
+    .batch-actions-compact {
+        flex-wrap: nowrap;
+    }
+    
+    .batch-btn {
+        flex: 1;
+    }
 }
 
 .color-preset.active {

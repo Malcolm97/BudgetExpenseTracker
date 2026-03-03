@@ -510,34 +510,88 @@
 
                     <!-- Expenses List -->
                     <div v-else class="expenses-list">
-                                            <!-- Batch Operations Toolbar -->
-                                            <div v-if="batchMode" class="batch-toolbar">
-                                                <button @click="toggleBatchMode" class="btn-secondary">Exit Batch Mode</button>
-                                                <button @click="selectAllFiltered" class="btn-info">Select All</button>
-                                                <button @click="deselectAll" class="btn-secondary">Deselect All</button>
-                                                <select v-model="batchAction" class="form-input batch-action-select">
-                                                    <option value="">Batch Action</option>
-                                                    <option value="delete">Delete Selected</option>
-                                                    <option value="category">Change Category</option>
-                                                    <option value="export-json">Export as JSON</option>
-                                                    <option value="export-excel">Export as Excel</option>
-                                                    <option value="export-pdf">Export as PDF</option>
-                                                </select>
-                                                <select v-if="batchAction === 'category'" v-model="batchCategoryTarget" class="form-input batch-category-select">
-                                                    <option value="">Select Category</option>
-                                                    <option v-for="cat in expenseCategories" :value="cat.id" :key="cat.id">{{ cat.name }}</option>
-                                                </select>
-                                                <button @click="executeBatchAction" class="btn-success" :disabled="!batchAction || (batchAction === 'category' && !batchCategoryTarget)">Apply</button>
-                                                                    <!-- Main Export Buttons -->
-                                                                    <div class="export-toolbar">
-                                                                        <button @click="exportToCSV" class="btn-secondary">Export All CSV</button>
-                                                                        <button @click="exportAllToExcel" class="btn-secondary">Export All Excel</button>
-                                                                        <button @click="exportAllToPDF" class="btn-secondary">Export All PDF</button>
-                                                                    </div>
-                                                <span class="batch-count">Selected: {{ selectedExpenseIds.size }}</span>
+                                        <!-- Batch Mode Toggle Button -->
+                                        <button v-if="!batchMode && filteredExpenses.length > 0" @click="toggleBatchMode" class="batch-toggle-btn">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                                            Batch
+                                        </button>
+                                        
+                                        <!-- Batch Operations Toolbar - Optimized -->
+                                        <div v-if="batchMode" class="batch-toolbar-compact">
+                                            <!-- Header Row -->
+                                            <div class="batch-header-compact">
+                                                <div class="batch-selection-info">
+                                                    <span class="batch-count-badge">{{ selectedExpenseIds.size }}</span>
+                                                    <span class="batch-selected-text">selected</span>
+                                                </div>
+                                                <div class="batch-header-actions">
+                                                    <button @click="selectAllFiltered" class="batch-action-btn" title="Select All">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                                    </button>
+                                                    <button @click="deselectAll" class="batch-action-btn" title="Clear Selection">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                                                    </button>
+                                                    <button @click="toggleBatchMode" class="batch-done-btn">Done</button>
+                                                </div>
                                             </div>
-                                            <button v-if="!batchMode && filteredExpenses.length > 0" @click="toggleBatchMode" class="btn-secondary batch-toggle-btn">Batch Mode</button>
-                        <div v-for="(expense, index) in filteredExpenses" :key="expense.id || index" class="expense-card">
+                                            
+                                            <!-- Action Buttons Row -->
+                                            <div class="batch-actions-compact">
+                                                <button @click="executeBatchDelete" class="batch-btn batch-btn-danger" :disabled="selectedExpenseIds.size === 0" title="Delete Selected">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                                    <span>Delete</span>
+                                                </button>
+                                                
+                                                <button @click="showBatchCategoryModal = true" class="batch-btn batch-btn-primary" :disabled="selectedExpenseIds.size === 0" title="Change Category">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-5.5 9h11z"/><circle cx="17.5" cy="17.5" r="4.5"/><path d="M3 13.5h8v8H3z"/></svg>
+                                                    <span>Category</span>
+                                                </button>
+                                                
+                                                <div class="batch-export-dropdown">
+                                                    <button @click="showBatchExportMenu = !showBatchExportMenu" class="batch-btn batch-btn-secondary" :disabled="selectedExpenseIds.size === 0" title="Export Selected">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                                                        <span>Export</span>
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                                    </button>
+                                                    <div v-if="showBatchExportMenu" class="batch-export-menu">
+                                                        <button @click="executeBatchExport('json'); showBatchExportMenu = false" class="export-menu-item">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                                                            JSON
+                                                        </button>
+                                                        <button @click="executeBatchExport('excel'); showBatchExportMenu = false" class="export-menu-item">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                                                            Excel
+                                                        </button>
+                                                        <button @click="executeBatchExport('pdf'); showBatchExportMenu = false" class="export-menu-item">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                                                            PDF
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Batch Category Modal -->
+                                        <div v-if="showBatchCategoryModal" class="batch-modal-overlay" @click.self="showBatchCategoryModal = false">
+                                            <div class="batch-modal">
+                                                <div class="batch-modal-header">
+                                                    <h4>Change Category</h4>
+                                                    <button @click="showBatchCategoryModal = false" class="batch-modal-close">
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                                                    </button>
+                                                </div>
+                                                <div class="batch-modal-body">
+                                                    <p class="batch-modal-info">Move {{ selectedExpenseIds.size }} expense(s) to:</p>
+                                                    <div class="batch-category-grid">
+                                                        <button v-for="cat in expenseCategories" :key="cat.id" @click="executeBatchCategoryChange(cat.id)" class="batch-category-option">
+                                                            <span class="category-dot" :style="{ backgroundColor: cat.color }"></span>
+                                                            <span>{{ cat.name }}</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                        <div v-for="(expense, index) in filteredExpenses" :key="expense.id || index" class="expense-card" :class="{ 'selected': batchMode && isExpenseSelected(expense.id) }">
                                                         <div v-if="batchMode" class="batch-checkbox">
                                                             <input type="checkbox" :id="'batch-' + expense.id" :checked="isExpenseSelected(expense.id)" @change="toggleSelectExpense(expense.id)">
                                                             <label :for="'batch-' + expense.id" class="sr-only">Select expense</label>

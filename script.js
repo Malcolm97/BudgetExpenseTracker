@@ -1204,6 +1204,8 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedExpenseIds: new Set(),
             batchAction: '',
             batchCategoryTarget: '',
+            showBatchCategoryModal: false,
+            showBatchExportMenu: false,
             
             // Frequency options (extended)
             frequencyOptions: [
@@ -3036,6 +3038,77 @@ document.addEventListener('DOMContentLoaded', function() {
                 doc.autoTable({ head: [columns], body: rows });
                 doc.save('expenses-batch-export.pdf');
                 this.displaySuccess(`${selectedExpenses.length} expense(s) exported as PDF!`);
+            },
+            
+            // ===== OPTIMIZED BATCH OPERATIONS =====
+            executeBatchDelete() {
+                if (this.selectedExpenseIds.size === 0) {
+                    this.displayError('Please select at least one expense');
+                    return;
+                }
+                
+                const count = this.selectedExpenseIds.size;
+                this.showConfirmationModal(
+                    'Delete Expenses',
+                    `Are you sure you want to delete ${count} expense(s)? This action cannot be undone.`,
+                    () => {
+                        this.expenses = this.expenses.filter(e => !this.selectedExpenseIds.has(e.id));
+                        this.deselectAll();
+                        this.batchMode = false;
+                        this.saveExpenses();
+                        this.updateTotalExpenses();
+                        this.updateDeductions();
+                        this.updateUpcomingDeductions();
+                        this.displaySuccess(`${count} expense(s) deleted!`);
+                    }
+                );
+            },
+            
+            executeBatchCategoryChange(categoryId) {
+                if (this.selectedExpenseIds.size === 0) {
+                    this.displayError('Please select at least one expense');
+                    return;
+                }
+                
+                if (!categoryId) {
+                    this.displayError('Please select a category');
+                    return;
+                }
+                
+                const count = this.selectedExpenseIds.size;
+                const categoryName = this.getCategoryById(categoryId).name;
+                
+                this.expenses.forEach(expense => {
+                    if (this.selectedExpenseIds.has(expense.id)) {
+                        expense.category = categoryId;
+                    }
+                });
+                
+                this.saveExpenses();
+                this.showBatchCategoryModal = false;
+                this.deselectAll();
+                this.batchMode = false;
+                this.displaySuccess(`${count} expense(s) moved to ${categoryName}!`);
+            },
+            
+            executeBatchExport(format) {
+                if (this.selectedExpenseIds.size === 0) {
+                    this.displayError('Please select at least one expense');
+                    return;
+                }
+                
+                const selectedExpenses = this.expenses.filter(e => this.selectedExpenseIds.has(e.id));
+                
+                if (format === 'json') {
+                    this.exportSelectedExpensesJSON(selectedExpenses);
+                } else if (format === 'excel') {
+                    this.exportSelectedExpensesExcel(selectedExpenses);
+                } else if (format === 'pdf') {
+                    this.exportSelectedExpensesPDF(selectedExpenses);
+                }
+                
+                this.deselectAll();
+                this.batchMode = false;
             },
             
             // ===== IMPORT/EXPORT =====
