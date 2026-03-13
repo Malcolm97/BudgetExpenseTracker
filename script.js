@@ -1015,47 +1015,12 @@ document.addEventListener('DOMContentLoaded', function() {
     updateOnlineStatus();
 
     // ===== PWA INSTALLATION =====
-    let deferredPrompt;
+    // PWA install is now handled by the Vue app via initPWAInstall() method
+    // The old install banner is kept for backward compatibility but is hidden by default
     const installBanner = document.getElementById('pwa-install-banner');
-    const installBtn = document.getElementById('install-btn');
-    const dismissBtn = document.getElementById('dismiss-btn');
-
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
-        if (installBanner) installBanner.style.display = 'none';
+    if (installBanner) {
+        installBanner.style.display = 'none';
     }
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('PWA: Install prompt triggered');
-        e.preventDefault();
-        deferredPrompt = e;
-        setTimeout(() => {
-            const dismissed = localStorage.getItem('pwa-install-dismissed');
-            if (!dismissed && installBanner) installBanner.style.display = 'block';
-        }, 3000);
-    });
-
-    if (installBtn) {
-        installBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log('PWA: User response:', outcome);
-            deferredPrompt = null;
-            if (installBanner) installBanner.style.display = 'none';
-        });
-    }
-
-    if (dismissBtn) {
-        dismissBtn.addEventListener('click', () => {
-            if (installBanner) installBanner.style.display = 'none';
-            localStorage.setItem('pwa-install-dismissed', 'true');
-        });
-    }
-
-    window.addEventListener('appinstalled', () => {
-        console.log('PWA: App installed successfully');
-        if (installBanner) installBanner.style.display = 'none';
-    });
 
     // ===== NUMERIC INPUT HANDLER (Remove leading zeros) =====
     function initNumericInputHandlers() {
@@ -1300,6 +1265,28 @@ document.addEventListener('DOMContentLoaded', function() {
             autoBackupEnabled: localStorage.getItem('autoBackupEnabled') !== 'false',
             lastBackupTime: null,
             
+            // Offline queue for pending operations
+            offlineQueue: [],
+            isOnline: navigator.onLine,
+            
+            // Auto-save state
+            autoSaveEnabled: true,
+            lastSaveTime: null,
+            pendingChanges: false,
+            
+            // Vue filter for capitalize
+            filters: {
+                capitalize: function(value) {
+                    if (!value) return '';
+                    value = value.toString();
+                    return value.charAt(0).toUpperCase() + value.slice(1);
+                }
+            },
+            
+            // Data recovery
+            lastKnownGoodState: null,
+            recoveryAvailable: false,
+            
             // Savings tracking
             savingsTracking: {
                 fortnightly: 0,
@@ -1318,7 +1305,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 totalSavings: 0,
                 accumulationBreakdown: [],
                 annualTotalSavings: 0
-            }
+            },
+            
+            // PWA Install state
+            pwaInstallable: false,
+            pwaInstallStatus: 'not-installed', // 'not-installed', 'installable', 'installed', 'ios-manual'
+            deferredPWAPrompt: null,
+            pwaInstallLoading: false,
+            isIOSSafari: false,
+            isIOSChrome: false,
+            isIOSFirefox: false,
+            isIOSEdge: false,
+            isIOS: false,
+            isAndroid: false,
+            isStandalone: false,
+            pwaShowInstallPrompt: false,
+            pwaInstallDontAskAgain: false,
+            pwaInstallDismissed: false,
+            pwaVisitCount: 0,
+            pwaHasEngaged: false
         },
         methods: {
             // ===== CURRENCY =====
@@ -1725,6 +1730,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.checkBudgetAlerts();
                     this.checkCategoryAlerts();
                     this.recordMonthlySpending();
+                    
+                    // Track PWA engagement
+                    this.trackPWAEngagement();
                     
                 } catch (error) {
                     Logger.error('Error adding expense:', error);
@@ -3973,6 +3981,727 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.templates.splice(index, 1);
                 localStorage.setItem('templates', JSON.stringify(this.templates));
                 this.displaySuccess('Template deleted!');
+            },
+            
+            // ===== PWA INSTALL METHODS =====
+            initPWAInstall() {
+                // Detect device types
+                const userAgent = navigator.userAgent;
+                this.isIOS = /iPad|iPhone|iPod/.test(userAgent);
+                this.isAndroid = /Android/.test(userAgent);
+                
+                // Detect iOS browsers
+                const isSafari = /Safari/.test(userAgent) && !/CriOS|FxiOS|EdgiOS/.test(userAgent);
+                const isChromeIOS = /CriOS/.test(userAgent);
+                const isFirefoxIOS = /FxiOS/.test(userAgent);
+                const isEdgeIOS = /EdgiOS/.test(userAgent);
+                
+                this.isIOSSafari = this.isIOS && isSafari;
+                this.isIOSChrome = this.isIOS && isChromeIOS;
+                this.isIOSFirefox = this.isIOS && isFirefoxIOS;
+                this.isIOSEdge = this.isIOS && isEdgeIOS;
+                
+                // Check if app is already installed (standalone mode)
+                this.isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                    window.navigator.standalone === true ||
+                                    document.referrer.includes('android-app://');
+                
+                if (this.isStandalone) {
+                    this.pwaInstallStatus = 'installed';
+                    return;
+                }
+                
+                // Load user preferences
+                this.pwaInstallDontAskAgain = localStorage.getItem('pwaDontAskAgain') === 'true';
+                this.pwaInstallDismissed = localStorage.getItem('pwaInstallDismissed') === 'true';
+                this.pwaVisitCount = parseInt(localStorage.getItem('pwaVisitCount') || '0');
+                this.pwaHasEngaged = localStorage.getItem('pwaHasEngaged') === 'true';
+                
+                // Increment visit count
+                this.pwaVisitCount++;
+                localStorage.setItem('pwaVisitCount', this.pwaVisitCount.toString());
+                
+                // iOS devices need manual install instructions
+                if (this.isIOS) {
+                    this.pwaInstallStatus = 'ios-manual';
+                    // Show iOS prompt after 2 visits or if engaged
+                    if (!this.pwaInstallDontAskAgain && !this.pwaInstallDismissed && 
+                        (this.pwaVisitCount >= 2 || this.pwaHasEngaged)) {
+                        setTimeout(() => {
+                            this.pwaShowInstallPrompt = true;
+                        }, 2000);
+                    }
+                    return;
+                }
+                
+                // Listen for the beforeinstallprompt event (Android/Chrome/Samsung/Edge)
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    console.log('PWA: Install prompt triggered');
+                    e.preventDefault();
+                    this.deferredPWAPrompt = e;
+                    this.pwaInstallStatus = 'installable';
+                    this.pwaInstallable = true;
+                    
+                    // Show install prompt after delay if not dismissed
+                    if (!this.pwaInstallDontAskAgain && !this.pwaInstallDismissed && 
+                        (this.pwaVisitCount >= 2 || this.pwaHasEngaged)) {
+                        setTimeout(() => {
+                            this.pwaShowInstallPrompt = true;
+                        }, 1500);
+                    }
+                });
+                
+                // Listen for app installed event
+                window.addEventListener('appinstalled', () => {
+                    console.log('PWA: App installed successfully');
+                    this.pwaInstallStatus = 'installed';
+                    this.pwaInstallable = false;
+                    this.pwaInstallLoading = false;
+                    this.pwaShowInstallPrompt = false;
+                    this.deferredPWAPrompt = null;
+                    localStorage.removeItem('pwaInstallDismissed');
+                    this.displaySuccess('App installed successfully! You can now access it from your home screen.');
+                });
+            },
+            
+            // Track user engagement for PWA install prompt timing
+            trackPWAEngagement() {
+                if (!this.pwaHasEngaged) {
+                    this.pwaHasEngaged = true;
+                    localStorage.setItem('pwaHasEngaged', 'true');
+                    
+                    // Show install prompt shortly after engagement
+                    if (!this.pwaInstallDontAskAgain && !this.pwaInstallDismissed && !this.isStandalone) {
+                        setTimeout(() => {
+                            this.pwaShowInstallPrompt = true;
+                        }, 1000);
+                    }
+                }
+            },
+            
+            // Dismiss install prompt
+            dismissPWAInstall(dontAskAgain = false) {
+                this.pwaShowInstallPrompt = false;
+                this.pwaInstallDismissed = true;
+                localStorage.setItem('pwaInstallDismissed', 'true');
+                
+                if (dontAskAgain) {
+                    this.pwaInstallDontAskAgain = true;
+                    localStorage.setItem('pwaDontAskAgain', 'true');
+                }
+            },
+            
+            async installPWA() {
+                // Handle iOS Safari - show instructions
+                if (this.isIOSSafari) {
+                    this.showIOSInstallInstructions();
+                    return;
+                }
+                
+                if (!this.deferredPWAPrompt) {
+                    this.displayError('Installation not available. Try refreshing the page.');
+                    return;
+                }
+                
+                this.pwaInstallLoading = true;
+                
+                try {
+                    this.deferredPWAPrompt.prompt();
+                    const { outcome } = await this.deferredPWAPrompt.userChoice;
+                    console.log('PWA: User response:', outcome);
+                    
+                    if (outcome === 'accepted') {
+                        this.displaySuccess('Installing app...');
+                    } else {
+                        this.pwaInstallLoading = false;
+                        this.displayNotification('Installation cancelled. You can install later from settings.', 'info', 3000);
+                    }
+                    
+                    this.deferredPWAPrompt = null;
+                } catch (error) {
+                    console.error('PWA install error:', error);
+                    this.pwaInstallLoading = false;
+                    this.displayError('Failed to install app. Please try again.');
+                }
+            },
+            
+            showIOSInstallInstructions() {
+                // Create a modal with iOS install instructions
+                const existingModal = document.querySelector('.ios-install-modal');
+                if (existingModal) existingModal.remove();
+                
+                const modal = document.createElement('div');
+                modal.className = 'ios-install-modal';
+                modal.innerHTML = `
+                    <div class="ios-install-content">
+                        <h3>Install on iOS</h3>
+                        <p>To install this app on your iOS device:</p>
+                        <ol>
+                            <li>Tap the <strong>Share</strong> button <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> in Safari</li>
+                            <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                            <li>Tap <strong>"Add"</strong> in the top right corner</li>
+                        </ol>
+                        <button class="btn-primary" onclick="this.closest('.ios-install-modal').remove()">Got it!</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Close on backdrop click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.remove();
+                });
+                
+                // Close on escape
+                const handleEscape = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', handleEscape);
+                    }
+                };
+                document.addEventListener('keydown', handleEscape);
+            },
+            
+            getPWAInstallStatus() {
+                if (this.pwaInstallStatus === 'installed') {
+                    return { text: 'Installed', icon: 'check-circle', class: 'installed' };
+                } else if (this.pwaInstallStatus === 'installable') {
+                    return { text: 'Available', icon: 'download', class: 'installable' };
+                } else if (this.pwaInstallStatus === 'ios-manual') {
+                    return { text: 'iOS Install', icon: 'info-circle', class: 'ios-manual' };
+                } else {
+                    return { text: 'Not Available', icon: 'info-circle', class: 'not-available' };
+                }
+            },
+            
+            isPWAInstalled() {
+                return this.pwaInstallStatus === 'installed' || 
+                       window.matchMedia('(display-mode: standalone)').matches || 
+                       window.navigator.standalone === true;
+            },
+            
+            displayInfo(message) {
+                this.displayNotification(message, 'info', 3000);
+            },
+            
+            // ===== OFFLINE FUNCTIONALITY =====
+            initOfflineSupport() {
+                // Initialize IndexedDB
+                this.initIndexedDB();
+                
+                // Listen for online/offline events
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    this.processOfflineQueue();
+                    this.displaySuccess('Back online! Syncing data...');
+                });
+                
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                    this.displayNotification('You are offline. Changes will be saved locally.', 'warning', 4000);
+                });
+                
+                // Listen for service worker messages
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.addEventListener('message', (event) => {
+                        this.handleServiceWorkerMessage(event.data);
+                    });
+                }
+                
+                // Auto-save on visibility change
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'hidden' && this.pendingChanges) {
+                        this.autoSave();
+                    }
+                });
+                
+                // Auto-save before page unload
+                window.addEventListener('beforeunload', (e) => {
+                    if (this.pendingChanges) {
+                        this.autoSave();
+                    }
+                });
+                
+                // Periodic auto-save every 30 seconds
+                setInterval(() => {
+                    if (this.pendingChanges) {
+                        this.autoSave();
+                    }
+                }, 30000);
+            },
+            
+            async initIndexedDB() {
+                try {
+                    await dbStorage.init();
+                    this.dbReady = true;
+                    Logger.log('IndexedDB initialized successfully');
+                    
+                    // Load any pending offline queue
+                    const queue = await dbStorage.getSetting('offlineQueue');
+                    if (queue && Array.isArray(queue)) {
+                        this.offlineQueue = queue;
+                    }
+                    
+                    // Check for recovery state
+                    const recoveryState = await dbStorage.getSetting('lastKnownGoodState');
+                    if (recoveryState) {
+                        this.lastKnownGoodState = recoveryState;
+                        this.recoveryAvailable = true;
+                    }
+                    
+                } catch (error) {
+                    Logger.error('Failed to initialize IndexedDB:', error);
+                    this.dbReady = false;
+                }
+            },
+            
+            handleServiceWorkerMessage(data) {
+                if (!data || !data.type) return;
+                
+                switch (data.type) {
+                    case 'SYNC_REQUIRED':
+                        this.syncData();
+                        break;
+                    case 'AUTO_BACKUP':
+                        this.performAutoBackup();
+                        break;
+                    case 'CHECK_BUDGET':
+                        this.checkBudgetAlerts();
+                        break;
+                }
+            },
+            
+            // ===== AUTO-SAVE FUNCTIONALITY =====
+            autoSave() {
+                if (!this.autoSaveEnabled) return;
+                
+                try {
+                    // Save to localStorage
+                    this.saveExpenses();
+                    
+                    // Save to IndexedDB for offline access
+                    if (this.dbReady) {
+                        this.saveToIndexedDB();
+                    }
+                    
+                    // Update last known good state
+                    this.saveLastKnownGoodState();
+                    
+                    this.lastSaveTime = new Date().toISOString();
+                    this.pendingChanges = false;
+                    
+                    Logger.debug('Auto-save completed at:', this.lastSaveTime);
+                } catch (error) {
+                    Logger.error('Auto-save failed:', error);
+                }
+            },
+            
+            async saveToIndexedDB() {
+                if (!this.dbReady) return;
+                
+                try {
+                    // Save expenses
+                    await dbStorage.clear(STORES.EXPENSES);
+                    await dbStorage.putAll(STORES.EXPENSES, this.expenses);
+                    
+                    // Save settings
+                    await dbStorage.setSetting('budget', this.budget);
+                    await dbStorage.setSetting('budgetEnabled', this.budgetEnabled);
+                    await dbStorage.setSetting('currency', this.currency);
+                    await dbStorage.setSetting('categoryBudgets', this.categoryBudgets);
+                    
+                    // Save spending history
+                    await dbStorage.clear(STORES.HISTORY);
+                    await dbStorage.putAll(STORES.HISTORY, this.spendingHistory);
+                    
+                    Logger.debug('Data saved to IndexedDB');
+                } catch (error) {
+                    Logger.error('Failed to save to IndexedDB:', error);
+                }
+            },
+            
+            async loadFromIndexedDB() {
+                if (!this.dbReady) return;
+                
+                try {
+                    // Load expenses
+                    const expenses = await dbStorage.getAll(STORES.EXPENSES);
+                    if (expenses && expenses.length > 0) {
+                        this.expenses = expenses;
+                    }
+                    
+                    // Load settings
+                    const budget = await dbStorage.getSetting('budget');
+                    if (budget !== null) this.budget = budget;
+                    
+                    const budgetEnabled = await dbStorage.getSetting('budgetEnabled');
+                    if (budgetEnabled !== null) this.budgetEnabled = budgetEnabled;
+                    
+                    const currency = await dbStorage.getSetting('currency');
+                    if (currency !== null) this.currency = currency;
+                    
+                    const categoryBudgets = await dbStorage.getSetting('categoryBudgets');
+                    if (categoryBudgets !== null) this.categoryBudgets = categoryBudgets;
+                    
+                    // Load spending history
+                    const history = await dbStorage.getAll(STORES.HISTORY);
+                    if (history && history.length > 0) {
+                        this.spendingHistory = history;
+                    }
+                    
+                    Logger.debug('Data loaded from IndexedDB');
+                } catch (error) {
+                    Logger.error('Failed to load from IndexedDB:', error);
+                }
+            },
+            
+            saveLastKnownGoodState() {
+                const state = {
+                    expenses: this.expenses,
+                    budget: this.budget,
+                    budgetEnabled: this.budgetEnabled,
+                    currency: this.currency,
+                    categoryBudgets: this.categoryBudgets,
+                    spendingHistory: this.spendingHistory,
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.lastKnownGoodState = state;
+                this.recoveryAvailable = true;
+                
+                if (this.dbReady) {
+                    dbStorage.setSetting('lastKnownGoodState', state);
+                }
+            },
+            
+            recoverFromLastKnownGoodState() {
+                if (!this.lastKnownGoodState) {
+                    this.displayError('No recovery state available.');
+                    return;
+                }
+                
+                this.showConfirmationModal(
+                    'Recover Data',
+                    'This will restore your data to the last known good state. Any unsaved changes will be lost. Continue?',
+                    () => {
+                        const state = this.lastKnownGoodState;
+                        
+                        if (state.expenses) this.expenses = state.expenses;
+                        if (state.budget !== undefined) this.budget = state.budget;
+                        if (state.budgetEnabled !== undefined) this.budgetEnabled = state.budgetEnabled;
+                        if (state.currency) this.currency = state.currency;
+                        if (state.categoryBudgets) this.categoryBudgets = state.categoryBudgets;
+                        if (state.spendingHistory) this.spendingHistory = state.spendingHistory;
+                        
+                        this.updateTotalExpenses();
+                        this.updateDeductions();
+                        this.updateUpcomingDeductions();
+                        this.saveExpenses();
+                        
+                        this.displaySuccess('Data recovered successfully!');
+                    }
+                );
+            },
+            
+            // ===== OFFLINE QUEUE =====
+            addToOfflineQueue(action, data) {
+                const queueItem = {
+                    id: generateId(),
+                    action: action,
+                    data: data,
+                    timestamp: new Date().toISOString(),
+                    synced: false
+                };
+                
+                this.offlineQueue.push(queueItem);
+                this.saveOfflineQueue();
+                
+                Logger.debug('Added to offline queue:', action);
+            },
+            
+            saveOfflineQueue() {
+                if (this.dbReady) {
+                    dbStorage.setSetting('offlineQueue', this.offlineQueue);
+                }
+                localStorage.setItem('offlineQueue', JSON.stringify(this.offlineQueue));
+            },
+            
+            async processOfflineQueue() {
+                if (this.offlineQueue.length === 0) return;
+                
+                Logger.log('Processing offline queue:', this.offlineQueue.length, 'items');
+                
+                const processed = [];
+                
+                for (const item of this.offlineQueue) {
+                    if (item.synced) continue;
+                    
+                    try {
+                        // Process different action types
+                        switch (item.action) {
+                            case 'addExpense':
+                            case 'updateExpense':
+                            case 'deleteExpense':
+                                // These are already saved locally, just mark as synced
+                                item.synced = true;
+                                processed.push(item.id);
+                                break;
+                                
+                            case 'fetchExchangeRates':
+                                await this.fetchExchangeRates();
+                                item.synced = true;
+                                processed.push(item.id);
+                                break;
+                        }
+                    } catch (error) {
+                        Logger.error('Failed to process queue item:', item, error);
+                    }
+                }
+                
+                // Remove processed items
+                this.offlineQueue = this.offlineQueue.filter(item => !processed.includes(item.id));
+                this.saveOfflineQueue();
+                
+                if (processed.length > 0) {
+                    this.displaySuccess(`Synced ${processed.length} offline change(s)`);
+                }
+            },
+            
+            // ===== DATA SYNC =====
+            async syncData() {
+                if (!navigator.onLine) {
+                    Logger.warn('Cannot sync while offline');
+                    return;
+                }
+                
+                try {
+                    // Process any pending offline operations
+                    await this.processOfflineQueue();
+                    
+                    // Save current state
+                    this.autoSave();
+                    
+                    // Create backup
+                    if (this.autoBackupEnabled) {
+                        await this.performAutoBackup();
+                    }
+                    
+                    Logger.log('Data sync completed');
+                } catch (error) {
+                    Logger.error('Data sync failed:', error);
+                }
+            },
+            
+            async performAutoBackup() {
+                if (!this.dbReady) return;
+                
+                try {
+                    await dbStorage.autoBackup();
+                    this.lastBackupTime = new Date().toISOString();
+                    Logger.debug('Auto backup completed');
+                } catch (error) {
+                    Logger.error('Auto backup failed:', error);
+                }
+            },
+            
+            // ===== BACKUP MANAGEMENT =====
+            async getAvailableBackups() {
+                if (!this.dbReady) return [];
+                return await dbStorage.getBackups();
+            },
+            
+            async restoreFromBackup(backupId) {
+                if (!this.dbReady) {
+                    this.displayError('Database not ready. Please try again.');
+                    return;
+                }
+                
+                this.showConfirmationModal(
+                    'Restore Backup',
+                    'This will replace all current data with the backup data. Continue?',
+                    async () => {
+                        try {
+                            const success = await dbStorage.restoreFromBackup(backupId);
+                            if (success) {
+                                await this.loadFromIndexedDB();
+                                this.updateTotalExpenses();
+                                this.updateDeductions();
+                                this.updateUpcomingDeductions();
+                                this.displaySuccess('Backup restored successfully!');
+                            } else {
+                                this.displayError('Failed to restore backup.');
+                            }
+                        } catch (error) {
+                            Logger.error('Restore failed:', error);
+                            this.displayError('Failed to restore backup.');
+                        }
+                    }
+                );
+            },
+            
+            async deleteBackup(backupId) {
+                if (!this.dbReady) return;
+                
+                try {
+                    await dbStorage.deleteBackup(backupId);
+                    this.displaySuccess('Backup deleted.');
+                } catch (error) {
+                    Logger.error('Failed to delete backup:', error);
+                    this.displayError('Failed to delete backup.');
+                }
+            },
+            
+            // ===== KEYBOARD SHORTCUTS =====
+            initKeyboardShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    // Skip if user is typing in an input field (with exceptions)
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                        // Allow some shortcuts even in inputs
+                        if (e.key === 'Escape') {
+                            e.target.blur();
+                            return;
+                        }
+                        // Allow Ctrl+Z (undo) in inputs
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                            // Let browser handle undo in inputs
+                            return;
+                        }
+                        // Allow Ctrl+S (save) globally
+                        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                            // Will be handled below
+                        } else {
+                            return;
+                        }
+                    }
+                    
+                    // Escape - Close modal
+                    if (e.key === 'Escape' && this.confirmModal.show) {
+                        this.closeConfirmModal();
+                        return;
+                    }
+                    
+                    // Ctrl/Cmd + E - Add new expense
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                        e.preventDefault();
+                        this.switchPage('expenses');
+                        this.$nextTick(() => {
+                            const nameInput = document.getElementById('expense-name');
+                            if (nameInput) {
+                                nameInput.focus();
+                                nameInput.select();
+                                AccessibilityUtils.announce('Ready to add new expense', 'polite');
+                            }
+                        });
+                        return;
+                    }
+                    
+                    // Ctrl/Cmd + Z - Undo last action
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                        e.preventDefault();
+                        if (this.lastDeleted && this.lastDeleted.expense) {
+                            this.undoDelete();
+                        } else if (this.isEditing) {
+                            this.resetNewExpense();
+                            AccessibilityUtils.announce('Edit cancelled', 'polite');
+                        } else {
+                            AccessibilityUtils.announce('Nothing to undo', 'polite');
+                        }
+                        return;
+                    }
+                    
+                    // Ctrl/Cmd + N - New expense (focus name input)
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                        e.preventDefault();
+                        const nameInput = document.getElementById('expense-name');
+                        if (nameInput) {
+                            nameInput.focus();
+                            AccessibilityUtils.announce('Focus moved to expense name input', 'polite');
+                        }
+                        return;
+                    }
+                    
+                    // Ctrl/Cmd + B - Focus budget input
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                        e.preventDefault();
+                        const budgetInput = document.getElementById('budget-input');
+                        if (budgetInput) {
+                            budgetInput.focus();
+                            budgetInput.select();
+                            AccessibilityUtils.announce('Focus moved to budget input', 'polite');
+                        }
+                        return;
+                    }
+                    
+                    // Ctrl/Cmd + S - Save/backup data
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        this.backupData();
+                        return;
+                    }
+                    
+                    // Ctrl/Cmd + / - Toggle theme
+                    if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                        e.preventDefault();
+                        const html = document.documentElement;
+                        const currentTheme = html.getAttribute('data-theme');
+                        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                        html.setAttribute('data-theme', newTheme);
+                        localStorage.setItem('theme', newTheme);
+                        
+                        // Update settings toggle if it exists
+                        const settingsToggle = document.getElementById('settings-theme-toggle');
+                        if (settingsToggle) {
+                            settingsToggle.setAttribute('aria-pressed', newTheme === 'dark' ? 'true' : 'false');
+                        }
+                        AccessibilityUtils.announce(`Theme switched to ${newTheme}`, 'polite');
+                        return;
+                    }
+                    
+                    // 1-4 - Switch pages
+                    if (e.key === '1') {
+                        this.switchPage('dashboard');
+                        AccessibilityUtils.announce('Switched to Dashboard', 'polite');
+                    } else if (e.key === '2') {
+                        this.switchPage('expenses');
+                        AccessibilityUtils.announce('Switched to Expenses', 'polite');
+                    } else if (e.key === '3') {
+                        this.switchPage('analytics');
+                        AccessibilityUtils.announce('Switched to Analytics', 'polite');
+                    } else if (e.key === '4') {
+                        this.switchPage('settings');
+                        AccessibilityUtils.announce('Switched to Settings', 'polite');
+                    }
+                    
+                    // ? - Show keyboard shortcuts help
+                    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+                        this.showKeyboardShortcutsHelp();
+                    }
+                });
+            },
+            
+            showKeyboardShortcutsHelp() {
+                const shortcuts = [
+                    { key: 'Ctrl/Cmd + E', action: 'Add new expense' },
+                    { key: 'Ctrl/Cmd + Z', action: 'Undo last action' },
+                    { key: 'Ctrl/Cmd + N', action: 'Focus expense name input' },
+                    { key: 'Ctrl/Cmd + B', action: 'Focus budget input' },
+                    { key: 'Ctrl/Cmd + S', action: 'Backup data' },
+                    { key: 'Ctrl/Cmd + /', action: 'Toggle dark/light theme' },
+                    { key: '1-4', action: 'Switch between pages' },
+                    { key: '?', action: 'Show this help' },
+                    { key: 'Escape', action: 'Close modals or blur inputs' }
+                ];
+                
+                let message = 'Keyboard Shortcuts:\n\n';
+                shortcuts.forEach(s => {
+                    message += s.key + ' - ' + s.action + '\n';
+                });
+                
+                alert(message);
+            },
+            
+            // ===== PENDING CHANGES TRACKING =====
+            markPendingChanges() {
+                this.pendingChanges = true;
             }
         },
         computed: {
@@ -4099,161 +4828,14 @@ document.addEventListener('DOMContentLoaded', function() {
             this.loadFromLocalStorage();
             this.initCurrencyConverter();
             this.initKeyboardShortcuts();
+            this.initPWAInstall();
+            this.initOfflineSupport();
             
             // Reinitialize settings controls after Vue is fully mounted
             this.$nextTick(() => {
                 console.log('Vue fully mounted, finalizing settings controls...');
                 initSettingsAppearance();
             });
-        },
-        
-        // ===== KEYBOARD SHORTCUTS =====
-        initKeyboardShortcuts() {
-            document.addEventListener('keydown', (e) => {
-                // Skip if user is typing in an input field (with exceptions)
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-                    // Allow some shortcuts even in inputs
-                    if (e.key === 'Escape') {
-                        e.target.blur();
-                        return;
-                    }
-                    // Allow Ctrl+Z (undo) in inputs
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                        // Let browser handle undo in inputs
-                        return;
-                    }
-                    // Allow Ctrl+S (save) globally
-                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                        // Will be handled below
-                    } else {
-                        return;
-                    }
-                }
-                
-                // Escape - Close modal
-                if (e.key === 'Escape' && this.confirmModal.show) {
-                    this.closeConfirmModal();
-                    return;
-                }
-                
-                // Ctrl/Cmd + E - Add new expense
-                if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-                    e.preventDefault();
-                    this.switchPage('expenses');
-                    this.$nextTick(() => {
-                        const nameInput = document.getElementById('expense-name');
-                        if (nameInput) {
-                            nameInput.focus();
-                            nameInput.select();
-                            AccessibilityUtils.announce('Ready to add new expense', 'polite');
-                        }
-                    });
-                    return;
-                }
-                
-                // Ctrl/Cmd + Z - Undo last action
-                if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                    e.preventDefault();
-                    if (this.lastDeleted && this.lastDeleted.expense) {
-                        this.undoDelete();
-                    } else if (this.isEditing) {
-                        this.resetNewExpense();
-                        AccessibilityUtils.announce('Edit cancelled', 'polite');
-                    } else {
-                        AccessibilityUtils.announce('Nothing to undo', 'polite');
-                    }
-                    return;
-                }
-                
-                // Ctrl/Cmd + N - New expense (focus name input)
-                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-                    e.preventDefault();
-                    const nameInput = document.getElementById('expense-name');
-                    if (nameInput) {
-                        nameInput.focus();
-                        AccessibilityUtils.announce('Focus moved to expense name input', 'polite');
-                    }
-                    return;
-                }
-                
-                // Ctrl/Cmd + B - Focus budget input
-                if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-                    e.preventDefault();
-                    const budgetInput = document.getElementById('budget-input');
-                    if (budgetInput) {
-                        budgetInput.focus();
-                        budgetInput.select();
-                        AccessibilityUtils.announce('Focus moved to budget input', 'polite');
-                    }
-                    return;
-                }
-                
-                // Ctrl/Cmd + S - Save/backup data
-                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                    e.preventDefault();
-                    this.backupData();
-                    return;
-                }
-                
-                // Ctrl/Cmd + / - Toggle theme
-                if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-                    e.preventDefault();
-                    const html = document.documentElement;
-                    const currentTheme = html.getAttribute('data-theme');
-                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                    html.setAttribute('data-theme', newTheme);
-                    localStorage.setItem('theme', newTheme);
-                    
-                    // Update settings toggle if it exists
-                    const settingsToggle = document.getElementById('settings-theme-toggle');
-                    if (settingsToggle) {
-                        settingsToggle.setAttribute('aria-pressed', newTheme === 'dark' ? 'true' : 'false');
-                    }
-                    AccessibilityUtils.announce(`Theme switched to ${newTheme}`, 'polite');
-                    return;
-                }
-                
-                // 1-4 - Switch pages
-                if (e.key === '1') {
-                    this.switchPage('dashboard');
-                    AccessibilityUtils.announce('Switched to Dashboard', 'polite');
-                } else if (e.key === '2') {
-                    this.switchPage('expenses');
-                    AccessibilityUtils.announce('Switched to Expenses', 'polite');
-                } else if (e.key === '3') {
-                    this.switchPage('analytics');
-                    AccessibilityUtils.announce('Switched to Analytics', 'polite');
-                } else if (e.key === '4') {
-                    this.switchPage('settings');
-                    AccessibilityUtils.announce('Switched to Settings', 'polite');
-                }
-                
-                // ? - Show keyboard shortcuts help
-                if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
-                    this.showKeyboardShortcutsHelp();
-                }
-            });
-        },
-        
-        showKeyboardShortcutsHelp() {
-            const shortcuts = [
-                { key: 'Ctrl/Cmd + E', action: 'Add new expense' },
-                { key: 'Ctrl/Cmd + Z', action: 'Undo last action' },
-                { key: 'Ctrl/Cmd + N', action: 'Focus expense name input' },
-                { key: 'Ctrl/Cmd + B', action: 'Focus budget input' },
-                { key: 'Ctrl/Cmd + S', action: 'Backup data' },
-                { key: 'Ctrl/Cmd + /', action: 'Toggle dark/light theme' },
-                { key: '1-4', action: 'Switch between pages' },
-                { key: '?', action: 'Show this help' },
-                { key: 'Escape', action: 'Close modals or blur inputs' }
-            ];
-            
-            let message = 'Keyboard Shortcuts:\n\n';
-            shortcuts.forEach(s => {
-                message += s.key + ' - ' + s.action + '\n';
-            });
-            
-            alert(message);
         }
     });
 });

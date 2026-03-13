@@ -32,7 +32,7 @@
     <div id="sr-announcements" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <div id="sr-alerts" class="sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
     
-    <!-- PWA Install Banner -->
+    <!-- PWA Install Banner (Legacy - Hidden) -->
     <div id="pwa-install-banner" class="pwa-install-banner" style="display: none;" role="dialog" aria-labelledby="install-title" aria-describedby="install-desc">
         <div class="install-banner-content">
             <div class="install-icon" aria-hidden="true">
@@ -50,6 +50,41 @@
     </div>
 
     <div id="app" v-cloak>
+        <!-- PWA Install Prompt Modal -->
+        <div v-if="pwaShowInstallPrompt && !isStandalone && pwaInstallStatus !== 'installed'" class="pwa-install-prompt" role="dialog" aria-labelledby="pwa-prompt-title" aria-modal="true">
+            <div class="pwa-prompt-content">
+                <button @click="dismissPWAInstall(false)" class="pwa-prompt-close" aria-label="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+                <div class="pwa-prompt-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+                </div>
+                <h3 id="pwa-prompt-title" class="pwa-prompt-title">Install Budget Tracker</h3>
+                <p class="pwa-prompt-desc">Install this app on your device for the best experience:</p>
+                <ul class="pwa-prompt-benefits">
+                    <li>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        <span>Works offline</span>
+                    </li>
+                    <li>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        <span>Fast & responsive</span>
+                    </li>
+                    <li>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        <span>Home screen access</span>
+                    </li>
+                </ul>
+                <div class="pwa-prompt-actions">
+                    <button @click="dismissPWAInstall(true)" class="pwa-prompt-dont-ask">Don't ask again</button>
+                    <button @click="installPWA" class="pwa-prompt-install" :disabled="pwaInstallLoading">
+                        <svg v-if="pwaInstallLoading" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="spin-animation"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                        <span>{{ pwaInstallLoading ? 'Installing...' : 'Install Now' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
         <header class="app-header" role="banner">
             <h1>Budget Expense Tracker</h1>
         </header>
@@ -1602,6 +1637,25 @@
                     </div>
                 </div>
             </section>
+
+            <!-- PWA Install Section - Minimal -->
+            <div class="pwa-install-compact">
+                <div class="pwa-compact-icon" :class="pwaInstallStatus === 'installed' ? 'installed' : ''">
+                    <svg v-if="pwaInstallStatus === 'installed'" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+                </div>
+                <div class="pwa-compact-info">
+                    <span class="pwa-compact-label">{{ pwaInstallStatus === 'installed' ? 'App Installed' : 'Install App' }}</span>
+                    <span class="pwa-compact-desc">{{ pwaInstallStatus === 'installed' ? 'Works offline' : 'Add to home screen' }}</span>
+                </div>
+                <button 
+                    v-if="pwaInstallStatus !== 'installed'" 
+                    @click="installPWA" 
+                    class="btn-primary btn-sm"
+                    :disabled="!pwaInstallable">
+                    Install
+                </button>
+            </div>
         </main>
 
         <!-- Add Category Modal -->
